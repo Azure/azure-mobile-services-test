@@ -1,0 +1,8 @@
+xcuserdata/
+Build
+derivedData/
+project.xcworkspace/
+Results/
+instruments*
+ZumoAutomationWithData.js
+ZumoAutomationTemplate-*.js

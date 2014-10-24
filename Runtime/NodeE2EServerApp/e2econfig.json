@@ -1,0 +1,47 @@
+{
+  "tables":[
+    { "name":    "authenticated" },
+    {
+      "name":    "blog_comments",
+      "columns": "postId=string,commentText=string,name=string,test=number"
+    },
+    {
+      "name":    "blog_posts",
+      "columns": "title=string,commentCount=number,showComments=boolean,data=string"
+    },
+    {
+      "name":    "dates",
+      "columns": "date=date,dateOffset=date"
+    },
+
+    {
+      "name":    "movies",
+      "columns": "title=string,duration=number,mpaaRating=string,releaseDate=date,bestPictureWinner=boolean"
+    },
+    {
+      "name":    "intIdMovies",
+      "columns": "title=string,duration=number,mpaaRating=string,releaseDate=date,bestPictureWinner=boolean",
+      "options": "--integerId"
+    },
+
+    {
+      "name":    "ParamsTestTable",
+      "options": "--integerId"
+    },
+
+    {
+      "name":    "roundTripTable",
+      "columns": "name=string,date1=date,bool=boolean,integer=number,number=number"
+    },
+    {
+      "name":    "intIdRoundTripTable",
+      "columns": "name=string,date1=date,bool=boolean,integer=number,number=number",
+      "options": "--integerId"
+    },
+
+    { "name":"public" },
+    { "name":"application" },
+    { "name":"user" },
+    { "name":"admin" }
+  ]
+}

@@ -1,0 +1,6 @@
+bin
+gen
+.metadata
+ZumoE2ETestApp/libs/gcm.jar
+ZumoE2ETestApp/libs/gson-2.2.2.jar
+ZumoE2ETestApp/libs/guava-17.0.jar

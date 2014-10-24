@@ -1,0 +1,21 @@
+{
+  "routes": {
+    "*": {
+      "get": {
+        "permission": "user"
+      },
+      "post": {
+        "permission": "user"
+      },
+      "put": {
+        "permission": "user"
+      },
+      "patch": {
+        "permission": "user"
+      },
+      "delete": {
+        "permission": "user"
+      }
+    }
+  }
+}

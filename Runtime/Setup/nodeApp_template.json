@@ -1,0 +1,17 @@
+{
+  "name":"example-node",
+  "platform":"Node",
+  "location":"West US",
+  "tier":"Free",
+  "sql":{
+    "server":"YOUR_SERVER_NAME",
+    "db":"YOUR_DB_NAME",
+    "user":"YOUR_DB_USER",
+    "password":"YOUR_DB_PASSWORD"
+  },
+  "appKey":"YOUR_APP_KEY",
+  "corsWhitelist":"CORS_WHITELIST",
+  "configFile":"../NodeE2EServerApp/e2econfig.json",
+  "srcFiles":"../NodeE2EServerApp/Repo",
+  "pingEndpoint":"status"
+}

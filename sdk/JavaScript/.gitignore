@@ -1,0 +1,12 @@
+*.suo
+*.csproj.user
+*.vbproj.user
+#ignore build files
+bin
+obj
+packages
+.nuget/nuget.exe
+src/*/Strings/*
+Components
+/ZumoE2ETestAppJs/ZumoE2ETestAppJs/bld
+/ZumoE2ETestAppJs/ZumoE2ETestAppJs/TestFramework

@@ -1,0 +1,17 @@
+{
+  "name":"example-dotnet",
+  "platform":"DotNet",
+  "location":"West US",
+  "tier":"Free",
+  "sql":{
+    "server":"YOUR_SERVER_NAME",
+    "db":"YOUR_DB_NAME",
+    "user":"YOUR_DB_USER",
+    "password":"YOUR_DB_PASSWORD"
+  },
+  "appKey":"YOUR_APP_KEY",
+  "corsWhitelist":"CORS_WHITELIST",
+  "srcFiles":"../DotNetE2EServerApp",
+  "siteExtensionPath":"path/to/privateSiteExtension.zip",
+  "pingEndpoint":"tables/movies"
+}
