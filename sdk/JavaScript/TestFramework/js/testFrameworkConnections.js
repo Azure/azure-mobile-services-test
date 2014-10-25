@@ -25,7 +25,7 @@ function setDefaultButtonEventHandler() {
         btn.onclick = function (evt) {
             var name = evt.target.innerText;
             testPlatform.alert('Operation ' + name + ' not implemented');
-        }
+        };
     }
 }
 
@@ -73,7 +73,7 @@ function btnRunTestClick(evt) {
             logs = logs + 'Tests passed: ' + testsPassed + '\n';
             logs = logs + 'Tests failed: ' + testsFailed;
             if (currentGroup.name.indexOf(zumo.AllTestsGroupName) === 0) {
-                if (testsFailed == 0) {
+                if (testsFailed === 0) {
                     if (currentGroup.name == zumo.AllTestsGroupName) {
                         btnRunAllTests.textContent = "Passed";
                     }
@@ -88,7 +88,7 @@ function btnRunTestClick(evt) {
             if (showAlerts) {
                 testPlatform.alert(logs);
             }
-        }
+        };
 
         var updateTest = function (test, index) {
             var tblTests = document.getElementById('tblTestsBody');
@@ -96,7 +96,7 @@ function btnRunTestClick(evt) {
             var td = tr.firstChild;
             td.style.color = getTestDisplayColor(test);
             td.innerText = "" + (index + 1) + ". " + test.displayText();
-        }
+        };
         var testFinished = updateTest;
         var testStarted = updateTest;
         currentGroup.runTests(testStarted, testFinished, groupDone);
@@ -122,7 +122,7 @@ document.getElementById('btnResetTests').onclick = function (evt) {
         td.style.color = getTestDisplayColor(test);
         td.innerText = "" + (index + 1) + ". " + test.displayText();
     });
-}
+};
 
 var testGroups = zumo.testGroups;
 
@@ -147,7 +147,7 @@ function handlerForAllTestsButtons(unattendedOnly) {
                 break;
             }
         }
-    }
+    };
 }
 
 function highlightSelectedGroup(groupIndex) {
@@ -183,14 +183,14 @@ function testGroupSelected(index) {
         td.style.color = getTestDisplayColor(test);
         td.ondblclick = function () {
             viewTestLogs(zumo.currentGroup, index);
-        }
+        };
         tblTests.appendChild(tr);
     });
 
     if (group.name === zumo.AllTestsGroupName || group.name === zumo.AllTestsUnattendedGroupName) {
         btnRunTestClick().then(
             function () {
-                if (dayLight.dayLightConfig != undefined) {
+                if (dayLight.dayLightConfig !== undefined) {
                     dayLight.ReportResultsToDaylight(zumo.testGroups, index);
                 }
             });
@@ -232,7 +232,7 @@ function addTestGroups() {
                 }, false);
                 a.textContent = name;
             }
-        }
+        };
 
         attachEvent(a, index);
 
