@@ -1,5 +1,6 @@
 {
   "name":"example-dotnet",
+  "useExistingApp":"false",
   "platform":"DotNet",
   "location":"West US",
   "tier":"Free",
@@ -12,6 +13,7 @@
   "appKey":"YOUR_APP_KEY",
   "corsWhitelist":"CORS_WHITELIST",
   "srcFiles":"../DotNetE2EServerApp",
+  "binFiles":"",
   "siteExtensionPath":"path/to/privateSiteExtension.zip",
   "pingEndpoint":"tables/movies"
 }
