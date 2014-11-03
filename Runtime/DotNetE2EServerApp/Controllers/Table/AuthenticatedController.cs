@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.WindowsAzure.Mobile.Service.Security;
+using Microsoft.Azure.Mobile.Server.Security;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Linq;
@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.OData;
 using ZumoE2EServerApp.DataObjects;
+using Microsoft.Azure.Mobile.Security;
 
 namespace ZumoE2EServerApp.Controllers
 {

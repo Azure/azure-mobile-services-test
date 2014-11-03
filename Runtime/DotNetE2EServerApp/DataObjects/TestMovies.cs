@@ -4,7 +4,7 @@
 
 using System;
 using System.Linq;
-using Microsoft.WindowsAzure.Mobile.Service;
+using Microsoft.Azure.Mobile.Server;
 using Newtonsoft.Json;
 using ZumoE2EServerApp.Utils;
 
