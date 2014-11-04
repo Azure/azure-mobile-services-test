@@ -35,7 +35,7 @@ if "%customNugetSource%" NEQ "" (
   echo Updating Nuget packages...
   REM TODO: Include *public* Nuget source below once the .NET ServerSDK nugets
   REM       specify dependencies with min & max versions
-  %nuget% update -Source "%customNugetSource%" %slnFileName%
+  %nuget% update -Source "%customNugetSource%" -Verbose %slnFileName%
   if %ERRORLEVEL% NEQ 0 (
     echo Error running nuget update
     goto ERROR_HANDLER
