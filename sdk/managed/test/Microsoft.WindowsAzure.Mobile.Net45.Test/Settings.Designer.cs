@@ -25,7 +25,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("https://davidni-e2e-js3.azure-mobile.net/")]
+        [global::System.Configuration.DefaultSettingValueAttribute("https://testapp.azure-mobile.net/")]
         public string MobileServiceRuntimeUrl {
             get {
                 return ((string)(this["MobileServiceRuntimeUrl"]));
@@ -37,7 +37,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("KEPjVCsikyaVLfKPrvIXEQvZIKWgcv91")]
+        [global::System.Configuration.DefaultSettingValueAttribute("ABCdefGHIjklMNOpqrSTUvwxYZAbcd12")]
         public string MobileServiceRuntimeKey {
             get {
                 return ((string)(this["MobileServiceRuntimeKey"]));
