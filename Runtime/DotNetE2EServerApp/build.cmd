@@ -1,6 +1,8 @@
 REM @echo off
-set customNugetSource=%1
-set defaultNugetSource=%2
+
+REM Use tilde to trim spaces and quotes from arguments
+set customNugetSource=%~1
+set defaultNugetSource=%~2
 
 set msbuild=%WINDIR%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
 set slnFileName=ZumoE2EServerApp.sln
