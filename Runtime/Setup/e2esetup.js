@@ -1,12 +1,13 @@
-var argv    = require('optimist').argv,
-    async   = require('async'),
-    colors  = require('colors'),
-    fse     = require('fs-extra'),
-    git     = require('gift'),
-    nconf   = require('nconf'),
-    request = require('request'),
-    scripty = require('azure-scripty'),
-    tmpDirs = require('tmp');
+var argv     = require('optimist').argv,
+    archiver = require('archiver'),
+    async    = require('async'),
+    colors   = require('colors'),
+    fse      = require('fs-extra'),
+    git      = require('gift'),
+    nconf    = require('nconf'),
+    request  = require('request'),
+    scripty  = require('azure-scripty'),
+    tmpDirs  = require('tmp');
 
 var state = {};
 var NumRetries = 3;
@@ -21,9 +22,10 @@ function run(callback) {
 }
 
 function usage() {
-  console.log('Usage: node e2esetup [options] configFile');
+  console.log('Usage: node e2esetup [options] jsonOptions');
   console.log("   options:");
   console.log("      --name               app name");
+  console.log("      --useExistingApp     Whether to re-use an existing app instead of recreating it each time: 'true' or 'false' (default is 'false' if not specified)");
   console.log("      --platform           app platform (DotNet / Node)");
   console.log("      --location           app location (e.g. West US)");
   console.log("      --sql:server         SQL server name");
@@ -31,13 +33,18 @@ function usage() {
   console.log("      --sql:user           database username");
   console.log("      --sql:password       database password");
   console.log("      --appKey             application key");
-  console.log("      --corsWhitelist      CORS whitelist (e.g. 'ms-appx-web://10805zumoTestUser.zumotestblu2' or '10805zumoTestUser.zumotestblu2'");
-  console.log("      --srcFiles           Path to the runtime user files");
-  console.log("      --configFile:        JSON file with configs for the app. See the provided templates.");
+  console.log("      --corsWhitelist      CORS whitelist (e.g. 'ms-appx-web://10805zumoTestUser.zumotestblu2' or '10805zumoTestUser.zumotestblu2')");
+  console.log("      --srcFiles           Optional path to the runtime user source files (these are pushed through Git)");
+  console.log("      --binFiles           Optional path to the runtime user binary files (these are uploaded through Kudu at /site/wwwroot)");
+  console.log("      --configFile:        JSON file with additional configs for a Node app. See the provided templates.");
   console.log("      --tier:              The tier level for the app i.e Free, basic or standard");
   console.log("      --pingEndpoint:      Endpoint to ping (GET) after app is created (e.g. 'status' or 'tables/movies')");
   console.log("      --pingDelay:         Time (in milliseconds) to wait before pinging the pingEndpoint (default: " + defaultPingDelay + ")");
   console.log("      --siteExtensionPath  ");
+  console.log();
+  console.log("   jsonOptions:");
+  console.log("      JSON file with configuration settings as specified above. See the supplied templates.");
+  console.log("      Values specified in the command line take precedence.");
   console.log();
 }
 
@@ -77,34 +84,46 @@ function make_app(callback) {
   
   async.series(
     [
-      delete_app_if_exists,
-      create_app,
+      function(done) {
+        var existingApp = null;
+        var appName = nconf.get('name');
+        state.existingApps.forEach(function(i) {
+          if (i.name.toLowerCase() == appName.toLowerCase()) {
+            existingApp = i;
+          }
+        });
+        if (existingApp) {
+          var useExistingApp = (nconf.get('useExistingApp') || 'false').toLowerCase();
+          if (useExistingApp == 'false') {
+            console.log('   App already exists. Deleting and recreating it...');
+            async.series([
+              delete_app,
+              create_app
+            ], done);
+          } else if (useExistingApp == 'true') {
+            console.log('   App already exists and will be re-used...');
+            done();
+          } else {
+            done('Configuration value "useExistingApp" must be "true" or "false" (default).');
+          }
+        } else {
+          console.log('   App does not currently exist and will be created');
+          create_app(done);
+        }
+      },
       scale_app,
       setup_app
     ], callback);
 }
 
-function delete_app_if_exists(callback) {
-  var existingApp = null;
-  var appName = nconf.get('name');
-  state.existingApps.forEach(function(i) {
-    if (i.name.toLowerCase() == appName.toLowerCase()) {
-      existingApp = i;
+function delete_app(callback) {
+  process.stdout.write('   Deleting existing app...');
+  scripty.invoke('mobile delete --deleteData --quiet ' + nconf.get('name'), function(err, results) {
+    if (!err) {
+      process.stdout.write(' OK'.green.bold + '\n');
     }
+    callback(err);
   });
-  
-  if (existingApp) {
-    process.stdout.write('   Deleting existing app...');
-    scripty.invoke('mobile delete --deleteData --quiet ' + appName, function(err, results) {
-      if (!err) {
-        process.stdout.write(' OK'.green.bold + '\n');
-      }
-      callback(err);
-    });
-  } else {
-    process.stdout.write('   App does not currently exist.\n');
-    callback();
-  }
 }
 
 function create_app(callback) {
@@ -239,8 +258,8 @@ function setup_node_app(callback) {
       create_node_tables(tables, done);
     },
     function(done) {
-      // Push repo
-      push_repo_and_siteextension(done);
+      // Upload user code and site extension
+      upload_site_and_siteextension(done);
     }
   ], callback);
 }
@@ -290,14 +309,12 @@ function setup_dotnet_app(callback) {
   console.log('   Setting up DotNet app:');
   async.series([
     function(done) {
-      push_repo_and_siteextension(done);
+      upload_site_and_siteextension(done);
     }
   ], callback);
 }
 
-function push_repo_and_siteextension(callback) {
-  var tmpPath = {};
-  var repo = {};
+function upload_site_and_siteextension(callback) {
   var gitUri = {};
   var kuduUsername = {};
   var kuduPassword = {};
@@ -351,6 +368,133 @@ function push_repo_and_siteextension(callback) {
       }
       upload_site_extension(scmEndpoint, kuduUsername, kuduPassword, siteExtensionPath, done);
     },
+    function (done) {
+      // Push source files through Git if specified
+      var srcFilesPath = nconf.get('srcFiles');
+      if (!srcFilesPath) {
+        return done();
+      }
+      push_repo(gitUri, srcFilesPath, done);
+    },
+    function (done) {
+      // Upload binary files through Kudu if specified
+      var binFilesPath = nconf.get('binFiles');
+      if (!binFilesPath) {
+        return done();
+      }
+      upload_user_binaries(scmEndpoint, kuduUsername, kuduPassword, binFilesPath, done);
+    },
+    function (done) {
+      // Restart the site
+      process.stdout.write('     Restarting site...');
+      call_kudu('delete', scmEndpoint + 'api/diagnostics/processes/0', null, kuduUsername, kuduPassword, 5,
+        function(err, resp, body) {
+          if (!err) {
+            console.log(' OK'.green.bold + ': ' + resp.statusCode);
+          }
+          else
+            console.log('Ignoring error (' + err + ')');
+          return done();
+        });
+    }
+  ], callback);
+}
+
+function upload_user_binaries(scmEndpoint, kuduUsername, kuduPassword, binFilesPath, callback){
+  var binContents = {};
+  var tmpPath = {};
+  var zipPath = {};
+  
+  console.log('   Uploading user binaries:');
+  async.series([
+    function(done) {
+      process.stdout.write('     Creating temp folder...');
+      tmpDirs.dir(function(err, _path) {
+        if (!err) {
+          tmpPath = _path;
+          console.log(' OK'.green.bold + ': ' + tmpPath);
+        }
+        done(err);
+      });
+    },
+    function(done) {
+      process.stdout.write('     Zipping user site binaries...');
+      zipPath = tmpPath + '/userSite.zip';
+      zip_folder(binFilesPath, zipPath, 'site/wwwroot', done);
+    },
+    function(done) {
+      process.stdout.write('     Reading zipped file...');
+      fse.readFile(zipPath, function(err, results) {
+        if (err) {
+          return done(err);
+        }
+        binContents = results;
+        console.log(' OK'.green.bold);
+        done();
+      });
+    },
+    function(done) {
+      process.stdout.write('     Removing old user site binaries...');
+      call_kudu('delete', scmEndpoint + 'api/vfs/Site/wwwroot/?recursive=true', null, kuduUsername, kuduPassword, 60,
+        function(err, resp, body) {
+          if (!err) {
+            console.log(' OK'.green.bold + ': ' + resp.statusCode);
+          }
+          return done(err);
+        });
+    },
+    function(done) {
+      process.stdout.write('     Uploading user site binaries (' + (binContents.length / 1024).toFixed(1) + ' KB)...');
+      call_kudu('put', scmEndpoint + 'api/zip', {body:binContents}, kuduUsername, kuduPassword, 150,
+        function(err, resp, body) {
+          if (!err) {
+            if (resp.statusCode == 200) {
+              console.log(' OK'.green.bold);
+            } else {
+              console.log(' Err: '.red.bold + resp.statusCode + '\n' + body);
+              err = 'Kudu returned ' + resp.statusCode;
+            }
+          }
+          done(err);
+        });
+    },
+    function(done) {
+      process.stdout.write('     Deleting temp folder...');
+      fse.remove(tmpPath, function(err) {
+        if (!err) {
+          console.log(' OK'.green.bold);
+        }
+        done(err);
+      });
+    }
+  ], callback);
+}
+
+function zip_folder(srcPath, destPath, contentPrefix, callback) {
+  var output = fse.createWriteStream(destPath);
+  var zip = archiver('zip');
+  
+  output.on('close', function () {
+    console.log(' OK'.green.bold);
+    callback();
+  });
+  
+  zip.on('error', function(err){
+    callback(err);
+  });
+  
+  zip.pipe(output);
+  zip.bulk([
+      { expand: true, cwd: srcPath, src: ['**'], dest: contentPrefix }
+  ]);
+  zip.finalize();
+}
+
+function push_repo(gitUri, srcFilesPath, callback) {
+  var tmpPath = {};
+  var repo = {};
+  
+  async.series([
     function(done) {
       process.stdout.write('     Creating temp folder...');
       tmpDirs.dir(function(err, _path) {
@@ -363,7 +507,7 @@ function push_repo_and_siteextension(callback) {
     },
     function(done) {
       process.stdout.write('     Copying source files to temp folder...');
-      fse.copy(nconf.get('srcFiles'), tmpPath, function(err) {
+      fse.copy(srcFilesPath, tmpPath, function(err) {
         if (!err) {
           console.log(' OK'.green.bold);
         }
@@ -428,12 +572,14 @@ function push_repo_and_siteextension(callback) {
         }
         done(err);
       });
-    },
+    }
   ], callback);
 }
 
 function upload_site_extension(scmEndpoint, kuduUsername, kuduPassword, siteExtensionPath, callback) {
   var siteExtensionContents = {};
+  
+  console.log('   Uploading private site extension:');
   async.series([
     function(done) {
       process.stdout.write('     Reading private site extension file...');
@@ -447,46 +593,54 @@ function upload_site_extension(scmEndpoint, kuduUsername, kuduPassword, siteExte
       });
     },
     function(done) {
-      process.stdout.write('     Removing old private site extension...');
-      request( { method:'delete',
-                 uri: scmEndpoint + 'api/vfs/SiteExtensions/?recursive=true',
-                 timeout: 60 * 1000,
-                 auth: {
-                   user: kuduUsername,
-                   pass: kuduPassword,
-                   sendImmediately: true
-                 }
-               }, function(err, resp, body) {
-        if (!err) {
-          console.log(' OK'.green.bold + ': ' + resp.statusCode);
-        }
-        return done(err);
-      });
+      process.stdout.write('     Removing old private site extensions...');
+      call_kudu('delete', scmEndpoint + 'api/vfs/SiteExtensions/?recursive=true', null, kuduUsername, kuduPassword, 60,
+        function(err, resp, body) {
+          if (!err) {
+            console.log(' OK'.green.bold + ': ' + resp.statusCode);
+          }
+          return done(err);
+        });
     },
     function(done) {
       process.stdout.write('     Uploading private site extension (' + (siteExtensionContents.length / 1024).toFixed(1) + ' KB)...');
-      request( { method:'put',
-                 uri: scmEndpoint + 'api/zip',
-                 timeout: 150 * 1000,
-                 auth: {
-                   user: kuduUsername,
-                   pass: kuduPassword,
-                   sendImmediately: true
-                 },
-                 body: siteExtensionContents
-               }, function(err, resp, body) {
-        if (!err) {
-          if (resp.statusCode == 200) {
-            console.log(' OK'.green.bold);
-          } else {
-            console.log(' Err: '.red.bold + resp.statusCode + '\n' + body);
-            err = 'Kudu returned ' + resp.statusCode;
+      call_kudu('put', scmEndpoint + 'api/zip', {body:siteExtensionContents}, kuduUsername, kuduPassword, 150,
+        function(err, resp, body) {
+          if (!err) {
+            if (resp.statusCode == 200) {
+              console.log(' OK'.green.bold);
+            } else {
+              console.log(' Err: '.red.bold + resp.statusCode + '\n' + body);
+              err = 'Kudu returned ' + resp.statusCode;
+            }
           }
-        }
-        done(err);
-      });
+          done(err);
+        });
     }
   ], callback);
+}
+
+function call_kudu(method, uri, content, username, password, timeout, callback) {
+  var opt = { method: method,
+             uri: uri,
+             timeout: timeout * 1000,
+             auth: {
+               user: username,
+               pass: password,
+               sendImmediately: true
+             }
+           };
+  
+  if (content) {
+    if (content.json) {
+      opt.json = content.json;
+    }
+    if (content.body) {
+      opt.body = content.body;
+    }
+  }
+  
+  request(opt, callback);
 }
 
 run(function(err) {

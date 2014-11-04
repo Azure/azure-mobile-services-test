@@ -1,5 +1,6 @@
 {
   "name":"example-node",
+  "useExistingApp":"false",
   "platform":"Node",
   "location":"West US",
   "tier":"Free",
