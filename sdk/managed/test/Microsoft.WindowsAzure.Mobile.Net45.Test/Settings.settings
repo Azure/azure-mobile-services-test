@@ -3,10 +3,10 @@
   <Profiles />
   <Settings>
     <Setting Name="MobileServiceRuntimeUrl" Type="System.String" Scope="User">
-      <Value Profile="(Default)">https://davidni-e2e-js3.azure-mobile.net/</Value>
+      <Value Profile="(Default)">https://testapp.azure-mobile.net/</Value>
     </Setting>
     <Setting Name="MobileServiceRuntimeKey" Type="System.String" Scope="User">
-      <Value Profile="(Default)">KEPjVCsikyaVLfKPrvIXEQvZIKWgcv91</Value>
+      <Value Profile="(Default)">ABCdefGHIjklMNOpqrSTUvwxYZAbcd12</Value>
     </Setting>
     <Setting Name="MobileServiceTags" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
