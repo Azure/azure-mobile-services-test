@@ -3,9 +3,9 @@
 // ----------------------------------------------------------------------------
 
 using AutoMapper;
-using Microsoft.WindowsAzure.Mobile.Service;
-using Microsoft.WindowsAzure.Mobile.Service.Config;
-using Microsoft.WindowsAzure.Mobile.Service.Security;
+using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Server.Config;
+using Microsoft.Azure.Mobile.Server.Security;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -26,8 +26,8 @@ namespace ZumoE2EServerApp
         {
             ConfigOptions options = new ConfigOptions
             {
-                PushAuthorization = AuthorizationLevel.Application,
-                DiagnosticsAuthorization = AuthorizationLevel.Anonymous,
+                //PushAuthorization = AuthorizationLevel.Application,
+                //DiagnosticsAuthorization = AuthorizationLevel.Anonymous,
             };
 
             HttpConfiguration config = ServiceConfig.Initialize(new ConfigBuilder(options));

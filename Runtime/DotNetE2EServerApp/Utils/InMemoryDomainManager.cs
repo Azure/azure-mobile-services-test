@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.WindowsAzure.Mobile.Service.Tables;
+using Microsoft.Azure.Mobile.Server.Tables;
 using System;
 using System.Collections.Generic;
 using System.Linq;
