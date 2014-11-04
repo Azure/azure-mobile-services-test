@@ -366,7 +366,7 @@ function upload_site_and_siteextension(callback) {
       if (!siteExtensionPath) {
         return done();
       }
-      upload_site_extension(scmEndpoint, kuduUsername, kuduPassword, siteExtensionPath, done);
+      upload_site_extension(scmEndpoint, kuduUsername, kuduPassword, siteExtensionPath.trim(), done);
     },
     function (done) {
       // Push source files through Git if specified
@@ -374,7 +374,7 @@ function upload_site_and_siteextension(callback) {
       if (!srcFilesPath) {
         return done();
       }
-      push_repo(gitUri, srcFilesPath, done);
+      push_repo(gitUri, srcFilesPath.trim(), done);
     },
     function (done) {
       // Upload binary files through Kudu if specified
@@ -382,7 +382,7 @@ function upload_site_and_siteextension(callback) {
       if (!binFilesPath) {
         return done();
       }
-      upload_user_binaries(scmEndpoint, kuduUsername, kuduPassword, binFilesPath, done);
+      upload_user_binaries(scmEndpoint, kuduUsername, kuduPassword, binFilesPath.trim(), done);
     },
     function (done) {
       // Restart the site
