@@ -1,4 +1,4 @@
-@echo off
+REM @echo off
 set customNugetSource=%1
 set defaultNugetSource=%2
 
