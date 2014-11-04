@@ -24,13 +24,11 @@ namespace ZumoE2EServerApp
     {
         public static void Register()
         {
-            ConfigOptions options = new ConfigOptions
-            {
-                //PushAuthorization = AuthorizationLevel.Application,
-                //DiagnosticsAuthorization = AuthorizationLevel.Anonymous,
-            };
+            ConfigOptions options = new ConfigOptions();
 
             HttpConfiguration config = ServiceConfig.Initialize(new ConfigBuilder(options));
+            config.IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always;
+            config.SetIsHosted(true);
 
             // Now add any missing connection strings and app settings from the environment.
             // Any envrionment variables found with names that match existing connection
@@ -57,9 +55,6 @@ namespace ZumoE2EServerApp
                     settings[setKey] = (string)environmentVariables[envKey];
                 }
             }
-
-            // Emulate the auth behavior of the server: default is application unless explicitly set.
-            config.Properties["MS_IsHosted"] = true;
 
             config.Formatters.JsonFormatter.SerializerSettings.DateFormatHandling = DateFormatHandling.IsoDateFormat;
 
