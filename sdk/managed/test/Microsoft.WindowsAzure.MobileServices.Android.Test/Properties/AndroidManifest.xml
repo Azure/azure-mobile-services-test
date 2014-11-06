@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-	<uses-sdk android:minSdkVersion="8" android:targetSdkVersion="8" />
-	<application></application>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="Microsoft.WindowsAzure.Mobile.Android.Test" android:versionCode="1" android:versionName="1.0">
+	<uses-sdk />
+	<application android:label="Microsoft.WindowsAzure.Mobile.Android.Test" android:icon="@drawable/Icon"></application>
 </manifest>
