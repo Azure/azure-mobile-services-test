@@ -34,7 +34,8 @@ clientSecret=$6
 runId=$7
 tags=$8
 runTimeVersion=$9
-nugetSourceOverride={$10}
+shift
+nugetSourceOverride=$9
 
 echo
 echo "==============================================="
