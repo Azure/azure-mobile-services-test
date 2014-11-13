@@ -9,8 +9,6 @@ mkdir Results
 
 DIR="$( pwd )"
 
-set -o nounset
-
 if [ $# -lt 9 ]
 then
   echo 'Usage:' $0 '<Application URL> <Application key> <Daylight URL> <Daylight Project> <clientId> <clientSecret> <runId> <Tag expression> <Runtime version> <nugetSourceOverride>'
@@ -57,7 +55,7 @@ echo
 echo Restoring Nuget packages...
 nuget restore $SLN_FILE
 
-if [[ $nugetSourceOverride && ${_nugetSourceOverride-_} ]]
+if [[ $nugetSourceOverride ]]
 then
   echo Updating Nuget from $nugetSourceOverride
   nuget update $SLN_FILE -Source $nugetSourceOverride -Verbose -Prerelease
