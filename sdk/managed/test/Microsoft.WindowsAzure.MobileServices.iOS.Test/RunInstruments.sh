@@ -9,17 +9,15 @@ mkdir Results
 
 DIR="$( pwd )"
 
-set -o nounset
-
 if [ $# -lt 9 ]
 then
-  echo 'Usage:' $0 '<Application URL> <Application key> <Daylight URL> <Daylight Project> <clientId> <clientSecret> <runId> <Tag expression> <Runtime version>'
+  echo 'Usage:' $0 '<Application URL> <Application key> <Daylight URL> <Daylight Project> <clientId> <clientSecret> <runId> <Tag expression> <Runtime version> <nugetSourceOverride>'
   echo 'Where'
   echo '  <Application URL> is the URL of the Mobile Service'
   echo '  <Application key> is the app key for that service'
   echo '  <Tag expression> example: !NodeRuntimeOnly*!DotNetRuntimeBug'
   echo '  <Runtime version> is reported to daylight'
-  
+  echo '  <nugetSourceOverride> will perform a nuget update from the specified location'
   exit 1
 fi
 
@@ -34,6 +32,8 @@ clientSecret=$6
 runId=$7
 tags=$8
 runTimeVersion=$9
+shift
+nugetSourceOverride=$9
 
 echo
 echo "==============================================="
@@ -47,12 +47,21 @@ echo "===    clientSecret:    $clientSecret"
 echo "===    runId:           $runId"
 echo "===    tags:            $tags"
 echo "===    runTimeVersion:  $runTimeVersion"
+echo "===    nugetSourceOverride: $nugetSourceOverride"
 echo "==============================================="
 echo
 
 echo
 echo Restoring Nuget packages...
 nuget restore $SLN_FILE
+
+if [[ $nugetSourceOverride ]]
+then
+  echo Updating Nuget from $nugetSourceOverride
+  nuget update $SLN_FILE -Source $nugetSourceOverride -Verbose -Prerelease
+else
+  echo Not updating Nugets
+fi
 
 echo
 echo Building...
