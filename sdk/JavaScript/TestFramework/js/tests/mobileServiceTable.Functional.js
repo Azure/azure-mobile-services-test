@@ -930,7 +930,7 @@ function defineTableGenericFunctionalTestsNamespace() {
                 insertPromises.push(insertPromise)
                 table.insert({ id: testId, name: 'Hey' }).then(function () {
                     insertPromise.resolve();
-                }, function (error) {
+                }, function (err) {
                     if (err != undefined) { test.addLog('Error' + JSON.stringify(err)); }
                     done(false);
                 });
