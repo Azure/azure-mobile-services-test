@@ -260,111 +260,114 @@ function defineTableGenericFunctionalTestsNamespace() {
 
                 var testIds = emptyStringIds.concat(invalidStringIds).concat(null);
                 readTable(table, testIds, function (error) {
-                    if (error) {
-                        done(false);
-                        return;
-                    }
-
-                    done(true);
+                    done(!error);
                 });
             });
         });
     }));
 
     tests.push(new zumo.Test('RefreshAsyncWithNoSuchItemAgainstStringIdTable', function (test, done) {
-        var client = zumo.getClient();
-        var table = client.getTable(stringIdTableName);
+        var client = zumo.getClient(),
+            table = client.getTable(stringIdTableName),
+            readTable = function (table, recordIds, callback) {
+                test.addLog('Read our data');
 
-        var insertPromises = [newLink()];
+                var count = 0,
+                    errorCount = 0,
+                    lookupComplete = function () {
+                        if (++count < recordIds.length) return;
+                        callback(errorCount > 0 ? new Error('All records not found') : null);
+                    };
+
+                recordIds.forEach(function (testId) {
+                    table.lookup(testId).then(function (item) {
+                        if (!assert.areEqual(test, item.id, testId)) {
+                            errorCount++;
+                        }
+                        lookupComplete();
+                    }, function (error) {
+                        errorCount++;
+                        lookupComplete();
+                    });
+                });
+            },
+            deleteTable = function (table, recordIds, callback) {
+                test.addLog('Delete our data');
+
+                var count = 0,
+                    errorCount = 0,
+                    deleteComplete = function () {
+                        if (++count < recordIds.length) return;
+                        callback(errorCount > 0 ? new Error('All records not deleted') : null);
+                    };
+
+                recordIds.forEach(function (testId) {
+                    table.del({id: testId}).then(function () {
+                        deleteComplete();
+                    }, function (error) {
+                        errorCount++;
+                        test.addLog('Should have suceeded');
+                        test.addLog('Error' + JSON.stringify(err));
+
+                        deleteComplete();
+                    });
+                });
+            },
+            refreshTable = function (table, recordIds, callback) {
+                test.addLog('Refresh our data');
+
+                var count = 0,
+                    errorCount = 0,
+                    refreshComplete = function () {
+                        if (++count < recordIds.length) return;
+                        callback(errorCount > 0 ? new Error('All records not deleted') : null);
+                    };
+
+                recordIds.forEach(function (testId) {
+                    table.refresh({ id: testId, Name: 'Hey' }).then(function (result) {
+                        errorCount++;
+                        test.addLog('Should have failed');
+                        refreshComplete();
+                    }, refreshComplete);
+                });
+            };
+
+
         emptyTable(table, function (error) {
             if (error) {
                 done(false);
                 return;
             }
 
-            var lookupStart = newLink();
-
             test.addLog('Initialize our data');
             populateTable(table, validStringIds, function (error) {
                 if (error) {
-                    lookupStart.reject();
                     done(false);
                     return;
                 }
 
-                lookupStart.resolve();
-            });
-
-            var lookupPromises = [newLink()];
-            lookupStart.then(function () {
-                validStringIds.forEach(function (testId) {
-                    var def = newLink();
-                    lookupPromises.push(def);
-                    table.lookup(testId).then(function (item) {
-                        if (assert.areEqual(test, item.id, testId)) {
-                            def.resolve();
-                        }
-                        else {
-                            def.reject();
-                        }
-                    }, function (error) {
-                        def.reject();
-                    });
-                });
-
-                lookupPromises[0].resolve();
-
-                var deleteStart = newLink();
-                $.when.apply($, lookupPromises).then(function () {
-                    deleteStart.resolve();
-                }, function (err) {
-                    done(false);
-                });
-
-                var deletePromises = [newLink()];
-                deleteStart.then(function () {
-                    test.addLog('Delete our data');
-                    validStringIds.forEach(function (testId) {
-                        var def = newLink();
-                        deletePromises.push(def);
-                        table.del({ id: testId }).then(function () {
-                            def.resolve();
-                        }, function (err) {
-                            test.addLog('Should have suceeded');
-                            test.addLog('Error' + JSON.stringify(err));
-                            def.reject();
-                        });
-                    });
-
-                    deletePromises[0].resolve();
-                    var refreshStart = newLink();
-                    $.when.apply($, deletePromises).then(function () {
-                        refreshStart.resolve();
-                    }, function () {
+                readTable(table, validStringIds, function (error) {
+                    if (error) {
                         done(false);
-                    });
+                        return;
+                    }
 
-                    var refreshPromises = [newLink()];
-                    refreshStart.then(function () {
-                        test.addLog('Refresh our data');
-                        validStringIds.forEach(function (testId) {
-                            var def = newLink();
-                            refreshPromises.push(def);
-                            table.refresh({ id: testId, Name: 'Hey' }).then(function (result) {
-                                test.addLog('Should have failed');
-                                def.reject();
-                            }, function (error) {
-                                def.resolve();
-                            });
-                        });
-                        refreshPromises[0].resolve();
-                        $.when.apply($, refreshPromises).then(function () {
-                            done(true);
-                        }, function () {
+                    deleteTable(table, validStringIds, function (error) {
+                        if (error) {
                             done(false);
+                            return;
+                        }
+                        
+                        refreshTable(table, validStringIds, function (error) {
+                            if (error) {
+                                done(false);
+                                return;
+                            }
+
+                            done(true)
                         });
-                    })
-                })
+                    });
+                });
             });
         });
     }));
@@ -372,11 +375,15 @@ function defineTableGenericFunctionalTestsNamespace() {
     // BUG #1706815 (query system properties)
     tests.push(new zumo.Test('AsyncFilterSelectOrderingOperationsNotImpactedBySystemProperties', function (test, done) {
         test.addLog('test table sorting with various system properties');
+
+        globaldone = done;
+        globalTest = test;
+
         var client = zumo.getClient(),
-            savedItems = [];
-        var forLink = [newLink()]
-        var i = 0;
-        var table = client.getTable(stringIdTableName);
+            table = client.getTable(stringIdTableName),
+            savedItems = [],
+            success = true;
+
         table.systemProperties = WindowsAzure.MobileServiceTable.SystemProperties.All;
 
         emptyTable(table, function (error) {
@@ -385,164 +392,117 @@ function defineTableGenericFunctionalTestsNamespace() {
                 return;
             }
 
-            var insertPromise = newLink();
             table.insert({ id: '1', name: 'value' }).then(function (item) {
-                insertPromise.resolve(item);
-            });
-            insertPromise.then(function (item) {
-                var insertPromise = newLink();
                 savedItems.push(item);
-                table.insert({ id: '2', name: 'value' }).then(function (item) {
-                    insertPromise.resolve(item);
-                });
-                return insertPromise;
+                return table.insert({ id: '2', name: 'value' });
+            }, failFn).then(function (item) {
+                savedItems.push(item);
+                return table.insert({ id: '3', name: 'value' });
             }).then(function (item) {
                 savedItems.push(item);
-                var insertPromise = newLink();
-                table.insert({ id: '3', name: 'value' }).then(function (item) {
-                    insertPromise.resolve(item);
-                });
-                return insertPromise;
+                return table.insert({ id: '4', name: 'value' });
             }).then(function (item) {
                 savedItems.push(item);
-                var insertPromise = newLink();
-                table.insert({ id: '4', name: 'value' }).then(function (item) {
-                    insertPromise.resolve(item);
-                });
-                return insertPromise;
+                return table.insert({ id: '5', name: 'value' });
             }).then(function (item) {
-                savedItems.push(item);
-                var insertPromise = newLink();
-                table.insert({ id: '5', name: 'value' }).then(function (item) {
-                    insertPromise.resolve(item);
-                });
-                return insertPromise;
-            }).then(function (item) {
-                savedItems.push(item);
-                forLink[0].resolve(0);
-            });
+                var promise;
 
-            testSystemProperties.forEach(function (systemProperties) {
-                i = i + 1;
-                forLink[i] = newLink();
-                forLink[i - 1].then(function (i2) {
-                    table.systemProperties = testSystemProperties[i2];
-                    test.addLog('testing properties: ' + systemProperties);
+                savedItems.push(item);
+                for (index = 0; index < testSystemProperties.length; index++) {
+                    table.systemProperties = testSystemProperties[index];
+                    test.addLog('testing properties: ' + table.systemProperties);
 
-                    var orderbyPromise = newLink();
-                    table.orderBy('__createdAt').read().then(function (item) {
-                        orderbyPromise.resolve(item);
-                    }, function () { forLink[i2 + 1].reject(); });
-
-                    orderbyPromise.then(function (items) {
+                    var orderTests = table.orderBy('__createdAt').read().then(function (items) {
                         for (var i = 0; i < items.length - 1; i++) {
                             if (!(items[i].id < items[i + 1].id)) {
-                                forLink[i2 + 1].reject();
+                                test.addLog('__createdAt order wrong');
+                                success = false;
+                                break;
                             }
-                        }
-                        var orderbyPromise = newLink();
-                        table.orderBy('__updatedAt').read().then(function (item) {
-                            orderbyPromise.resolve(item);
-                        }, function () { forLink[i2 + 1].reject(); })
-                        return orderbyPromise;
-                    }, function () {
-                        forLink[i2 + 1].reject();
-                    }).then(function (items) {
-                        for (var i = 0; i < items.length - 1; i++) {
-                            if (!(items[i].id < items[i + 1].id)) {
-                                forLink[i2 + 1].reject();
-                            }
-                        }
-                        var orderbyPromise = newLink();
-                        table.orderBy('__version').read().then(function (item) {
-                            orderbyPromise.resolve(item);
-                        }, function () { forLink[i2 + 1].reject(); })
-                        return orderbyPromise;
-                    }, function () {
-                        forLink[i2 + 1].reject();
-                    }).then(function (items) {
-                        for (var i = 0; i < items.length - 1; i++) {
-                            if (!(items[i].id < items[i + 1].id)) {
-                                forLink[i2 + 1].reject();
-                            }
-                        }
-                        var wherePromise = newLink();
-                        table.where(function (value) { return this.__createdAt >= value; }, savedItems[3].__createdAt).read().then(function (items) {
-                            wherePromise.resolve(items);
-                        }, function () { forLink[i2 + 1].reject(); })
-                        return wherePromise;
-                    }).then(function (items) {
-                        var wherePromise = newLink();
-                        if (!assert.areEqual(test, 2, items.length)) {
-                            forLink[i2 + 1].reject();
                         }
 
-                        table.where(function (value) { return this.__updatedAt >= value; }, savedItems[3].__updatedAt).read().then(function (items) {
-                            wherePromise.resolve(items);
-                        }, function () { forLink[i2 + 1].reject(); })
-                        return wherePromise;
-                    }).then(function (items) {
-                        if (!assert.areEqual(test, 2, items.length)) {
-                            forLink[i2 + 1].reject();
+                        return table.orderBy('__updatedAt').read();
+                    }, failFn).then(function (items) {
+                        for (var i = 0; i < items.length - 1; i++) {
+                            if (!(items[i].id < items[i + 1].id)) {
+                                test.addLog('__updatedAt order wrong');
+                                success = false;
+                                break;
+                            }
                         }
 
-                        var wherePromise = newLink();
-                        table.where({ __version: savedItems[3].__version }).read().then(function (items) {
-                            wherePromise.resolve(items);
-                        }, function () { forLink[i2 + 1].reject(); })
-                        return wherePromise;
-                    }).then(function (items) {
-                        if (!assert.areEqual(test, 1, items.length)) {
-                            forLink[i2 + 1].reject();
+                        return table.orderBy('__version').read();
+                    }, failFn).then(function (items) {
+                        for (var i = 0; i < items.length - 1; i++) {
+                            if (!(items[i].id < items[i + 1].id)) {
+                                test.addLog('__version order wrong');
+                                success = false;
+                                break;
+                            }
                         }
-                        var wherePromise = newLink();
-                        table.select('id', '__createdAt').read().then(function (items) {
-                            wherePromise.resolve(items);
-                        }, function () { forLink[i2 + 1].reject(); })
-                        return wherePromise;
-                    }).then(function (items) {
+
+                        return table.select('id', '__createdAt').read();
+                     
+                        // Node only
+                        /*
+                        return table.where(function (value) { return this.__createdAt >= value; }, savedItems[3].__createdAt).read()
+                                .then(function (items) {
+                                    if (!assert.areEqual(test, 2, items.length)) {
+                                        success = false;
+                                    }
+
+                                    return table.where(function (value) { return this.__updatedAt >= value; }, savedItems[3].__updatedAt).read();
+                                }).then(function (items) {
+                                    if (!assert.areEqual(test, 2, items.length)) {
+                                        success = false;
+                                    }
+                                    return table.where({ __version: savedItems[3].__version }).read();
+                                }).then(function (items) {
+                                    if (!assert.areEqual(test, 1, items.length)) {
+                                        success = false;
+                                    }
+
+                                    return table.select('id', '__createdAt').read();
+                                });
+                        */
+                    }, failFn).then(function (items) {
                         for (var i = 0; i < items.length; i++) {
                             if (items[i].__createdAt == null) {
-                                forLink[i2 + 1].reject();
+                                test.addLog('missing __createdAt');
+                                success = false;
+                                break;
                             }
                         }
-                        var selectPromise = newLink();
-                        table.select('id', '__updatedAt').read().then(function (items) {
-                            selectPromise.resolve(items)
-                        }, function () { forLink[i2 + 1].reject(); })
-                        return selectPromise;
+                        return table.select('id', '__updatedAt').read();
                     }).then(function (items) {
                         for (var i = 0; i < items.length; i++) {
                             if (items[i].__updatedAt == null) {
-                                forLink[i2 + 1].reject();
+                                test.addLog('missing __updatedAt');
                             }
                         }
-                        var selectPromise = newLink();
-                        table.select('id', '__version').read().then(function (items) {
-                            selectPromise.resolve(items)
-                        }, function () { forLink[i2 + 1].reject(); })
-                        return selectPromise;
+                        return table.select('id', '__version').read();
                     }).then(function (items) {
                         for (var i = 0; i < items.length; i++) {
                             if (items[i].__version == null) {
-                                var rejected = true;
-                                forLink[i2 + 1].reject();
+                                test.addLog('missing __version');
                             }
                         }
-                        if (!rejected) {
-                            forLink[i2 + 1].resolve(i2 + 1);
-                        }
-                    })
-                })
-            })
+                    });
 
-            $.when.apply($, forLink).then(function () {
+                    if (promise) {
+                        promise.then(function () { return orderTests });
+                    } else {
+                        promise = orderTests;
+                    }
+                }
+
+                return promise;
+            }).then(function () {
                 done(true);
-            }, function () {
-                done(false);
-            });
+            }, failFn);
+
         });
-    }, [zumo.runtimeFeatureNames.NodeRuntime_Only]));
+    }));
 
     // BUG #2133523: .NET runtime should respond 400 if query requests invalid system properties
     tests.push(new zumo.Test('AsyncTableOperationsWithInvalidSystemPropertiesQuerystring', function (test, done) {
