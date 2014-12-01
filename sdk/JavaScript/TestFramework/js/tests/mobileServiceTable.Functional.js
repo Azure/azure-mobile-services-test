@@ -47,20 +47,55 @@ function defineTableGenericFunctionalTestsNamespace() {
         }, callback);
     }
 
+    function emptyTable2(table) {
+        var emptyTablePromise = table.read().then(function (results) {
+            if (!results || results.length == 0) {
+                return null;
+            }
+
+            var deletePromiseChain;
+            results.forEach(function (result) {
+                var delPromise = table.del(result);
+
+                if (!deletePromiseChain) {
+                    deletePromiseChain = delPromise;
+                } else {
+                    deletePromiseChain = deletePromiseChain.then(function (result) {
+                        return delPromise;
+                    });
+                }
+            });
+            
+            return deletePromiseChain;
+        });
+
+        emptyTablePromise.then(function (result) {
+            return null;
+        });
+
+        return emptyTablePromise;
+    }
+
     function populateTable(table, recordIds, callback) {
-        var remaining = recordIds.length,
-            errorCount = 0,
-            done = function () {
-                if (--remaining != 0) return;
-                callback(errorCount > 0 ? new Error('Error populating table') : null);
-            };
+        var promise,            
+            insertedRecords = 0;
 
         recordIds.forEach(function (recordId) {
-            table.insert({ id: recordId, name: 'Hey' }).then(done, function (error) {
-                errorCount++;
-                done();
+            var insertPromise = table.insert({ id: recordId, name: 'Hey' }).then(function (item) {
+                insertedRecords++;
             });
+
+            if (!promise) {
+                promise = insertPromise;
+            } else {
+                promise = promise.then(function (count) { return insertPromise; });
+            }
         });
+    
+        if (!promise) { return 0; }
+        return promise.then(function () {
+            return insertedRecords;
+        })
     }
 
     tests.push(new zumo.Test('Identify enabled runtime features for functional tests',
@@ -100,276 +135,209 @@ function defineTableGenericFunctionalTestsNamespace() {
         var client = zumo.getClient(),
             table = client.getTable(stringIdTableName),
             savedVersion,
-            correctVersion;
+            correctVersion,
+            newItem;
 
         table.systemProperties = WindowsAzure.MobileServiceTable.SystemProperties.All;
-
-        emptyTable(table, function (error) {
-            if (error) {
-                failFn(error);
-                return;
+    
+        emptyTable2(table).then(function () {
+            return table.insert({ id: 'an id', name: 'a value' });
+        }).then(function (item) {
+            savedVersion = item.__version;
+            item.name = 'Hello!';
+            return table.update(item);
+        }).then(function (item) {
+            var a1 = assert.areNotEqual(item.__version, savedVersion);
+            item.name = 'But Wait!';
+            correctVersion = item.__version;
+            item.__version = savedVersion;
+            newItem = item;
+            return table.update(item);
+        }).then(function (items) { 
+            done(false); 
+        }, function (error) {            
+            if (assert.areEqual(test, 412, error.request.status) &&
+                        error.message.indexOf("Precondition Failed") > -1 &&
+                        assert.areEqual(test, error.serverInstance.__version, correctVersion) &&
+                        assert.areEqual(test, error.serverInstance.name, 'Hello!')) {
+                newItem.__version = correctVersion;
+                return table.update(newItem);
+            } else {
+                throw new Error('Incorrect error returned from update');
             }
-            
-            var newItem;
-            table.insert({
-                id: 'an id', name: 'a value'
-            }).then(function (item) {
-                savedVersion = item.__version;
-                item.name = 'Hello!';
-                return table.update(item);
-            }, failFn).then(function (item) {
-                var a1 = assert.areNotEqual(item.__version, savedVersion);
-                item.name = 'But Wait!';
-                correctVersion = item.__version;
-                item.__version = savedVersion;
-                newItem = item;
-                return table.update(item);
-            }, failFn).then(function (items) { 
-                done(false); 
-            }, function (error) {
-                if (assert.areEqual(test, 412, error.request.status) &&
-                            error.message.indexOf("Precondition Failed") > -1 &&
-                            assert.areEqual(test, error.serverInstance.__version, correctVersion) &&
-                            assert.areEqual(test, error.serverInstance.name, 'Hello!')) {
-                    newItem.__version = correctVersion;
-                    return table.update(newItem);
-                } else {
-                    done(false);
-                }
-            }).then(function (item) {
-                if (assert.areNotEqual(item.__version, correctVersion)) {
-                    done(true);
-                } else {
-                    done(false);
-                }
-            }, failFn);
-        });
+        }).then(function (item) {
+            if (assert.areNotEqual(item.__version, correctVersion)) {
+                done(true);
+            } else {
+                throw new Error('Incorrect version found');
+            }
+        }, failFn);
     }));
 
     tests.push(new zumo.Test('DeleteAsyncWithNosuchItemAgainstStringIdTable', function (test, done) {
-        var client = zumo.getClient(),
-            table = client.getTable(stringIdTableName);
+        globalTest = test;
+        globaldone = done;
 
-        emptyTable(table, function (error) {
-            if (error) {
-                done(false);
-                return;
-            }           
+        var table = zumo.getClient().getTable(stringIdTableName),
+            lookupData = function (recordIds) {
+                var promise;
+                recordIds.forEach(function (recordId) {
+                    lookupPromise = table.lookup(recordId);
 
-            var count = validStringIds.length,
-                errorCount = 0,
-                deleteComplete = function(initialAttempt) {
-                    if (--count != 0) return;
-                    if (errorCount > 0 && initialAttempt) {
-                        done(false)
-                        return;
+                    if (!promise) {
+                        promise = lookupPromise;
+                    } else {
+                        promise = promise.then(function () { return lookupPromise; });
                     }
-
-                    if (initialAttempt) {
-                        count = validStringIds.length;
-                        deleteTests(false);
-                        return;
-                    }                   
-
-                    done(errorCount === validStringIds.length);
-                },
-                deleteTests = function (initialAttempt) {
-                    test.addLog('Delete our data');
-
-                    count = validStringIds.length;
-                    validStringIds.forEach(function(testId) {
-                        table.del({ id: testId }).then(function() {
-                            deleteComplete(initialAttempt);
-;                        }, function (error) {
-                            errorCount++;
-                            deleteComplete(initialAttempt);
-                        });
-                    });
-                },
-                lookupComplete = function () {
-                    test.addLog('Lookup our data');
-
-                    if (--count != 0) return;
-                    if (errorCount > 0) {
-                        done(false)
-                        return;
-                    }
-
-                    deleteTests(true);
-                },
-                lookupTests = function (error) {
-                    if (error) {
-                        failFn(error);
-                        return;
-                    }
-
-                    count = validStringIds.length;
-                    validStringIds.forEach(function (testId) {
-                        table.lookup(testId).then(lookupComplete, function (error) {
-                            errorCount++;
-                            lookupComplete();
-                        });
-                    });
-                };
-
-            test.addLog('Initialize our data');
-            populateTable(table, validStringIds, lookupTests);
-        });
-    }));
-
-    tests.push(new zumo.Test('FilterReadAsyncWithEmptyStringIdAgainstStringIdTable', function (test, done) {
-        var client = zumo.getClient(),
-            table = client.getTable(stringIdTableName),
-            readTable = function(table, recordIds, callback) {
-                var readCount = 0,
-                    errorCount = 0,
-                    readComplete = function () {
-                        if (++readCount < recordIds.length) return;
-                        callback(errorCount > 0 ? new Error('Error reading ' + errorCount + ' records') : null);
-                    };
-
-                recordIds.forEach(function (testId) {
-                    table.where({ id: testId }).read().then(function(results) {
-                        testFailed = !assert.areEqual(test, results.length, 0);
-                        if (testFailed) {
-                            errorCount++;
-                        }
-                        readComplete();
-                    }, function (error) {
-                        test.addLog('Error' + JSON.stringify(err));
-                        errorCount++;
-                        readComplete();
-                    });
                 });
+
+                return promise;
+            };
+            deleteData = function (recordIds, initialAttempt) {
+                var promise;
+                recordIds.forEach(function (recordId) {
+                    deletePromise = table.del({ id: recordId }).then(function (result) {
+                        if (!initialAttempt) throw new Error('Expected delete to fail');
+                        return;
+                    }, function (error) {
+                        if (initialAttempt) throw error;
+                        return;
+                    });
+
+                    if (!promise) {
+                        promise = deletePromise;
+                    } else {
+                        promise = promise.then(function () { return deletePromise });
+                    }
+                });
+
+                return promise;
             };
 
-        emptyTable(table, function (error) {
-            if (error) {
-                done(false);
-                return;
-            }
-
+        emptyTable2(table).then(function () {
             test.addLog('Initialize our data');
-            populateTable(table, validStringIds, function (error) {
-                if (error) {
-                    done(false);
-                    return;
-                }
+            return populateTable(table, validStringIds);
+        }).then(function () {
+            test.addLog('Lookup our data');
+            return lookupData(validStringIds);
+        }).then(function () {
+            test.addLog('Delete our data');
+            return deleteData(validStringIds, true);
+        }).then(function() {
+            test.addLog('Delete our data again');
+            return deleteData(validStringIds, false);
+        }).then(function () {
+            done(true);
+        }, failFn);
+    }));
+    
+    tests.push(new zumo.Test('FilterReadAsyncWithEmptyStringIdAgainstStringIdTable', function (test, done) {
+        globalTest = test;
+        globaldone = done;
 
-                test.addLog('verify no results for ids we didn\'t use');
+        var table = zumo.getClient().getTable(stringIdTableName),
+            readData = function (recordIds) {
+                var promise;
+                recordIds.forEach(function (recordId) {
+                    readPromise = table.where({ id: recordId }).read().then(function (results) {
+                        if (results.length > 0) {
+                            throw new Error('Results found for id: ' + recordId);
+                        }
+                    });
 
-                var testIds = emptyStringIds.concat(invalidStringIds).concat(null);
-                readTable(table, testIds, function (error) {
-                    done(!error);
+                    if (!promise) {
+                        promise = readPromise;
+                    } else {
+                        promise = promise.then(function () { return readPromise; });
+                    }
                 });
-            });
-        });
+
+                return promise;
+            };
+
+        emptyTable2(table).then(function () {
+            test.addLog('Initialize our data');
+            return populateTable(table, validStringIds);
+        }).then(function () {
+            test.addLog('verify no results for ids we didn\'t use');
+
+            var testIds = emptyStringIds.concat(invalidStringIds).concat(null);
+            return readData(testIds);
+        }).then(function () {
+            done(true);
+        }, failFn);
     }));
 
     tests.push(new zumo.Test('RefreshAsyncWithNoSuchItemAgainstStringIdTable', function (test, done) {
-        var client = zumo.getClient(),
-            table = client.getTable(stringIdTableName),
-            readTable = function (table, recordIds, callback) {
-                test.addLog('Read our data');
+        globalTest = test;
+        globaldone = done;
 
-                var count = 0,
-                    errorCount = 0,
-                    lookupComplete = function () {
-                        if (++count < recordIds.length) return;
-                        callback(errorCount > 0 ? new Error('All records not found') : null);
-                    };
-
-                recordIds.forEach(function (testId) {
-                    table.lookup(testId).then(function (item) {
-                        if (!assert.areEqual(test, item.id, testId)) {
-                            errorCount++;
+        var table = zumo.getClient().getTable(stringIdTableName),
+            lookupData = function (recordIds) {
+                var promise;
+                recordIds.forEach(function (recordId) {
+                    lookupPromise = table.lookup(recordId).then(function (item) {
+                        if (!assert.areEqual(test, item.id, recordId)) {
+                            throw new Error('Wrong record found');
                         }
-                        lookupComplete();
-                    }, function (error) {
-                        errorCount++;
-                        lookupComplete();
                     });
+
+                    if (!promise) {
+                        promise = lookupPromise;
+                    } else {
+                        promise = promise.then(function () { return lookupPromise; });
+                    }
                 });
+
+                return promise;
             },
-            deleteTable = function (table, recordIds, callback) {
-                test.addLog('Delete our data');
+            deleteData = function (recordIds) {
+                var promise;
+                recordIds.forEach(function (recordId) {
+                    delPromise = table.del({ id: recordId });
+                    if (!promise) {
+                        promise = delPromise;
+                    } else {
+                        promise = promise.then(function () { return delPromise; });
+                    }
+                });
 
-                var count = 0,
-                    errorCount = 0,
-                    deleteComplete = function () {
-                        if (++count < recordIds.length) return;
-                        callback(errorCount > 0 ? new Error('All records not deleted') : null);
-                    };
-
-                recordIds.forEach(function (testId) {
-                    table.del({id: testId}).then(function () {
-                        deleteComplete();
+                return promise;
+            },
+            refreshData = function (recordIds) {
+                var promise;
+                recordIds.forEach(function (recordId) {
+                    refreshPromise = table.refresh({ id: recordId, Name: 'Hey' }).then(function (result) {
+                        throw new Error('Refresh was supposed to fail for: ' + recordId);
                     }, function (error) {
-                        errorCount++;
-                        test.addLog('Should have suceeded');
-                        test.addLog('Error' + JSON.stringify(err));
-
-                        deleteComplete();
+                        return;
                     });
-                });
-            },
-            refreshTable = function (table, recordIds, callback) {
-                test.addLog('Refresh our data');
 
-                var count = 0,
-                    errorCount = 0,
-                    refreshComplete = function () {
-                        if (++count < recordIds.length) return;
-                        callback(errorCount > 0 ? new Error('All records not deleted') : null);
-                    };
-
-                recordIds.forEach(function (testId) {
-                    table.refresh({ id: testId, Name: 'Hey' }).then(function (result) {
-                        errorCount++;
-                        test.addLog('Should have failed');
-                        refreshComplete();
-                    }, refreshComplete);
+                    if (!promise) {
+                        promise = refreshPromise;
+                    } else {
+                        promise = promise.then(function () { return refreshPromise; });
+                    }
                 });
+
+                return promise;
             };
 
-
-        emptyTable(table, function (error) {
-            if (error) {
-                done(false);
-                return;
-            }
-
+        emptyTable2(table).then(function() {
             test.addLog('Initialize our data');
-            populateTable(table, validStringIds, function (error) {
-                if (error) {
-                    done(false);
-                    return;
-                }
-
-                readTable(table, validStringIds, function (error) {
-                    if (error) {
-                        done(false);
-                        return;
-                    }
-
-                    deleteTable(table, validStringIds, function (error) {
-                        if (error) {
-                            done(false);
-                            return;
-                        }
-                        
-                        refreshTable(table, validStringIds, function (error) {
-                            if (error) {
-                                done(false);
-                                return;
-                            }
-
-                            done(true)
-                        });
-                    });
-                });
-            });
-        });
+            return populateTable(table, validStringIds);
+        }).then(function () {
+            test.addLog('Read our data');
+            return lookupData(validStringIds);
+        }).then(function () {
+            test.addLog('Delete our data');
+            return deleteData(validStringIds);
+        }).then(function () {
+            test.addLog('Refresh our data');
+            return refreshData(validStringIds);
+        }).then(function () {
+            done(true);
+        }, failFn);
     }));
 
     // BUG #1706815 (query system properties)
@@ -490,7 +458,7 @@ function defineTableGenericFunctionalTestsNamespace() {
                     });
 
                     if (promise) {
-                        promise.then(function () { return orderTests });
+                        promise = promise.then(function () { return orderTests });
                     } else {
                         promise = orderTests;
                     }
@@ -498,7 +466,7 @@ function defineTableGenericFunctionalTestsNamespace() {
 
                 return promise;
             }).then(function () {
-                done(true);
+                done(success);
             }, failFn);
 
         });
@@ -840,7 +808,7 @@ function defineTableGenericFunctionalTestsNamespace() {
                 table.insert({ id: testId, name: 'Hey' }).then(function () {
                     insertPromise.resolve();
                 }, function (error) {
-                    if (err != undefined) { test.addLog('Error' + JSON.stringify(err)); }
+                    if (error != undefined) { test.addLog('Error' + JSON.stringify(error)); }
                     done(false);
                 });
             });
@@ -866,7 +834,7 @@ function defineTableGenericFunctionalTestsNamespace() {
                             def.reject();
                         }
                     }, function (error) {
-                        if (err != undefined) { test.addLog('Error' + JSON.stringify(err)); }
+                        if (error != undefined) { test.addLog('Error' + JSON.stringify(error)); }
                         done(false);
                     });
                 });
