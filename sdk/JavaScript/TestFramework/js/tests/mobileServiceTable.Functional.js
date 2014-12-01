@@ -24,31 +24,8 @@ function defineTableGenericFunctionalTestsNamespace() {
         globaldone(false);
     }
 
-    function emptyTable(table, callback) {
-        table.read().then(function (results) {
-            var remaining = results.length,
-                errorCount = 0,
-                done = function () {
-                    if (--remaining != 0) return;
-                    callback(errorCount > 0 ? new Error('Error emptying table') : null);
-                };
-
-            if (remaining == 0) {
-                callback();
-                return;
-            }
-
-            results.forEach(function (result) {
-                table.del(result).then(done, function (error) {
-                    errorCount++;
-                    done();
-                });
-            });
-        }, callback);
-    }
-
-    function emptyTable2(table) {
-        var emptyTablePromise = table.read().then(function (results) {
+    function emptyTable(table) {
+        return table.read().then(function (results) {
             if (!results || results.length == 0) {
                 return null;
             }
@@ -68,12 +45,6 @@ function defineTableGenericFunctionalTestsNamespace() {
             
             return deletePromiseChain;
         });
-
-        emptyTablePromise.then(function (result) {
-            return null;
-        });
-
-        return emptyTablePromise;
     }
 
     function populateTable(table, recordIds, callback) {
@@ -140,7 +111,7 @@ function defineTableGenericFunctionalTestsNamespace() {
 
         table.systemProperties = WindowsAzure.MobileServiceTable.SystemProperties.All;
     
-        emptyTable2(table).then(function () {
+        emptyTable(table).then(function () {
             return table.insert({ id: 'an id', name: 'a value' });
         }).then(function (item) {
             savedVersion = item.__version;
@@ -214,7 +185,7 @@ function defineTableGenericFunctionalTestsNamespace() {
                 return promise;
             };
 
-        emptyTable2(table).then(function () {
+        emptyTable(table).then(function () {
             test.addLog('Initialize our data');
             return populateTable(table, validStringIds);
         }).then(function () {
@@ -255,7 +226,7 @@ function defineTableGenericFunctionalTestsNamespace() {
                 return promise;
             };
 
-        emptyTable2(table).then(function () {
+        emptyTable(table).then(function () {
             test.addLog('Initialize our data');
             return populateTable(table, validStringIds);
         }).then(function () {
@@ -323,7 +294,7 @@ function defineTableGenericFunctionalTestsNamespace() {
                 return promise;
             };
 
-        emptyTable2(table).then(function() {
+        emptyTable(table).then(function() {
             test.addLog('Initialize our data');
             return populateTable(table, validStringIds);
         }).then(function () {
@@ -354,122 +325,116 @@ function defineTableGenericFunctionalTestsNamespace() {
 
         table.systemProperties = WindowsAzure.MobileServiceTable.SystemProperties.All;
 
-        emptyTable(table, function (error) {
-            if (error) {
-                done(false);
-                return;
+        emptyTable(table).then(function () {
+            return table.insert({ id: '1', name: 'value' })
+        }).then(function (item) {
+            savedItems.push(item);
+            return table.insert({ id: '2', name: 'value' });
+        }, failFn).then(function (item) {
+            savedItems.push(item);
+            return table.insert({ id: '3', name: 'value' });
+        }).then(function (item) {
+            savedItems.push(item);
+            return table.insert({ id: '4', name: 'value' });
+        }).then(function (item) {
+            savedItems.push(item);
+            return table.insert({ id: '5', name: 'value' });
+        }).then(function (item) {
+            var promise;
+
+            savedItems.push(item);
+            for (index = 0; index < testSystemProperties.length; index++) {
+                table.systemProperties = testSystemProperties[index];
+                test.addLog('testing properties: ' + table.systemProperties);
+
+                var orderTests = table.orderBy('__createdAt').read().then(function (items) {
+                    for (var i = 0; i < items.length - 1; i++) {
+                        if (!(items[i].id < items[i + 1].id)) {
+                            test.addLog('__createdAt order wrong');
+                            success = false;
+                            break;
+                        }
+                    }
+
+                    return table.orderBy('__updatedAt').read();
+                }).then(function (items) {
+                    for (var i = 0; i < items.length - 1; i++) {
+                        if (!(items[i].id < items[i + 1].id)) {
+                            test.addLog('__updatedAt order wrong');
+                            success = false;
+                            break;
+                        }
+                    }
+
+                    return table.orderBy('__version').read();
+                }).then(function (items) {
+                    for (var i = 0; i < items.length - 1; i++) {
+                        if (!(items[i].id < items[i + 1].id)) {
+                            test.addLog('__version order wrong');
+                            success = false;
+                            break;
+                        }
+                    }
+
+                    return table.select('id', '__createdAt').read();
+                     
+                    // Node only
+                    /*
+                    return table.where(function (value) { return this.__createdAt >= value; }, savedItems[3].__createdAt).read()
+                            .then(function (items) {
+                                if (!assert.areEqual(test, 2, items.length)) {
+                                    success = false;
+                                }
+
+                                return table.where(function (value) { return this.__updatedAt >= value; }, savedItems[3].__updatedAt).read();
+                            }).then(function (items) {
+                                if (!assert.areEqual(test, 2, items.length)) {
+                                    success = false;
+                                }
+                                return table.where({ __version: savedItems[3].__version }).read();
+                            }).then(function (items) {
+                                if (!assert.areEqual(test, 1, items.length)) {
+                                    success = false;
+                                }
+
+                                return table.select('id', '__createdAt').read();
+                            });
+                    */
+                }).then(function (items) {
+                    for (var i = 0; i < items.length; i++) {
+                        if (items[i].__createdAt == null) {
+                            test.addLog('missing __createdAt');
+                            success = false;
+                            break;
+                        }
+                    }
+                    return table.select('id', '__updatedAt').read();
+                }).then(function (items) {
+                    for (var i = 0; i < items.length; i++) {
+                        if (items[i].__updatedAt == null) {
+                            test.addLog('missing __updatedAt');
+                        }
+                    }
+                    return table.select('id', '__version').read();
+                }).then(function (items) {
+                    for (var i = 0; i < items.length; i++) {
+                        if (items[i].__version == null) {
+                            test.addLog('missing __version');
+                        }
+                    }
+                });
+
+                if (promise) {
+                    promise = promise.then(function () { return orderTests });
+                } else {
+                    promise = orderTests;
+                }
             }
 
-            table.insert({ id: '1', name: 'value' }).then(function (item) {
-                savedItems.push(item);
-                return table.insert({ id: '2', name: 'value' });
-            }, failFn).then(function (item) {
-                savedItems.push(item);
-                return table.insert({ id: '3', name: 'value' });
-            }).then(function (item) {
-                savedItems.push(item);
-                return table.insert({ id: '4', name: 'value' });
-            }).then(function (item) {
-                savedItems.push(item);
-                return table.insert({ id: '5', name: 'value' });
-            }).then(function (item) {
-                var promise;
-
-                savedItems.push(item);
-                for (index = 0; index < testSystemProperties.length; index++) {
-                    table.systemProperties = testSystemProperties[index];
-                    test.addLog('testing properties: ' + table.systemProperties);
-
-                    var orderTests = table.orderBy('__createdAt').read().then(function (items) {
-                        for (var i = 0; i < items.length - 1; i++) {
-                            if (!(items[i].id < items[i + 1].id)) {
-                                test.addLog('__createdAt order wrong');
-                                success = false;
-                                break;
-                            }
-                        }
-
-                        return table.orderBy('__updatedAt').read();
-                    }, failFn).then(function (items) {
-                        for (var i = 0; i < items.length - 1; i++) {
-                            if (!(items[i].id < items[i + 1].id)) {
-                                test.addLog('__updatedAt order wrong');
-                                success = false;
-                                break;
-                            }
-                        }
-
-                        return table.orderBy('__version').read();
-                    }, failFn).then(function (items) {
-                        for (var i = 0; i < items.length - 1; i++) {
-                            if (!(items[i].id < items[i + 1].id)) {
-                                test.addLog('__version order wrong');
-                                success = false;
-                                break;
-                            }
-                        }
-
-                        return table.select('id', '__createdAt').read();
-                     
-                        // Node only
-                        /*
-                        return table.where(function (value) { return this.__createdAt >= value; }, savedItems[3].__createdAt).read()
-                                .then(function (items) {
-                                    if (!assert.areEqual(test, 2, items.length)) {
-                                        success = false;
-                                    }
-
-                                    return table.where(function (value) { return this.__updatedAt >= value; }, savedItems[3].__updatedAt).read();
-                                }).then(function (items) {
-                                    if (!assert.areEqual(test, 2, items.length)) {
-                                        success = false;
-                                    }
-                                    return table.where({ __version: savedItems[3].__version }).read();
-                                }).then(function (items) {
-                                    if (!assert.areEqual(test, 1, items.length)) {
-                                        success = false;
-                                    }
-
-                                    return table.select('id', '__createdAt').read();
-                                });
-                        */
-                    }, failFn).then(function (items) {
-                        for (var i = 0; i < items.length; i++) {
-                            if (items[i].__createdAt == null) {
-                                test.addLog('missing __createdAt');
-                                success = false;
-                                break;
-                            }
-                        }
-                        return table.select('id', '__updatedAt').read();
-                    }).then(function (items) {
-                        for (var i = 0; i < items.length; i++) {
-                            if (items[i].__updatedAt == null) {
-                                test.addLog('missing __updatedAt');
-                            }
-                        }
-                        return table.select('id', '__version').read();
-                    }).then(function (items) {
-                        for (var i = 0; i < items.length; i++) {
-                            if (items[i].__version == null) {
-                                test.addLog('missing __version');
-                            }
-                        }
-                    });
-
-                    if (promise) {
-                        promise = promise.then(function () { return orderTests });
-                    } else {
-                        promise = orderTests;
-                    }
-                }
-
-                return promise;
-            }).then(function () {
-                done(success);
-            }, failFn);
-
-        });
+            return promise;
+        }).then(function () {
+            done(success);
+        }, failFn);
     }));
 
     // BUG #2133523: .NET runtime should respond 400 if query requests invalid system properties
@@ -711,16 +676,13 @@ function defineTableGenericFunctionalTestsNamespace() {
     }, [zumo.runtimeFeatureNames.NodeRuntime_Only]));
 
     tests.push(new zumo.Test('LookupAsyncWithNosuchItemAgainstStringIdTable', function (test, done) {
-        var client = zumo.getClient();
-        var table = client.getTable(stringIdTableName);
+        globaldone = done;
+        globalTest = test;
+
+        var table = zumo.getClient().getTable(stringIdTableName);
         var insertPromises = [newLink()];
 
-        emptyTable(table, function (error) {
-            if (error) {
-                done(false);
-                return;
-            }
-
+        emptyTable(table).then(function () {
             test.addLog('Initialize our data');
             validStringIds.forEach(function (testId) {
                 var insertPromise = newLink();
@@ -787,20 +749,17 @@ function defineTableGenericFunctionalTestsNamespace() {
                     });
                 })
             })
-        });
+        }, failFn);
     }));
 
     tests.push(new zumo.Test('InsertAsyncWithExistingItemAgainstStringIdTable', function (test, done) {
-        var client = zumo.getClient();
-        var table = client.getTable(stringIdTableName);
+        globaldone = done;
+        globalTest = test;
+
+        var table = zumo.getClient().getTable(stringIdTableName);
         var insertPromises = [newLink()];
 
-        emptyTable(table, function (error) {
-            if (error) {
-                done(false);
-                return;
-            }
-
+        emptyTable(table).then(function () {
             test.addLog('Initialize our data');
             validStringIds.forEach(function (testId) {
                 var insertPromise = newLink();
@@ -869,20 +828,18 @@ function defineTableGenericFunctionalTestsNamespace() {
                     });
                 })
             });
-        });
+        }, failFn);
     }));
 
     tests.push(new zumo.Test('UpdateAsyncWithNosuchItemAgainstStringIdTable', function (test, done) {
+        globaldone = done;
+        globalTest = test;
+
         var client = zumo.getClient();
         var table = client.getTable(stringIdTableName);
         var insertPromises = [newLink()];
 
-        emptyTable(table, function (error) {
-            if (error) {
-                done(false);
-                return;
-            }
-
+        emptyTable(table).then(function () {
             test.addLog('Initialize our data');
             validStringIds.forEach(function (testId) {
                 var insertPromise = newLink();
@@ -949,7 +906,7 @@ function defineTableGenericFunctionalTestsNamespace() {
                     });
                 })
             })
-        });
+        }, failFn);
     }));
 
     tests.push(new zumo.Test('AsyncTableOperationsWithIntegerAsStringIdAgainstIntIdTable', function (test, done) {
@@ -958,12 +915,8 @@ function defineTableGenericFunctionalTestsNamespace() {
 
         var client = zumo.getClient();
         var table = client.getTable(intIdTableName);
-        emptyTable(table, function (error) {
-            if (error) {
-                done(false);
-                return;
-            }
 
+        emptyTable(table).then(function () {
             test.addLog('Insert record');
             var insertPromise = newLink();
             table.insert({
@@ -1072,7 +1025,7 @@ function defineTableGenericFunctionalTestsNamespace() {
                         done(false);
                     }
                 });
-        });
+        }, failFn);
     }));
 
     tests.push(new zumo.Test('DeleteAsyncWithWithMergeConflict', function (test, done) {
@@ -1087,12 +1040,7 @@ function defineTableGenericFunctionalTestsNamespace() {
         table.systemProperties = WindowsAzure.MobileServiceTable.SystemProperties.All;
 
         var insertPromise = newLink();
-        emptyTable(table, function (error) {
-            if (error) {
-                failFn(error);
-                return;
-            }
-
+        emptyTable(table).then(function () {
             table.insert({
                 id: 'an id', name: 'a value'
             }).then(function (item) {
@@ -1145,15 +1093,10 @@ function defineTableGenericFunctionalTestsNamespace() {
     tests.push(new zumo.Test('ReadAsyncWithValidIntIdAgainstIntIdTable', function (test, done) {
         globaldone = done;
         globalTest = test;
-        var client = zumo.getClient();
-        var table = client.getTable(intIdTableName);
 
-        emptyTable(table, function (error) {
-            if (error) {
-                done(false);
-                return;
-            }
+        var table = zumo.getClient().getTable(intIdTableName);
 
+        emptyTable(table).then(function () {
             test.addLog('Insert record');
             var insertPromise = newLink();
             table.insert({
@@ -1187,30 +1130,16 @@ function defineTableGenericFunctionalTestsNamespace() {
     tests.push(new zumo.Test('AsyncTableOperationsWithAllSystemProperties', function (test, done) {
         globalTest = test;
         globaldone = done;
-        var client = zumo.getClient();
-        var table = client.getTable(stringIdTableName);
 
-        var savedItem,
+        var table = zumo.getClient().getTable(stringIdTableName),
+            savedItem,
             savedVersion,
             savedUpdatedAt;
 
         table.systemProperties = WindowsAzure.MobileServiceTable.SystemProperties.All;  //All
-        var emptyTablePromise = emptyTable(table);
 
-        var insertPromise = newLink();
-        emptyTable(table, function (error) {
-            if (error) {
-                failFn(error);
-                return;
-            }
-
-            table.insert({
-                id: 'an id', Name: 'a value'
-            }).then(function (item) {
-                insertPromise.resolve(item);
-            })
-
-            return insertPromise;
+        var insertPromise = emptyTable(table).then(function () {
+            return table.insert({ id: 'an id', Name: 'a value' });
         });
 
         var readPromise = newLink();
@@ -1360,85 +1289,42 @@ function defineTableGenericFunctionalTestsNamespace() {
     tests.push(new zumo.Test('AsyncTableOperationsWithSystemPropertiesSetExplicitly', function (test, done) {
         globalTest = test;
         globaldone = done;
-        var client = zumo.getClient();
-        var table = client.getTable(stringIdTableName),
+
+        var table = zumo.getClient().getTable(stringIdTableName),
             props = WindowsAzure.MobileServiceTable.SystemProperties;
+
         table.systemProperties = props.Version | props.CreatedAt | props.UpdatedAt;
 
-        var emptyTablePromise = emptyTable(table);
-
-        var insertPromise = newLink();
-
-        emptyTable(table, function (error) {
-            if (error) {
-                failFn(error);
-                return;
-            }
-
-            table.insert({
-                name: 'a value'
-            }).then(function (item) {
-                insertPromise.resolve(item);
-            })
-            return insertPromise;
-        }, failFn);
-
-        var insertPromise2 = newLink();
-        insertPromise.then(function (item) {
+        emptyTable(table).then(function () {
+            return table.insert({ name: 'a value' });
+        }).then(function (item) {
             if (item.__createdAt != null && item.__updatedAt != null && item.__version != null) {
                 table.systemProperties = props.Version | props.CreatedAt;
-                table.insert({
-                    name: 'a value'
-                }).then(function (item) {
-                    insertPromise2.resolve(item);
-                }, failFn);
+                return table.insert({ name: 'a value' });
+            } else {
+                throw new Error('Incorrect system properties');
             }
-            else {
-                done(false);
-                insertPromise2.reject();
-            }
-        });
-
-        var insertPromise3 = newLink();
-        insertPromise2.then(function (item) {
+        }).then(function (item) {
             if (item.__createdAt != null && item.__updatedAt == null && item.__version != null) {
                 table.systemProperties = props.UpdatedAt | props.CreatedAt;
-                table.insert({
-                    name: 'a value'
-                }).then(function (item) {
-                    insertPromise3.resolve(item);
-                }, failFn);
+                return table.insert({ name: 'a value' });
+            } else {
+                throw new Error('Incorrect system properties');
             }
-            else {
-                insertPromise3.reject();
-            }
-            return insertPromise3;
-        }, failFn);
-
-        var insertPromise4 = newLink();
-        insertPromise3.then(function (item) {
+        }).then(function (item) {
             if (item.__createdAt != null && item.__updatedAt != null && item.__version == null) {
                 table.systemProperties = props.UpdatedAt;
-                table.insert({
-                    name: 'a value'
-                }).then(function (item) {
-                    insertPromise4.resolve(item);
-                }, failFn);
+                return table.insert({ name: 'a value' });
+            } else {
+                throw new Error('Incorrect system properties');
             }
-            else {
-                done(false);
-                insertPromise4.reject();
+        }).then(function (item) {
+            if (!(item.__createdAt == null && item.__updatedAt != null && item.__version == null)) {
+                throw new Error('Incorrect system properties');
             }
+        }).then(function () {
+            done(true);
         }, failFn);
-
-        insertPromise4.then(function (item) {
-            if (item.__createdAt == null && item.__updatedAt != null && item.__version == null) {
-                done(true);
-            }
-            else {
-                done(false);
-            }
-        });
     }, [zumo.runtimeFeatureNames.NodeRuntime_Only]));
 
     return {
