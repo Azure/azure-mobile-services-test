@@ -12,8 +12,8 @@
 rm -rf TestFramework 
 rsync -rlK ../../TestFramework .
 
-# Plugins required for authentication
-phonegap local plugin add org.apache.cordova.inappbrowser
+phonegap local plugin add com.microsoft.azure-mobile-services
+# phonegap local plugin add https://github.com/azure/azure-mobile-services-cordova.git
 
 # Plugins required for push notifications
 phonegap local plugin add org.apache.cordova.device
