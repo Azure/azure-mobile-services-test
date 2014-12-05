@@ -582,17 +582,6 @@ function upload_site_extension(scmEndpoint, kuduUsername, kuduPassword, siteExte
   console.log('   Uploading private site extension:');
   async.series([
     function(done) {
-      process.stdout.write('     Reading private site extension file...');
-      fse.readFile(siteExtensionPath, function(err, results) {
-        if (err) {
-          return done(err);
-        }
-        siteExtensionContents = results;
-        console.log(' OK'.green.bold);
-        done();
-      });
-    },
-    function(done) {
       process.stdout.write('     Removing old private site extensions...');
       call_kudu('delete', scmEndpoint + 'api/vfs/SiteExtensions/?recursive=true', null, kuduUsername, kuduPassword, 60,
         function(err, resp, body) {
@@ -600,21 +589,6 @@ function upload_site_extension(scmEndpoint, kuduUsername, kuduPassword, siteExte
             console.log(' OK'.green.bold + ': ' + resp.statusCode);
           }
           return done(err);
-        });
-    },
-    function(done) {
-      process.stdout.write('     Uploading private site extension (' + (siteExtensionContents.length / 1024).toFixed(1) + ' KB)...');
-      call_kudu('put', scmEndpoint + 'api/zip', {body:siteExtensionContents}, kuduUsername, kuduPassword, 150,
-        function(err, resp, body) {
-          if (!err) {
-            if (resp.statusCode == 200) {
-              console.log(' OK'.green.bold);
-            } else {
-              console.log(' Err: '.red.bold + resp.statusCode + '\n' + body);
-              err = 'Kudu returned ' + resp.statusCode;
-            }
-          }
-          done(err);
         });
     }
   ], callback);
