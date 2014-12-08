@@ -22,8 +22,8 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                 return "?";
 
             using (Stream stream = executingAssembly.GetManifestResourceStream(packagesConfigResourceName))
-            using (StreamReader reader = new StreamReader(stream))
             {
+                StreamReader reader = new StreamReader(stream);
                 string result = reader.ReadToEnd();
                 string line = result.Split('\n').FirstOrDefault(s => s.Contains("\"WindowsAzure.MobileServices\""));
                 if (line == null)

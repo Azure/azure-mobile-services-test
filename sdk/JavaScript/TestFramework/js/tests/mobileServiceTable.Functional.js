@@ -25,53 +25,50 @@ function defineTableGenericFunctionalTestsNamespace() {
     }
 
     function emptyTable(table) {
-        var emptyTablePromise2 = newLink();
-        var emptyTablePromise = newLink();
-        var readPromise = newLink();
-        var promises = [readPromise];
-        table.read().then(function (results) {
-            if (results.length == 0) {
-                readPromise.resolve();
+        return table.read().then(function (results) {
+            if (!results || results.length == 0) {
+                return null;
             }
-            results.forEach(function (result) {
-                var def = newLink();
-                promises.push(def);
-                table.del(result)
-                    .then(function () {
-                        def.resolve();
-                    }, function () {
-                    });
-            });
-            readPromise.resolve();
-        }, function () { readPromise.reject(); });
-        $.when.apply($, promises).then(function () {
-            emptyTablePromise.resolve();
-        }, function () { emptyTablePromise.reject(); });
 
-        emptyTablePromise.then(function () {
-            var readPromise = newLink();
-            var promises = [readPromise];
-            table.read().then(function (results) {
-                if (results.length == 0) {
-                    readPromise.resolve();
+            var deletePromiseChain;
+            results.forEach(function (result) {
+                var delPromise = table.del(result);
+
+                if (!deletePromiseChain) {
+                    deletePromiseChain = delPromise;
+                } else {
+                    deletePromiseChain = deletePromiseChain.then(function (result) {
+                        return delPromise;
+                    });
                 }
-                results.forEach(function (result) {
-                    var def = newLink();
-                    promises.push(def);
-                    table.del(result)
-                        .then(function () {
-                            def.resolve();
-                        }, function () {
-                        });
-                });
-                readPromise.resolve();
-            }, function () { readPromise.reject(); });
-            $.when.apply($, promises).then(function () {
-                emptyTablePromise2.resolve();
-            }, function () { emptyTablePromise2.reject(); });
-        })
-        return emptyTablePromise2;
+            });
+            
+            return deletePromiseChain;
+        });
     }
+
+    function populateTable(table, recordIds, callback) {
+        var promise,            
+            insertedRecords = 0;
+
+        recordIds.forEach(function (recordId) {
+            var insertPromise = table.insert({ id: recordId, name: 'Hey' }).then(function (item) {
+                insertedRecords++;
+            });
+
+            if (!promise) {
+                promise = insertPromise;
+            } else {
+                promise = promise.then(function (count) { return insertPromise; });
+            }
+        });
+    
+        if (!promise) { return 0; }
+        return promise.then(function () {
+            return insertedRecords;
+        })
+    }
+
     tests.push(new zumo.Test('Identify enabled runtime features for functional tests',
            function (test, done) {
                var client = zumo.getClient();
@@ -83,12 +80,14 @@ function defineTableGenericFunctionalTestsNamespace() {
                    var features = runtimeInfo.features;
                    zumo.util.globalTestParams[zumo.constants.RUNTIME_FEATURES_KEY] = features;
                    if (runtimeInfo.runtime.type.indexOf("node") > -1) {
+                       validStringIds = baseValidStringIds();
                        validStringIds.push("...");
                        validStringIds.push("id with 255 characters " + new Array(257 - 24).join('A'));
                        validStringIds.push("id with allowed ascii characters  !#$%&'()*,-.0123456789:;<=>@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{|}");
                        validStringIds.push("id with allowed extended ascii characters ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþ");
                    }
                    if (runtimeInfo.runtime.type.indexOf("NET") > -1) {
+                       validStringIds = baseValidStringIds();
                        validStringIds.push("id with 128 characters " + new Array(129 - 24).join('A'));
                        validStringIds.push("id with allowed ascii characters  !#$%&'()*,-.0123456789:;<=>@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{|}".substr(0, 127));
                        validStringIds.push("id with allowed extended ascii characters ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþ".substr(0, 127));
@@ -103,503 +102,340 @@ function defineTableGenericFunctionalTestsNamespace() {
     tests.push(new zumo.Test('UpdateAsyncWithWithMergeConflict', function (test, done) {
         globalTest = test;
         globaldone = done;
-        var client = zumo.getClient();
-        var table = client.getTable(stringIdTableName),
-                savedVersion,
-                correctVersion;
+
+        var client = zumo.getClient(),
+            table = client.getTable(stringIdTableName),
+            savedVersion,
+            correctVersion,
+            newItem;
 
         table.systemProperties = WindowsAzure.MobileServiceTable.SystemProperties.All;
-
-
-        var insertPromise = newLink();
+    
         emptyTable(table).then(function () {
-            table.insert({
-                id: 'an id', name: 'a value'
-            }).then(function (item) {
-                insertPromise.resolve(item)
-            }, failFn)
-        }, failFn)
-
-        var updatePromise = newLink();
-        insertPromise.then(function (item) {
+            return table.insert({ id: 'an id', name: 'a value' });
+        }).then(function (item) {
             savedVersion = item.__version;
             item.name = 'Hello!';
-            table.update(item).then(function (items) {
-                updatePromise.resolve(items);
-            }, failFn)
-        })
-
-        var updatePromise2 = newLink();
-        updatePromise.then(function (item) {
+            return table.update(item);
+        }).then(function (item) {
             var a1 = assert.areNotEqual(item.__version, savedVersion);
             item.name = 'But Wait!';
             correctVersion = item.__version;
             item.__version = savedVersion;
-
-            table.update(item).then(function (items) {
-                updatePromise2.reject();
-            }, function (error) {
-                if (assert.areEqual(test, 412, error.request.status) &&
-                          error.message.indexOf("Precondition Failed") > -1 &&
-                          assert.areEqual(test, error.serverInstance.__version, correctVersion) &&
-                          assert.areEqual(test, error.serverInstance.name, 'Hello!')) {
-                    item.__version = correctVersion;
-                    updatePromise2.resolve(item);
-                }
-                else {
-                    updatePromise2.reject();
-                }
-
-            });
-        });
-
-        updatePromise2.then(function (item) {
-            table.update(item).then(function (items) {
-                if (assert.areNotEqual(items.__version, correctVersion))
-                    done(true);
-                else
-                    done(false);
-            }, failFn);
+            newItem = item;
+            return table.update(item);
+        }).then(function (items) { 
+            done(false); 
+        }, function (error) {            
+            if (assert.areEqual(test, 412, error.request.status) &&
+                        error.message.indexOf("Precondition Failed") > -1 &&
+                        assert.areEqual(test, error.serverInstance.__version, correctVersion) &&
+                        assert.areEqual(test, error.serverInstance.name, 'Hello!')) {
+                newItem.__version = correctVersion;
+                return table.update(newItem);
+            } else {
+                throw new Error('Incorrect error returned from update');
+            }
+        }).then(function (item) {
+            if (assert.areNotEqual(item.__version, correctVersion)) {
+                done(true);
+            } else {
+                throw new Error('Incorrect version found');
+            }
         }, failFn);
     }));
+
     tests.push(new zumo.Test('DeleteAsyncWithNosuchItemAgainstStringIdTable', function (test, done) {
+        globalTest = test;
+        globaldone = done;
 
-        var client = zumo.getClient();
-        var table = client.getTable(stringIdTableName);
-        var emptyTablePromise = emptyTable(table);
+        var table = zumo.getClient().getTable(stringIdTableName),
+            lookupData = function (recordIds) {
+                var promise;
+                recordIds.forEach(function (recordId) {
+                    lookupPromise = table.lookup(recordId);
 
-        var insertPromises = [newLink()];
-        emptyTablePromise.then(function () {
-            test.addLog('Initialize our data');
-            validStringIds.forEach(function (testId) {
-                var insertPromise = newLink();
-                insertPromises.push(insertPromise)
-                table.insert({ id: testId, name: 'Hey' }).then(function () {
-                    insertPromise.resolve();
-                }, function (err) {
-                    insertPromise.reject();
-                });
-            });
-
-            insertPromises[0].resolve();
-            var lookupStart = newLink();
-            $.when.apply($, insertPromises).then(function () {
-                lookupStart.resolve();
-            }, function (err) {
-                done(false);
-            });
-
-            var lookupPromises = [newLink()];
-            lookupStart.then(function () {
-                validStringIds.forEach(function (testId) {
-                    var def = newLink();
-                    lookupPromises.push(def);
-                    table.lookup(testId).then(function (item) {
-                        if (assert.areEqual(test, item.id, testId)) {
-                            def.resolve();
-                        }
-                        else {
-                            def.reject();
-                        }
-                    }, function (error) {
-                        def.reject();
-                    });
-                });
-
-                lookupPromises[0].resolve();
-                var deleteStart = newLink();
-                $.when.apply($, lookupPromises).then(function () {
-                    deleteStart.resolve();
-                }, function (err) {
-                    done(false);
-                });
-
-                var deletePromises = [newLink()];
-                deleteStart.then(function () {
-                    test.addLog('Delete our data');
-                    validStringIds.forEach(function (testId) {
-                        var def = newLink();
-                        deletePromises.push(def);
-                        table.del({ id: testId }).then(function () {
-                            def.resolve();
-                        }, function (err) {
-                            test.addLog('Should have suceeded');
-                            test.addLog('Error' + JSON.stringify(err));
-                            def.reject();
-                        });
-                    });
-
-                    deletePromises[0].resolve();
-                    var delete2Start = newLink();
-                    $.when.apply($, deletePromises).then(function () {
-                        delete2Start.resolve();
-                    }, function () {
-                        done(false);
-                    });
-
-                    var delete2Promises = [newLink()];
-                    delete2Start.then(function () {
-                        test.addLog('Delete our data');
-                        validStringIds.forEach(function (testId) {
-                            var def = newLink();
-                            delete2Promises.push(def);
-                            table.del({ id: testId }).then(function (result) {
-                                test.addLog('Should have failed');
-                                def.reject();
-                            }, function (error) {
-                                def.resolve();
-                            });
-                        });
-                        delete2Promises[0].resolve();
-                        $.when.apply($, delete2Promises).then(function () {
-                            done(true);
-                        }, function () {
-                            done(false);
-                        });
-                    })
-                })
-            });
-        }, function (error) {
-            done(false);
-        });
-
-    }));
-
-    tests.push(new zumo.Test('FilterReadAsyncWithEmptyStringIdAgainstStringIdTable', function (test, done) {
-        var client = zumo.getClient();
-        var table = client.getTable(stringIdTableName);
-        var emptyTablePromise = emptyTable(table);
-        var insertPromises = [newLink()];
-        emptyTablePromise.then(function () {
-            test.addLog('Initialize our data');
-            validStringIds.forEach(function (testId) {
-                var insertPromise = newLink();
-                insertPromises.push(insertPromise)
-                table.insert({ id: testId, name: 'Hey' }).then(function () {
-                    insertPromise.resolve();
-                }, function (err) {
-                    insertPromise.reject();
-                });
-            });
-
-            insertPromises[0].resolve();
-            var readStart = newLink();
-            $.when.apply($, insertPromises).then(function () {
-                readStart.resolve();
-            }, function (err) {
-                done(false);
-            });
-
-
-            var promises = [newLink()];
-            readStart.then(function () {
-                test.addLog('verify no results for ids we didn\'t use');
-                var testIds = emptyStringIds.concat(invalidStringIds).concat(null);
-                testIds.forEach(function (testId) {
-                    var def = newLink();
-                    promises.push(def);
-                    table.where({ id: testId }).read().then(function (items) {
-                        def.resolve(items);
-                    }, function (error) {
-                        test.addLog('Error' + JSON.stringify(err));
-                        return def.reject();
-                    });
-                });
-
-                promises[0].resolve();
-
-                $.when.apply($, promises).done(function () {
-                    var results = arguments;
-                    var testResult = true;
-                    for (var i = 1; i < results.length; i++) {
-                        testResult = !assert.areEqual(test, results[i].length, 0)
-                        if (testResult) {
-                            done(false);
-                            break;
-                        }
+                    if (!promise) {
+                        promise = lookupPromise;
+                    } else {
+                        promise = promise.then(function () { return lookupPromise; });
                     }
-                    if (!testResult)
-                        done(true);
                 });
-            });
 
-        })
+                return promise;
+            };
+            deleteData = function (recordIds, initialAttempt) {
+                var promise;
+                recordIds.forEach(function (recordId) {
+                    deletePromise = table.del({ id: recordId }).then(function (result) {
+                        if (!initialAttempt) throw new Error('Expected delete to fail');
+                        return;
+                    }, function (error) {
+                        if (initialAttempt) throw error;
+                        return;
+                    });
+
+                    if (!promise) {
+                        promise = deletePromise;
+                    } else {
+                        promise = promise.then(function () { return deletePromise });
+                    }
+                });
+
+                return promise;
+            };
+
+        emptyTable(table).then(function () {
+            test.addLog('Initialize our data');
+            return populateTable(table, validStringIds);
+        }).then(function () {
+            test.addLog('Lookup our data');
+            return lookupData(validStringIds);
+        }).then(function () {
+            test.addLog('Delete our data');
+            return deleteData(validStringIds, true);
+        }).then(function() {
+            test.addLog('Delete our data again');
+            return deleteData(validStringIds, false);
+        }).then(function () {
+            done(true);
+        }, failFn);
+    }));
+    
+    tests.push(new zumo.Test('FilterReadAsyncWithEmptyStringIdAgainstStringIdTable', function (test, done) {
+        globalTest = test;
+        globaldone = done;
+
+        var table = zumo.getClient().getTable(stringIdTableName),
+            readData = function (recordIds) {
+                var promise;
+                recordIds.forEach(function (recordId) {
+                    readPromise = table.where({ id: recordId }).read().then(function (results) {
+                        if (results.length > 0) {
+                            throw new Error('Results found for id: ' + recordId);
+                        }
+                    });
+
+                    if (!promise) {
+                        promise = readPromise;
+                    } else {
+                        promise = promise.then(function () { return readPromise; });
+                    }
+                });
+
+                return promise;
+            };
+
+        emptyTable(table).then(function () {
+            test.addLog('Initialize our data');
+            return populateTable(table, validStringIds);
+        }).then(function () {
+            test.addLog('verify no results for ids we didn\'t use');
+
+            var testIds = emptyStringIds.concat(invalidStringIds).concat(null);
+            return readData(testIds);
+        }).then(function () {
+            done(true);
+        }, failFn);
     }));
 
     tests.push(new zumo.Test('RefreshAsyncWithNoSuchItemAgainstStringIdTable', function (test, done) {
-        var client = zumo.getClient();
-        var table = client.getTable(stringIdTableName);
-        var emptyTablePromise = emptyTable(table);
+        globalTest = test;
+        globaldone = done;
 
-        var insertPromises = [newLink()];
-        emptyTablePromise.then(function () {
-            test.addLog('Initialize our data');
-            validStringIds.forEach(function (testId) {
-                var insertPromise = newLink();
-                insertPromises.push(insertPromise)
-                table.insert({ id: testId, name: 'Hey' }).then(function () {
-                    insertPromise.resolve();
-                }, function (err) {
-                    insertPromise.reject();
+        var table = zumo.getClient().getTable(stringIdTableName),
+            lookupData = function (recordIds) {
+                var promise;
+                recordIds.forEach(function (recordId) {
+                    lookupPromise = table.lookup(recordId).then(function (item) {
+                        if (!assert.areEqual(test, item.id, recordId)) {
+                            throw new Error('Wrong record found');
+                        }
+                    });
+
+                    if (!promise) {
+                        promise = lookupPromise;
+                    } else {
+                        promise = promise.then(function () { return lookupPromise; });
+                    }
                 });
-            });
 
-            insertPromises[0].resolve();
-            var lookupStart = newLink();
-            $.when.apply($, insertPromises).then(function () {
-                lookupStart.resolve();
-            }, function (err) {
-                done(false);
-            });
+                return promise;
+            },
+            deleteData = function (recordIds) {
+                var promise;
+                recordIds.forEach(function (recordId) {
+                    delPromise = table.del({ id: recordId });
+                    if (!promise) {
+                        promise = delPromise;
+                    } else {
+                        promise = promise.then(function () { return delPromise; });
+                    }
+                });
 
-            var lookupPromises = [newLink()];
-            lookupStart.then(function () {
-                validStringIds.forEach(function (testId) {
-                    var def = newLink();
-                    lookupPromises.push(def);
-                    table.lookup(testId).then(function (item) {
-                        if (assert.areEqual(test, item.id, testId)) {
-                            def.resolve();
-                        }
-                        else {
-                            def.reject();
-                        }
+                return promise;
+            },
+            refreshData = function (recordIds) {
+                var promise;
+                recordIds.forEach(function (recordId) {
+                    refreshPromise = table.refresh({ id: recordId, Name: 'Hey' }).then(function (result) {
+                        throw new Error('Refresh was supposed to fail for: ' + recordId);
                     }, function (error) {
-                        def.reject();
+                        return;
                     });
+
+                    if (!promise) {
+                        promise = refreshPromise;
+                    } else {
+                        promise = promise.then(function () { return refreshPromise; });
+                    }
                 });
 
-                lookupPromises[0].resolve();
+                return promise;
+            };
 
-                var deleteStart = newLink();
-                $.when.apply($, lookupPromises).then(function () {
-                    deleteStart.resolve();
-                }, function (err) {
-                    done(false);
-                });
-
-                var deletePromises = [newLink()];
-                deleteStart.then(function () {
-                    test.addLog('Delete our data');
-                    validStringIds.forEach(function (testId) {
-                        var def = newLink();
-                        deletePromises.push(def);
-                        table.del({ id: testId }).then(function () {
-                            def.resolve();
-                        }, function (err) {
-                            test.addLog('Should have suceeded');
-                            test.addLog('Error' + JSON.stringify(err));
-                            def.reject();
-                        });
-                    });
-
-                    deletePromises[0].resolve();
-                    var refreshStart = newLink();
-                    $.when.apply($, deletePromises).then(function () {
-                        refreshStart.resolve();
-                    }, function () {
-                        done(false);
-                    });
-
-                    var refreshPromises = [newLink()];
-                    refreshStart.then(function () {
-                        test.addLog('Refresh our data');
-                        validStringIds.forEach(function (testId) {
-                            var def = newLink();
-                            refreshPromises.push(def);
-                            table.refresh({ id: testId, Name: 'Hey' }).then(function (result) {
-                                test.addLog('Should have failed');
-                                def.reject();
-                            }, function (error) {
-                                def.resolve();
-                            });
-                        });
-                        refreshPromises[0].resolve();
-                        $.when.apply($, refreshPromises).then(function () {
-                            done(true);
-                        }, function () {
-                            done(false);
-                        });
-                    })
-                })
-            });
-        }, function (error) {
-            done(false);
-        });
-
+        emptyTable(table).then(function() {
+            test.addLog('Initialize our data');
+            return populateTable(table, validStringIds);
+        }).then(function () {
+            test.addLog('Read our data');
+            return lookupData(validStringIds);
+        }).then(function () {
+            test.addLog('Delete our data');
+            return deleteData(validStringIds);
+        }).then(function () {
+            test.addLog('Refresh our data');
+            return refreshData(validStringIds);
+        }).then(function () {
+            done(true);
+        }, failFn);
     }));
 
     // BUG #1706815 (query system properties)
     tests.push(new zumo.Test('AsyncFilterSelectOrderingOperationsNotImpactedBySystemProperties', function (test, done) {
         test.addLog('test table sorting with various system properties');
+
+        globaldone = done;
+        globalTest = test;
+
         var client = zumo.getClient(),
-            savedItems = [];
-        var forLink = [newLink()]
-        var i = 0;
-        var table = client.getTable(stringIdTableName);
+            table = client.getTable(stringIdTableName),
+            savedItems = [],
+            success = true;
+
         table.systemProperties = WindowsAzure.MobileServiceTable.SystemProperties.All;
-        var emptyTablePromise = emptyTable(table);
 
-        emptyTablePromise.then(function () {
-            var insertPromise = newLink();
-            table.insert({ id: '1', name: 'value' }).then(function (item) {
-                insertPromise.resolve(item);
-            });
-            return insertPromise;
-        }).then(function (item) {
-            var insertPromise = newLink();
-            savedItems.push(item);
-            table.insert({ id: '2', name: 'value' }).then(function (item) {
-                insertPromise.resolve(item);
-            });
-            return insertPromise;
+        emptyTable(table).then(function () {
+            return table.insert({ id: '1', name: 'value' })
         }).then(function (item) {
             savedItems.push(item);
-            var insertPromise = newLink();
-            table.insert({ id: '3', name: 'value' }).then(function (item) {
-                insertPromise.resolve(item);
-            });
-            return insertPromise;
+            return table.insert({ id: '2', name: 'value' });
+        }, failFn).then(function (item) {
+            savedItems.push(item);
+            return table.insert({ id: '3', name: 'value' });
         }).then(function (item) {
             savedItems.push(item);
-            var insertPromise = newLink();
-            table.insert({ id: '4', name: 'value' }).then(function (item) {
-                insertPromise.resolve(item);
-            });
-            return insertPromise;
+            return table.insert({ id: '4', name: 'value' });
         }).then(function (item) {
             savedItems.push(item);
-            var insertPromise = newLink();
-            table.insert({ id: '5', name: 'value' }).then(function (item) {
-                insertPromise.resolve(item);
-            });
-            return insertPromise;
+            return table.insert({ id: '5', name: 'value' });
         }).then(function (item) {
+            var promise;
+
             savedItems.push(item);
-            forLink[0].resolve(0);
-        });
+            for (index = 0; index < testSystemProperties.length; index++) {
+                table.systemProperties = testSystemProperties[index];
+                test.addLog('testing properties: ' + table.systemProperties);
 
-
-        testSystemProperties.forEach(function (systemProperties) {
-            i = i + 1;
-            forLink[i] = newLink();
-            forLink[i - 1].then(function (i2) {
-                table.systemProperties = testSystemProperties[i2];
-                test.addLog('testing properties: ' + systemProperties);
-
-                var orderbyPromise = newLink();
-                table.orderBy('__createdAt').read().then(function (item) {
-                    orderbyPromise.resolve(item);
-                }, function () { forLink[i2 + 1].reject(); });
-
-                orderbyPromise.then(function (items) {
+                var orderTests = table.orderBy('__createdAt').read().then(function (items) {
                     for (var i = 0; i < items.length - 1; i++) {
                         if (!(items[i].id < items[i + 1].id)) {
-                            forLink[i2 + 1].reject();
+                            test.addLog('__createdAt order wrong');
+                            success = false;
+                            break;
                         }
                     }
-                    var orderbyPromise = newLink();
-                    table.orderBy('__updatedAt').read().then(function (item) {
-                        orderbyPromise.resolve(item);
-                    }, function () { forLink[i2 + 1].reject(); })
-                    return orderbyPromise;
-                }, function () {
-                    forLink[i2 + 1].reject();
+
+                    return table.orderBy('__updatedAt').read();
                 }).then(function (items) {
                     for (var i = 0; i < items.length - 1; i++) {
                         if (!(items[i].id < items[i + 1].id)) {
-                            forLink[i2 + 1].reject();
+                            test.addLog('__updatedAt order wrong');
+                            success = false;
+                            break;
                         }
                     }
-                    var orderbyPromise = newLink();
-                    table.orderBy('__version').read().then(function (item) {
-                        orderbyPromise.resolve(item);
-                    }, function () { forLink[i2 + 1].reject(); })
-                    return orderbyPromise;
-                }, function () {
-                    forLink[i2 + 1].reject();
+
+                    return table.orderBy('__version').read();
                 }).then(function (items) {
                     for (var i = 0; i < items.length - 1; i++) {
                         if (!(items[i].id < items[i + 1].id)) {
-                            forLink[i2 + 1].reject();
+                            test.addLog('__version order wrong');
+                            success = false;
+                            break;
                         }
                     }
-                    var wherePromise = newLink();
-                    table.where(function (value) { return this.__createdAt >= value; }, savedItems[3].__createdAt).read().then(function (items) {
-                        wherePromise.resolve(items);
-                    }, function () { forLink[i2 + 1].reject(); })
-                    return wherePromise;
-                }).then(function (items) {
-                    var wherePromise = newLink();
-                    if (!assert.areEqual(test, 2, items.length)) {
-                        forLink[i2 + 1].reject();
-                    }
 
-                    table.where(function (value) { return this.__updatedAt >= value; }, savedItems[3].__updatedAt).read().then(function (items) {
-                        wherePromise.resolve(items);
-                    }, function () { forLink[i2 + 1].reject(); })
-                    return wherePromise;
-                }).then(function (items) {
-                    if (!assert.areEqual(test, 2, items.length)) {
-                        forLink[i2 + 1].reject();
-                    }
+                    return table.select('id', '__createdAt').read();
+                     
+                    // Node only
+                    /*
+                    return table.where(function (value) { return this.__createdAt >= value; }, savedItems[3].__createdAt).read()
+                            .then(function (items) {
+                                if (!assert.areEqual(test, 2, items.length)) {
+                                    success = false;
+                                }
 
-                    var wherePromise = newLink();
-                    table.where({ __version: savedItems[3].__version }).read().then(function (items) {
-                        wherePromise.resolve(items);
-                    }, function () { forLink[i2 + 1].reject(); })
-                    return wherePromise;
-                }).then(function (items) {
-                    if (!assert.areEqual(test, 1, items.length)) {
-                        forLink[i2 + 1].reject();
-                    }
-                    var wherePromise = newLink();
-                    table.select('id', '__createdAt').read().then(function (items) {
-                        wherePromise.resolve(items);
-                    }, function () { forLink[i2 + 1].reject(); })
-                    return wherePromise;
+                                return table.where(function (value) { return this.__updatedAt >= value; }, savedItems[3].__updatedAt).read();
+                            }).then(function (items) {
+                                if (!assert.areEqual(test, 2, items.length)) {
+                                    success = false;
+                                }
+                                return table.where({ __version: savedItems[3].__version }).read();
+                            }).then(function (items) {
+                                if (!assert.areEqual(test, 1, items.length)) {
+                                    success = false;
+                                }
+
+                                return table.select('id', '__createdAt').read();
+                            });
+                    */
                 }).then(function (items) {
                     for (var i = 0; i < items.length; i++) {
                         if (items[i].__createdAt == null) {
-                            forLink[i2 + 1].reject();
+                            test.addLog('missing __createdAt');
+                            success = false;
+                            break;
                         }
                     }
-                    var selectPromise = newLink();
-                    table.select('id', '__updatedAt').read().then(function (items) {
-                        selectPromise.resolve(items)
-                    }, function () { forLink[i2 + 1].reject(); })
-                    return selectPromise;
+                    return table.select('id', '__updatedAt').read();
                 }).then(function (items) {
                     for (var i = 0; i < items.length; i++) {
                         if (items[i].__updatedAt == null) {
-                            forLink[i2 + 1].reject();
+                            test.addLog('missing __updatedAt');
                         }
                     }
-                    var selectPromise = newLink();
-                    table.select('id', '__version').read().then(function (items) {
-                        selectPromise.resolve(items)
-                    }, function () { forLink[i2 + 1].reject(); })
-                    return selectPromise;
+                    return table.select('id', '__version').read();
                 }).then(function (items) {
                     for (var i = 0; i < items.length; i++) {
                         if (items[i].__version == null) {
-                            var rejected = true;
-                            forLink[i2 + 1].reject();
+                            test.addLog('missing __version');
                         }
                     }
-                    if (!rejected) {
-                        forLink[i2 + 1].resolve(i2 + 1);
-                    }
-                })
-            })
-        })
+                });
 
-        $.when.apply($, forLink).then(function () {
-            done(true);
-        }, function () {
-            done(false);
-        });
-    }, [zumo.runtimeFeatureNames.NodeRuntime_Only]));
+                if (promise) {
+                    promise = promise.then(function () { return orderTests });
+                } else {
+                    promise = orderTests;
+                }
+            }
+
+            return promise;
+        }).then(function () {
+            done(success);
+        }, failFn);
+    }));
 
     // BUG #2133523: .NET runtime should respond 400 if query requests invalid system properties
     tests.push(new zumo.Test('AsyncTableOperationsWithInvalidSystemPropertiesQuerystring', function (test, done) {
@@ -840,12 +676,13 @@ function defineTableGenericFunctionalTestsNamespace() {
     }, [zumo.runtimeFeatureNames.NodeRuntime_Only]));
 
     tests.push(new zumo.Test('LookupAsyncWithNosuchItemAgainstStringIdTable', function (test, done) {
-        var client = zumo.getClient();
-        var table = client.getTable(stringIdTableName);
-        var emptyTablePromise = emptyTable(table);
+        globaldone = done;
+        globalTest = test;
 
+        var table = zumo.getClient().getTable(stringIdTableName);
         var insertPromises = [newLink()];
-        emptyTablePromise.then(function () {
+
+        emptyTable(table).then(function () {
             test.addLog('Initialize our data');
             validStringIds.forEach(function (testId) {
                 var insertPromise = newLink();
@@ -912,18 +749,17 @@ function defineTableGenericFunctionalTestsNamespace() {
                     });
                 })
             })
-        }, function (error) {
-            done(false);
-        });
+        }, failFn);
     }));
 
     tests.push(new zumo.Test('InsertAsyncWithExistingItemAgainstStringIdTable', function (test, done) {
-        var client = zumo.getClient();
-        var table = client.getTable(stringIdTableName);
-        var emptyTablePromise = emptyTable(table);
+        globaldone = done;
+        globalTest = test;
 
+        var table = zumo.getClient().getTable(stringIdTableName);
         var insertPromises = [newLink()];
-        emptyTablePromise.then(function () {
+
+        emptyTable(table).then(function () {
             test.addLog('Initialize our data');
             validStringIds.forEach(function (testId) {
                 var insertPromise = newLink();
@@ -931,7 +767,7 @@ function defineTableGenericFunctionalTestsNamespace() {
                 table.insert({ id: testId, name: 'Hey' }).then(function () {
                     insertPromise.resolve();
                 }, function (error) {
-                    if (err != undefined) { test.addLog('Error' + JSON.stringify(err)); }
+                    if (error != undefined) { test.addLog('Error' + JSON.stringify(error)); }
                     done(false);
                 });
             });
@@ -957,7 +793,7 @@ function defineTableGenericFunctionalTestsNamespace() {
                             def.reject();
                         }
                     }, function (error) {
-                        if (err != undefined) { test.addLog('Error' + JSON.stringify(err)); }
+                        if (error != undefined) { test.addLog('Error' + JSON.stringify(error)); }
                         done(false);
                     });
                 });
@@ -992,18 +828,18 @@ function defineTableGenericFunctionalTestsNamespace() {
                     });
                 })
             });
-        }, function (error) {
-            done(false);
-        });
+        }, failFn);
     }));
 
     tests.push(new zumo.Test('UpdateAsyncWithNosuchItemAgainstStringIdTable', function (test, done) {
+        globaldone = done;
+        globalTest = test;
+
         var client = zumo.getClient();
         var table = client.getTable(stringIdTableName);
-        var emptyTablePromise = emptyTable(table);
-
         var insertPromises = [newLink()];
-        emptyTablePromise.then(function () {
+
+        emptyTable(table).then(function () {
             test.addLog('Initialize our data');
             validStringIds.forEach(function (testId) {
                 var insertPromise = newLink();
@@ -1070,19 +906,17 @@ function defineTableGenericFunctionalTestsNamespace() {
                     });
                 })
             })
-        }, function (error) {
-            done(false);
-        });
+        }, failFn);
     }));
 
     tests.push(new zumo.Test('AsyncTableOperationsWithIntegerAsStringIdAgainstIntIdTable', function (test, done) {
         globalTest = test;
         globaldone = done;
+
         var client = zumo.getClient();
         var table = client.getTable(intIdTableName);
-        var emptyTablePromise = emptyTable(table);
 
-        emptyTablePromise.then(function () {
+        emptyTable(table).then(function () {
             test.addLog('Insert record');
             var insertPromise = newLink();
             table.insert({
@@ -1091,47 +925,47 @@ function defineTableGenericFunctionalTestsNamespace() {
                 insertPromise.resolve();
                 testId = item.id;
             }, failFn);
-            return insertPromise;
-        }).then(function (item) {
-            var readPromise = newLink();
-            test.addLog('read table');
-            table.read().then(function (items) {
-                readPromise.resolve(items);
-            }, failFn);
-            return readPromise;
-        }).then(function (items) {
-            var selectPromise = newLink();
-            var a1 = assert.areEqual(test, 1, items.length);
-            var a2 = assert.areEqual(test, testId, items[0].id);
-            var a3 = assert.areEqual(test, "Hey", items[0].name);
-            if (a1 && a2 && a3) {
-                test.addLog('perform select');
-                table.select(function () {
-                    this.xid = this.id; this.xname = this.name; return this;
-                }).read().then(function (item) {
-                    selectPromise.resolve(item);
+
+            insertPromise.then(function (item) {
+                var readPromise = newLink();
+                test.addLog('read table');
+                table.read().then(function (items) {
+                    readPromise.resolve(items);
                 }, failFn);
-            }
-            else {
-                selectPromise.reject();
-            }
-            return selectPromise;
-        }).then(function (items) {
-            var lookupPromise = newLink();
-            var a1 = assert.areEqual(test, 1, items.length);
-            var a2 = assert.areEqual(test, testId, items[0].xid);
-            var a3 = assert.areEqual(test, 'Hey', items[0].xname);
-            if (a1 && a2 && a3) {
-                test.addLog('perform lookup');
-                table.lookup(items[0].xid).then(function (items) {
-                    lookupPromise.resolve(items)
-                }, failFn);
-            }
-            else {
-                lookupPromise.reject();
-            }
-            return lookupPromise;
-        }).then(
+                return readPromise;
+            }).then(function (items) {
+                var selectPromise = newLink();
+                var a1 = assert.areEqual(test, 1, items.length);
+                var a2 = assert.areEqual(test, testId, items[0].id);
+                var a3 = assert.areEqual(test, "Hey", items[0].name);
+                if (a1 && a2 && a3) {
+                    test.addLog('perform select');
+                    table.select(function () {
+                        this.xid = this.id; this.xname = this.name; return this;
+                    }).read().then(function (item) {
+                        selectPromise.resolve(item);
+                    }, failFn);
+                }
+                else {
+                    selectPromise.reject();
+                }
+                return selectPromise;
+            }).then(function (items) {
+                var lookupPromise = newLink();
+                var a1 = assert.areEqual(test, 1, items.length);
+                var a2 = assert.areEqual(test, testId, items[0].xid);
+                var a3 = assert.areEqual(test, 'Hey', items[0].xname);
+                if (a1 && a2 && a3) {
+                    test.addLog('perform lookup');
+                    table.lookup(items[0].xid).then(function (items) {
+                        lookupPromise.resolve(items)
+                    }, failFn);
+                }
+                else {
+                    lookupPromise.reject();
+                }
+                return lookupPromise;
+            }).then(
                  function (item) {
                      var updatePromise = newLink();
                      var a1 = assert.areEqual(test, testId, item.id);
@@ -1180,20 +1014,19 @@ function defineTableGenericFunctionalTestsNamespace() {
                      }
                      return readPromise;
                  }).then(
-         function (items) {
-             var a1 = assert.areEqual(test, 1, items.length);
-             var a2 = assert.areEqual(test, testId, items[0].id);
-             var a3 = assert.areEqual(test, 'What?', items[0].name);
-             if (a1 && a2 && a3) {
-                 done(true);
-             }
-             else {
-                 done(false);
-             }
-         });
+                function (items) {
+                    var a1 = assert.areEqual(test, 1, items.length);
+                    var a2 = assert.areEqual(test, testId, items[0].id);
+                    var a3 = assert.areEqual(test, 'What?', items[0].name);
+                    if (a1 && a2 && a3) {
+                        done(true);
+                    }
+                    else {
+                        done(false);
+                    }
+                });
+        }, failFn);
     }));
-
-
 
     tests.push(new zumo.Test('DeleteAsyncWithWithMergeConflict', function (test, done) {
         globalTest = test;
@@ -1260,11 +1093,10 @@ function defineTableGenericFunctionalTestsNamespace() {
     tests.push(new zumo.Test('ReadAsyncWithValidIntIdAgainstIntIdTable', function (test, done) {
         globaldone = done;
         globalTest = test;
-        var client = zumo.getClient();
-        var table = client.getTable(intIdTableName);
-        var emptyTablePromise = emptyTable(table);
 
-        emptyTablePromise.then(function () {
+        var table = zumo.getClient().getTable(intIdTableName);
+
+        emptyTable(table).then(function () {
             test.addLog('Insert record');
             var insertPromise = newLink();
             table.insert({
@@ -1273,23 +1105,24 @@ function defineTableGenericFunctionalTestsNamespace() {
                 insertPromise.resolve(item);
                 testId = item.id;
             }, failFn);
-            return insertPromise;
-        }).then(function (item) {
-            var readPromise = newLink();
-            table.read().then(function (item) {
-                readPromise.resolve(item);
-            }, failFn);
-            return readPromise;
-        }).then(function (items) {
-            var a1 = assert.areEqual(test, 1, items.length);
-            var a2 = items[0].id > 0;
-            var a3 = assert.areEqual(test, 'Hey', items[0].name);
-            if (a1 && a2 && a3) {
-                done(true);
-            }
-            else {
-                done(false);
-            }
+
+            insertPromise.then(function (item) {
+                var readPromise = newLink();
+                table.read().then(function (item) {
+                    readPromise.resolve(item);
+                }, failFn);
+                return readPromise;
+            }).then(function (items) {
+                var a1 = assert.areEqual(test, 1, items.length);
+                var a2 = items[0].id > 0;
+                var a3 = assert.areEqual(test, 'Hey', items[0].name);
+                if (a1 && a2 && a3) {
+                    done(true);
+                }
+                else {
+                    done(false);
+                }
+            });
         });
     }));
 
@@ -1297,25 +1130,17 @@ function defineTableGenericFunctionalTestsNamespace() {
     tests.push(new zumo.Test('AsyncTableOperationsWithAllSystemProperties', function (test, done) {
         globalTest = test;
         globaldone = done;
-        var client = zumo.getClient();
-        var table = client.getTable(stringIdTableName);
 
-        var savedItem,
+        var table = zumo.getClient().getTable(stringIdTableName),
+            savedItem,
             savedVersion,
             savedUpdatedAt;
 
         table.systemProperties = WindowsAzure.MobileServiceTable.SystemProperties.All;  //All
-        var emptyTablePromise = emptyTable(table);
 
-        var insertPromise = newLink();
-        emptyTablePromise.then(function () {
-            table.insert({
-                id: 'an id', Name: 'a value'
-            }).then(function (item) {
-                insertPromise.resolve(item);
-            })
-            return insertPromise;
-        }, failFn);
+        var insertPromise = emptyTable(table).then(function () {
+            return table.insert({ id: 'an id', Name: 'a value' });
+        });
 
         var readPromise = newLink();
         insertPromise.then(function (item) {
@@ -1464,80 +1289,44 @@ function defineTableGenericFunctionalTestsNamespace() {
     tests.push(new zumo.Test('AsyncTableOperationsWithSystemPropertiesSetExplicitly', function (test, done) {
         globalTest = test;
         globaldone = done;
-        var client = zumo.getClient();
-        var table = client.getTable(stringIdTableName),
+
+        var table = zumo.getClient().getTable(stringIdTableName),
             props = WindowsAzure.MobileServiceTable.SystemProperties;
+
         table.systemProperties = props.Version | props.CreatedAt | props.UpdatedAt;
 
-        var emptyTablePromise = emptyTable(table);
-
-        var insertPromise = newLink();
-        emptyTablePromise.then(function () {
-            table.insert({
-                name: 'a value'
-            }).then(function (item) {
-                insertPromise.resolve(item);
-            })
-            return insertPromise;
-        }, failFn);
-
-        var insertPromise2 = newLink();
-        insertPromise.then(function (item) {
+        emptyTable(table).then(function () {
+            return table.insert({ name: 'a value' });
+        }).then(function (item) {
             if (item.__createdAt != null && item.__updatedAt != null && item.__version != null) {
                 table.systemProperties = props.Version | props.CreatedAt;
-                table.insert({
-                    name: 'a value'
-                }).then(function (item) {
-                    insertPromise2.resolve(item);
-                }, failFn);
+                return table.insert({ name: 'a value' });
+            } else {
+                throw new Error('Incorrect system properties');
             }
-            else {
-                done(false);
-                insertPromise2.reject();
-            }
-        });
-
-        var insertPromise3 = newLink();
-        insertPromise2.then(function (item) {
+        }).then(function (item) {
             if (item.__createdAt != null && item.__updatedAt == null && item.__version != null) {
                 table.systemProperties = props.UpdatedAt | props.CreatedAt;
-                table.insert({
-                    name: 'a value'
-                }).then(function (item) {
-                    insertPromise3.resolve(item);
-                }, failFn);
+                return table.insert({ name: 'a value' });
+            } else {
+                throw new Error('Incorrect system properties');
             }
-            else {
-                insertPromise3.reject();
-            }
-            return insertPromise3;
-        }, failFn);
-
-        var insertPromise4 = newLink();
-        insertPromise3.then(function (item) {
+        }).then(function (item) {
             if (item.__createdAt != null && item.__updatedAt != null && item.__version == null) {
                 table.systemProperties = props.UpdatedAt;
-                table.insert({
-                    name: 'a value'
-                }).then(function (item) {
-                    insertPromise4.resolve(item);
-                }, failFn);
+                return table.insert({ name: 'a value' });
+            } else {
+                throw new Error('Incorrect system properties');
             }
-            else {
-                done(false);
-                insertPromise4.reject();
+        }).then(function (item) {
+            if (!(item.__createdAt == null && item.__updatedAt != null && item.__version == null)) {
+                throw new Error('Incorrect system properties');
             }
+        }).then(function () {
+            done(true);
         }, failFn);
-
-        insertPromise4.then(function (item) {
-            if (item.__createdAt == null && item.__updatedAt != null && item.__version == null) {
-                done(true);
-            }
-            else {
-                done(false);
-            }
-        });
     }, [zumo.runtimeFeatureNames.NodeRuntime_Only]));
+
     return {
         name: 'MobileServiceTableGenericFunctional',
         tests: tests
@@ -1632,31 +1421,28 @@ testValidSystemPropertyQueryStrings = [
     "__systemProperties= updatedat ,,"
 ];
 
-var validStringIds = myfunction();
-function myfunction() {
-    // Constants
-    var validStringIds = [
-             "id",
-             "true",
-             "false",
-             "00000000-0000-0000-0000-000000000000",
-             "aa4da0b5-308c-4877-a5d2-03f274632636",
-             "69C8BE62-A09F-4638-9A9C-6B448E9ED4E7",
-             "{EC26F57E-1E65-4A90-B949-0661159D0546}",
-             "87D5B05C93614F8EBFADF7BC10F7AE8C",
-             "someone@someplace.com",
-             "id with spaces",
-             " .",
-             "'id' with single quotes",
-             "id with Japanese 私の車はどこですか？",
-             "id with Arabic أين هو سيارتي؟",
-             "id with Russian Где моя машина",
-             "id with some URL significant characters % # &"
-    ];
-    return validStringIds;
-}
-
-emptyStringIds = [""];
+var baseValidStringIds = function () {
+    return [
+                 "id",
+                 "true",
+                 "false",
+                 "00000000-0000-0000-0000-000000000000",
+                 "aa4da0b5-308c-4877-a5d2-03f274632636",
+                 "69C8BE62-A09F-4638-9A9C-6B448E9ED4E7",
+                 "{EC26F57E-1E65-4A90-B949-0661159D0546}",
+                 "87D5B05C93614F8EBFADF7BC10F7AE8C",
+                 "someone@someplace.com",
+                 "id with spaces",
+                 " .",
+                 "'id' with single quotes",
+                 "id with Japanese 私の車はどこですか？",
+                 "id with Arabic أين هو سيارتي؟",
+                 "id with Russian Где моя машина",
+                 "id with some URL significant characters % # &"
+        ];
+    },
+    validStringIds = baseValidStringIds(),
+    emptyStringIds = [""];
 
 testInvalidSystemPropertyQueryStrings = [
     // Unknown system Properties
@@ -1767,6 +1553,7 @@ function defineBlogTestsNamespace() {
                 done(false);
             })
     }))
+
     return {
         name: 'Blog',
         tests: tests
