@@ -139,7 +139,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             });
         }
 
-        public async void Log(string message)
+        public void Log(string message)
         {
             //await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
             //{
