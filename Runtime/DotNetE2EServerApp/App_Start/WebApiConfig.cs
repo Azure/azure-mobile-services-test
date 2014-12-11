@@ -26,6 +26,7 @@ namespace ZumoE2EServerApp
         {
             ConfigOptions options = new ConfigOptions();
 
+            options.CorsPolicy = new System.Web.Http.Cors.EnableCorsAttribute("*", "*", "*");
             HttpConfiguration config = ServiceConfig.Initialize(new ConfigBuilder(options));
             config.IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always;
             config.SetIsHosted(true);
