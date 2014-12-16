@@ -165,6 +165,7 @@ function setup_app(callback) {
     // Common setup
     setup_app_keys,
     setup_cors,
+    setup_auth_AllProviders,
     
     // Platform-specific setup
     function(done) {
@@ -211,7 +212,7 @@ function setup_app(callback) {
                     done(err);
                   });
     },
-
+	
     // Done
     function(done) {
       console.log('   Done!'.green.bold);
@@ -241,6 +242,50 @@ function setup_cors(callback) {
   }
   process.stdout.write('   Setting up CORS (' + corsWhitelist + ')...');
   scripty.invoke('mobile config set ' + nconf.get('name') + ' crossDomainWhitelist ' + corsWhitelist, function(err, results) {
+    if (!err) {
+      console.log(' OK'.green.bold);
+    }
+    callback(err);
+  });
+}
+
+function setup_auth_AllProviders(callback) {  
+	async.series([
+		function(done) {
+			var clientId = nconf.get('googleClientId');  
+			var clientSecret = nconf.get('googleClientSecret');  
+			setup_auth('google',clientId,clientSecret,done);
+		},
+	
+		function(done) {
+			var clientId = nconf.get('msClientId');  
+			var clientSecret = nconf.get('msClientSecret');  
+			setup_auth('microsoftaccount',clientId,clientSecret,done);
+		},
+	
+		function(done) {
+			var clientId = nconf.get('fbClientId');  
+			var clientSecret = nconf.get('fbClientSecret');
+			setup_auth('facebook',clientId,clientSecret,done);
+		},
+	
+		function(done) {
+			var clientId = nconf.get('twitterApiKey');  
+			var clientSecret = nconf.get('twitterApiSecret');   
+			setup_auth('twitter',clientId,clientSecret,done);
+		}
+	], callback);  
+}
+
+function setup_auth(authprovider,clientId,clientSecret,callback) {  
+  if (!clientId) {
+    return callback();
+  }  
+  if (!clientSecret) {
+    return callback();
+  }
+  process.stdout.write('   Setting up '+ authprovider + ' auth. clientId (' + clientId + ') clientsecret (' + clientSecret + ')...\n');
+  scripty.invoke('mobile auth '+ authprovider +' set ' + nconf.get('name') + ' ' + clientId + ' '+ clientSecret, function(err, results) {
     if (!err) {
       console.log(' OK'.green.bold);
     }
