@@ -33,7 +33,7 @@ echo Device: $DEVICE_CMD_ARG
 pushd ZumoE2ETestApp
 
 # Copy in current version of the framework
-curl --location --output sdk.zip --silent https://go.microsoft.com/fwLink/?LinkID=266533&clcid=0x409
+curl --location --output sdk.zip --silent https://go.microsoft.com/fwLink/?LinkID=266533
 unzip sdk.zip
 
 xcodebuild -sdk iphonesimulator8.1 || exit 1
