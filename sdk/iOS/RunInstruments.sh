@@ -7,8 +7,6 @@ mkdir Results
 
 DIR="$( pwd )"
 
-set -o nounset
-
 if [ $# -lt 7 ]
 then
   echo Usage: $0 \<Application URL\> \<Application key\> \<device\> \<zumotestuser password\> \<clientId\> \<clientSecret\> \<runId\>
@@ -32,9 +30,16 @@ echo Device: $DEVICE_CMD_ARG
 # Build current app to test with
 pushd ZumoE2ETestApp
 
-# Copy in current version of the framework
-curl --location --output sdk.zip --silent https://go.microsoft.com/fwLink/?LinkID=266533
-unzip sdk.zip
+if [ $8 ]
+then
+  # Copy specified framework
+  cp -f $8 sdk.zip
+else
+  # Copy in current version of the framework
+  curl --location --output sdk.zip --silent https://go.microsoft.com/fwLink/?LinkID=266533
+fi
+
+unzip -o sdk.zip
 
 xcodebuild -sdk iphonesimulator8.1 || exit 1
 # xcodebuild -sdk iphoneos7.1
