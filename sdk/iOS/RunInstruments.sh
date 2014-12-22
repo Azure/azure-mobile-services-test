@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # Make sure we are executing in this script's directory
 cd "$( cd "$( dirname "$0" )" && pwd )"
@@ -29,10 +29,13 @@ export DEVICE_CMD_ARG=$3
 
 echo Device: $DEVICE_CMD_ARG
 
-# TODO: Copy in correct version of the framework
-
 # Build current app to test with
 pushd ZumoE2ETestApp
+
+# Copy in current version of the framework
+curl --location --output sdk.zip --silent https://go.microsoft.com/fwLink/?LinkID=266533
+unzip sdk.zip
+
 xcodebuild -sdk iphonesimulator8.1 || exit 1
 # xcodebuild -sdk iphoneos7.1
 popd
