@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # Make sure we are executing in this script's directory
 cd "$( cd "$( dirname "$0" )" && pwd )"
