@@ -69,7 +69,7 @@ echo Building...
 
 
 DEVICE_ARG=iPhone\ 6\ \(8.1\ Simulator\)
-APP_NAME=$DIR/bin/iPhoneSimulator/Debug/MicrosoftWindowsAzureMobileiOSTest.app
+APP_NAME=$DIR/bin/iPhoneSimulator/Debug/MicrosoftWindowsAzureMobileiOSE2ETest.app
 
 echo APP_NAME: $APP_NAME
 
