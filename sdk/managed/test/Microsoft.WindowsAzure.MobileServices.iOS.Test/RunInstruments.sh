@@ -52,8 +52,12 @@ echo "==============================================="
 echo
 
 echo
+echo Updating NuGet if required ...
+nuget update -self -Verbose
+
+echo
 echo Restoring Nuget packages...
-nuget restore $SLN_FILE
+nuget restore $SLN_FILE -Verbose
 
 if [[ $nugetSourceOverride ]]
 then
