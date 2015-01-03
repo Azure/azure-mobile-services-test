@@ -57,7 +57,7 @@ nuget update -self -Verbose
 
 echo
 echo Restoring Nuget packages...
-nuget restore $SLN_FILE -Verbose
+nuget restore $SLN_FILE
 
 if [[ $nugetSourceOverride ]]
 then
