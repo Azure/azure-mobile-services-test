@@ -134,9 +134,15 @@ function create_app(callback) {
     sqlServer: nconf.get('sql:server'),
     sqlDb: nconf.get('sql:db'),
     location: '"' + nconf.get('location') + '"',
-    backend: nconf.get('platform'),
+    backend: platform,
     positional: [nconf.get('name'), nconf.get('sql:user'), nconf.get('sql:password')]
   };
+
+  var platform = nconf.get('platform').toLowerCase();
+  if (lower == 'node') {
+	cmd.push = 'legacy';
+  }
+
   scripty.invoke(cmd, function(err, results) {
       if (!err) {
         console.log(' OK'.green.bold);
