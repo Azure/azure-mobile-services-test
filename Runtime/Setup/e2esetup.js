@@ -129,18 +129,26 @@ function delete_app(callback) {
 function create_app(callback) {
   process.stdout.write('   Creating new app...');
 
+  var platform = nconf.get('platform').toLowerCase();
   var cmd = {
     command: 'mobile create',
     sqlServer: nconf.get('sql:server'),
     sqlDb: nconf.get('sql:db'),
     location: '"' + nconf.get('location') + '"',
-    backend: nconf.get('platform'),
-    positional: [nconf.get('name'), nconf.get('sql:user'), nconf.get('sql:password')]
+    backend: platform
   };
+  
+  if (platform == 'node') {
+	  cmd.push = 'legacy';
+  }
+
+  cmd.positional = [nconf.get('name'), nconf.get('sql:user'), nconf.get('sql:password')];
+
   scripty.invoke(cmd, function(err, results) {
       if (!err) {
         console.log(' OK'.green.bold);
       }
+
       callback(err);
     });
 }
