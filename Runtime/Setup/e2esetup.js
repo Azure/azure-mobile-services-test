@@ -118,7 +118,7 @@ function make_app(callback) {
 
 function delete_app(callback) {
   process.stdout.write('   Deleting existing app...');
-  scripty.invoke('mobile delete --deleteData --quiet ' + nconf.get('name'), function(err, results) {
+  scripty.invoke('mobile delete --deleteData --deleteNotificationHubNamespace --quiet ' + nconf.get('name'), function (err, results) {
     if (!err) {
       process.stdout.write(' OK'.green.bold + '\n');
     }
@@ -171,7 +171,10 @@ function setup_app(callback) {
     function(done) {
       var lower = nconf.get('platform').toLowerCase();
       if (lower == 'node') {
-        setup_node_app(done);
+        async.series([
+          setup_node_app,
+          enable_push
+        ], done);          
       }
       else if (lower == 'dotnet') {
         setup_dotnet_app(done);
@@ -179,7 +182,9 @@ function setup_app(callback) {
         done('Invalid app platform in config file: ' + lower + '\n');
       }
     },
-    
+
+    setup_push,
+
     // Wait some time before pinging the site
     function(done) {
       var pingDelay = nconf.get('pingDelay') || 7500;
@@ -249,6 +254,62 @@ function setup_cors(callback) {
   });
 }
 
+function enable_push(callback) {
+  invoke_scripty('   ', 'mobile push nh enable ' + nconf.get('name'), callback);
+}
+
+function setup_push(callback) {
+  var indent = '   ';
+  process.stdout.write(indent + 'Configuring Push...');
+  async.series([
+		function (done) {
+		  var gcmApiKey = nconf.get('push:gcm:apiKey');
+		  if (gcmApiKey) {
+		    invoke_scripty(indent, 'mobile push gcm set ' + nconf.get('name') + ' ' + gcmApiKey, done);
+		  } else {
+		    done();
+		  }
+		},
+
+		function (done) {
+		  var apnsMode = nconf.get('push:apns:mode');
+		  var apnsCertPath = nconf.get('push:apns:certPath');
+		  var apnsCertPassword = nconf.get('push:apns:certPassword') || '';
+
+		  if (apnsMode || apnsCertPath) {
+		    var cmd = 'mobile push apns set ' + nconf.get('name') + ' ' + apnsMode + ' ' + apnsCertPath;
+		    if (apnsCertPassword) {
+		      cmd = cmd + ' -p ' + apnsCertPassword;
+		    }
+
+		    invoke_scripty(indent, cmd, done);
+		  } else {
+		    done();
+		  }
+		},
+
+		function (done) {
+		  var mpnsCertPath = nconf.get('push:mpns:certPath');
+		  var mpnsCertPassword = nconf.get('push:mpns:certPassword') || '';
+		  if (mpnsCertPath) {
+		    invoke_scripty(indent, 'mobile push mpns set ' + nconf.get('name') + ' ' + mpnsCertPath + ' ' + mpnsCertPassword, done);
+		  } else {
+		    done();
+		  }
+		},
+
+		function (done) {
+		  var wnsClientSecret = nconf.get('push:wns:clientSecret');
+		  var wnsPackageSid = nconf.get('push:wns:packageSid');
+		  if (wnsClientSecret && wnsPackageSid) {
+		    invoke_scripty(indent, 'mobile push wns set ' + nconf.get('name') + ' ' + wnsClientSecret + ' ' + wnsPackageSid, done);
+		  } else {
+		    done();
+		  }
+		}
+  ], callback);
+}
+
 function setup_auth_AllProviders(callback) {  
 	async.series([
 		function(done) {
@@ -284,7 +345,7 @@ function setup_auth(authprovider,clientId,clientSecret,callback) {
   if (!clientSecret) {
     return callback();
   }
-  process.stdout.write('   Setting up '+ authprovider + ' auth. clientId (' + clientId + ') clientsecret (' + clientSecret + ')...\n');
+  process.stdout.write('   Setting up '+ authprovider + ' auth. clientId (' + clientId + ') clientsecret (' + clientSecret + ')...');
   scripty.invoke('mobile auth '+ authprovider +' set ' + nconf.get('name') + ' ' + clientId + ' '+ clientSecret, function(err, results) {
     if (!err) {
       console.log(' OK'.green.bold);
@@ -686,6 +747,16 @@ function call_kudu(method, uri, content, username, password, timeout, callback) 
   }
   
   request(opt, callback);
+}
+
+function invoke_scripty(currentIndent, scriptToInvoke, callback) {
+  process.stdout.write('   ' + currentIndent + scriptToInvoke);
+  scripty.invoke(scriptToInvoke, function (err, results) {
+    if (!err) {
+      console.log(' OK'.green.bold + '\n');
+    }
+    callback(err);
+  });
 }
 
 run(function(err) {
