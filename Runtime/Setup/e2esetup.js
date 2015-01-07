@@ -118,7 +118,7 @@ function make_app(callback) {
 
 function delete_app(callback) {
   process.stdout.write('   Deleting existing app...');
-  scripty.invoke('mobile delete --deleteData --quiet ' + nconf.get('name'), function(err, results) {
+  scripty.invoke('mobile delete --deleteData --deleteNotificationHubNamespace --quiet ' + nconf.get('name'), function (err, results) {
     if (!err) {
       process.stdout.write(' OK'.green.bold + '\n');
     }
@@ -260,7 +260,7 @@ function enable_push(callback) {
 
 function setup_push(callback) {
   var indent = '   ';
-  process.stdout.write(indent + 'Configuring Push (' + corsWhitelist + ')...');
+  process.stdout.write(indent + 'Configuring Push...');
   async.series([
 		function (done) {
 		  var gcmApiKey = nconf.get('push:gcm:apiKey');
