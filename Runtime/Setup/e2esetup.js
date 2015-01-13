@@ -259,7 +259,7 @@ function setup_auth_AllProviders(callback) {
 	
 		function(done) {
 			var clientId = nconf.get('msClientId');  
-			var clientSecret = nconf.get('msClientSecret');  
+			var clientSecret = nconf.get('msClientSecret');  			
 			setup_auth('microsoftaccount',clientId,clientSecret,done);
 		},
 	
@@ -285,12 +285,23 @@ function setup_auth(authprovider,clientId,clientSecret,callback) {
     return callback();
   }
   process.stdout.write('   Setting up '+ authprovider + ' auth. clientId (' + clientId + ') clientsecret (' + clientSecret + ')...\n');
-  scripty.invoke('mobile auth '+ authprovider +' set ' + nconf.get('name') + ' ' + clientId + ' '+ clientSecret, function(err, results) {
-    if (!err) {
-      console.log(' OK'.green.bold);
-    }
-    callback(err);
-  });
+  if(authprovider == 'microsoftaccount') {
+	var msPackageSID = nconf.get('msPackageSID');  		
+	scripty.invoke('mobile auth '+ authprovider +' set --packageSid ' + msPackageSID + ' ' + nconf.get('name') + ' ' + clientId + ' '+ clientSecret, function(err, results) {
+		if (!err) {
+		console.log(' OK'.green.bold);
+		}
+		callback(err);
+	});
+  }  
+  else {
+	scripty.invoke('mobile auth '+ authprovider +' set ' + nconf.get('name') + ' ' + clientId + ' '+ clientSecret, function(err, results) {
+		if (!err) {
+		console.log(' OK'.green.bold);
+		}
+		callback(err);
+	});
+  }
 }
 
 function setup_node_app(callback) {
