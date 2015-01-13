@@ -7,13 +7,13 @@
     <Language Code="en-us" InMinimumRequirementSet="true" />
   </SupportedLocales>
   <ProductReservedInfo>
-    <MainPackageIdentityName>10805zumoTestUser.e2etest-node2</MainPackageIdentityName>
+    <MainPackageIdentityName>Microsoft.WindowsAzure.MobileServices.WindowsStore.Test</MainPackageIdentityName>
     <ReservedNames>
-      <ReservedName>e2etest-node2</ReservedName>
+      <ReservedName>Microsoft.WindowsAzure.MobileServices.WindowsStore.Test</ReservedName>
     </ReservedNames>
   </ProductReservedInfo>
   <AccountPackageIdentityNames>   
-    <MainPackageIdentityName>10805zumoTestUser.e2etest-dotnet2</MainPackageIdentityName>
+    <MainPackageIdentityName>Microsoft.WindowsAzure.MobileServices.WindowsStore.Test</MainPackageIdentityName>
   </AccountPackageIdentityNames>
   <PackageInfoList LandingUrl="https://appdev.microsoft.com:443/StorePortals/Developer/Catalog/ReleaseAnchor/17b85926-f3dc-4154-8091-4934fe33de1f" />
 </StoreAssociation>
