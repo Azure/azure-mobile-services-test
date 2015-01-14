@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/2010/manifest">
-  <Identity Name="44263a2d-8087-40af-8163-307a43f420ba" Publisher="CN=pbatum" Version="1.0.0.0" />
+  <Identity Name="Microsoft.WindowsAzure.MobileServices.WindowsStore" Publisher="CN=B2D1C358-6AF8-4416-BF73-129CC1F3C152" Version="1.0.0.0" />
   <Properties>
-    <DisplayName>Microsoft.WindowsAzure.MobileServices.WindowsStore.Test</DisplayName>
-    <PublisherDisplayName>pbatum</PublisherDisplayName>
+    <DisplayName>e2etest-node2</DisplayName>
+    <PublisherDisplayName>Azure Mobile Team</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
   <Prerequisites>
@@ -15,7 +15,7 @@
   </Resources>
   <Applications>
     <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="Microsoft.WindowsAzure.MobileServices.WindowsStore.Test.App">
-      <VisualElements DisplayName="Microsoft Azure Mobile Services Test App" Logo="Assets\Logo.png" SmallLogo="Assets\SmallLogo.png" Description="Microsoft Azure Mobile Services Test App" ForegroundText="light" BackgroundColor="#464646">
+      <VisualElements DisplayName="Microsoft.WindowsAzure.MobileServices.WindowsStore.Test" Logo="Assets\Logo.png" SmallLogo="Assets\SmallLogo.png" Description="Microsoft Azure Mobile Services Test App" ForegroundText="light" BackgroundColor="#464646">
         <DefaultTile ShowName="logoOnly" />
         <SplashScreen Image="Assets\SplashScreen.png" />
       </VisualElements>
