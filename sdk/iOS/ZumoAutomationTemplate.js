@@ -29,9 +29,9 @@ UIATarget.onAlert = function(alert) {
 
 	done = true;
 	if (title == 'Tests Complete') {
-		UIALogger.logPass('Unattended tests');
+		UIALogger.logPass('All tests');
 	} else {
-		UIALogger.logFail('Unattended tests');
+		UIALogger.logFail('All tests');
 	}
 
 	return false;
@@ -85,14 +85,14 @@ function setMobileService(app, window, appUrl, appKey) {
 }
 
 function startTests() {
-	UIATarget.localTarget().pushTimeout(30);
+	UIATarget.localTarget().pushTimeout(300);
 
 	var testGroups = window.tableViews()[0].cells();
-	var lastTestGroup = testGroups.length - 2;
+	var lastTestGroup = testGroups.length - 1;
 	testGroups[lastTestGroup].tap();
 
 	UIATarget.localTarget().popTimeout();
-	UIALogger.logStart('Unattended tests');
+	UIALogger.logStart('All tests');
 }
 
 function backToStart() {
@@ -109,24 +109,22 @@ function isLoginPage() {
 		return null;
 	}
 	
-	var tag = webView.staticTexts()["Facebook"];
-	if (tag.isValid()) {
+	var alltags = webView.staticTexts();
+
+	if (alltags.withPredicate('name contains "Facebook"').length > 0) {
 		return FACEBOOK;
 	}
-	
-	tag = webView.staticTexts()["Microsoft account"];
-	if (tag.isValid()) {
+
+	if (alltags.withPredicate('name contains "Microsoft"').length > 0) {
 		return MICROSOFT;
 	}
-	
-	tag = webView.links()["Twitter"];
-	if (tag.isValid()) {
+
+	if (alltags.withPredicate('name contains "Twitter"').length > 0) {
 		return TWITTER;
 	}
-	
-	tag = webView.images()["Google"];
-	if (tag.isValid()) {
-		return GOOGLE;
+
+	if (alltags.withPredicate('name contains "Google"').length > 0) {
+			return GOOGLE;
 	}
 	
 	return null;
