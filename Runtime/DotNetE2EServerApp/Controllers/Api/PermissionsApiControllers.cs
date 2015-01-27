@@ -3,7 +3,6 @@
 // ----------------------------------------------------------------------------
 
 using Microsoft.WindowsAzure.Mobile.Service.Security;
-using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;

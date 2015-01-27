@@ -10,7 +10,6 @@ using System.Web.Http.Controllers;
 using System.Web.Http.OData;
 using ZumoE2EServerApp.DataObjects;
 using ZumoE2EServerApp.Models;
-using ZumoE2EServerApp.Utils;
 using System;
 using System.Net.Http;
 using System.Net;
