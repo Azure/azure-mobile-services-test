@@ -65,6 +65,7 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestRe
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestStatus;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.Util;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.log.DaylightLogger;
+import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.ClientSDKLoginTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.CustomApiTests;
 //import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.EnhancedPushTests;
 //import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.LoginTests;
@@ -119,10 +120,12 @@ public class MainActivity extends Activity {
 			mAutomationPreferences.put("pref_run_unattended", extras.getString("pref_run_unattended", ""));
 			mAutomationPreferences.put("pref_mobile_service_url", extras.getString("pref_mobile_service_url", ""));
 			mAutomationPreferences.put("pref_mobile_service_key", extras.getString("pref_mobile_service_key", ""));
+			mAutomationPreferences.put("pref_google_userid", extras.getString("pref_google_userid", ""));
+			mAutomationPreferences.put("pref_google_webapp_clientid", extras.getString("pref_google_webapp_clientid", ""));
 			mAutomationPreferences.put("pref_master_run_id", extras.getString("pref_master_run_id", ""));
 			mAutomationPreferences.put("pref_runtime_version", extras.getString("pref_runtime_version", ""));
-			mAutomationPreferences.put("pref_client_id", extras.getString("pref_client_id", ""));
-			mAutomationPreferences.put("pref_client_secret", extras.getString("pref_client_secret", ""));
+			mAutomationPreferences.put("pref_daylight_client_id", extras.getString("pref_client_id", ""));
+			mAutomationPreferences.put("pref_daylight_client_secret", extras.getString("pref_client_secret", ""));
 			mAutomationPreferences.put("pref_daylight_url", extras.getString("pref_daylight_url", ""));
 			mAutomationPreferences.put("pref_daylight_project", extras.getString("pref_daylight_project", ""));
 		}
@@ -148,6 +151,8 @@ public class MainActivity extends Activity {
 			}
 		});
 
+        ClientSDKLoginTests.mainActivity=this;
+
 		// PushTests.mainActivity = this;
 		// EnhancedPushTests.mainActivity = this;
 
@@ -170,6 +175,7 @@ public class MainActivity extends Activity {
 		adapter.add(new RoundTripTests());
 		adapter.add(new QueryTests());
 		adapter.add(new UpdateDeleteTests());
+		adapter.add(new ClientSDKLoginTests());
 		// adapter.add(new LoginTests());
 		// adapter.add(new MiscTests());
 		// adapter.add(new PushTests());
@@ -515,11 +521,11 @@ public class MainActivity extends Activity {
 	}
 
 	private String getDaylightClientId() {
-		return this.getPreference(Constants.PREFERENCE_CLIENT_ID);
+		return this.getPreference(Constants.PREFERENCE_DAYLIGHT_CLIENT_ID);
 	}
 
 	private String getDaylightClientSecret() {
-		return this.getPreference(Constants.PREFERENCE_CLIENT_SECRET);
+		return this.getPreference(Constants.PREFERENCE_DAYLIGHT_CLIENT_SECRET);
 	}
 
 	private String getDaylightRuntime() {
@@ -529,6 +535,14 @@ public class MainActivity extends Activity {
 	private String getDaylightRunId() {
 		return this.getPreference(Constants.PREFERENCE_MASTER_RUN_ID);
 	}
+
+    public String getGoogleUserId() {
+        return this.getPreference(Constants.PREFERENCE_GOOGLE_USERID);
+    }
+
+    public String getGoogleWebAppClientId() {
+        return this.getPreference(Constants.PREFERENCE_GOOGLE_WEBAPP_CLIENTID);
+    }
 
 	private boolean shouldRunUnattended() {
 		if (mAutomationPreferences != null) {

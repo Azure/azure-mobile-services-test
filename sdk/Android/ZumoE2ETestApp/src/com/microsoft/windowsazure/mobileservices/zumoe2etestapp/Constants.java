@@ -28,11 +28,16 @@ public class Constants {
 
 	public static final String PREFERENCE_RUNTIME_VERSION = "pref_runtime_version";
 
-	public static final String PREFERENCE_CLIENT_ID = "pref_client_id";
+	public static final String PREFERENCE_DAYLIGHT_CLIENT_ID = "pref_daylight_client_id";
 
-	public static final String PREFERENCE_CLIENT_SECRET = "pref_client_secret";
+	public static final String PREFERENCE_DAYLIGHT_CLIENT_SECRET = "pref_daylight_client_secret";
 
 	public static final String PREFERENCE_DAYLIGHT_URL = "pref_daylight_url";
 
 	public static final String PREFERENCE_DAYLIGHT_PROJECT = "pref_daylight_project";
+
+    public static final String PREFERENCE_GOOGLE_USERID = "pref_google_userid";
+
+    public static final String PREFERENCE_GOOGLE_WEBAPP_CLIENTID = "pref_google_webapp_clientid";
+
 }
