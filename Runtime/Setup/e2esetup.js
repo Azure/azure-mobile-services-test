@@ -130,7 +130,7 @@ function create_app(callback) {
   process.stdout.write('   Creating new app...');
 
   var cmd = {
-    command: 'mobile create',
+    command: 'mobile create -p nh',
     sqlServer: nconf.get('sql:server'),
     sqlDb: nconf.get('sql:db'),
     location: '"' + nconf.get('location') + '"',
