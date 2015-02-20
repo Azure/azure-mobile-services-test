@@ -7,12 +7,12 @@
     <Language Code="en" InMinimumRequirementSet="true" />
   </SupportedLocales>
   <ProductReservedInfo>
-    <MainPackageIdentityName>Microsoft.WindowsAzure.MobileServices.Win8.Test</MainPackageIdentityName>
+    <MainPackageIdentityName>Microsoft.WindowsAzure.Mobile.WP81.Test</MainPackageIdentityName>
     <ReservedNames>
-      <ReservedName>Microsoft.WindowsAzure.MobileServices.Win8.Test</ReservedName>
+      <ReservedName>Microsoft.WindowsAzure.Mobile.WP81.Test</ReservedName>
     </ReservedNames>
   </ProductReservedInfo>
   <AccountPackageIdentityNames>
   </AccountPackageIdentityNames>
-  <PackageInfoList LandingUrl="https://appdev.microsoft.com:443/StorePortals/Developer/Catalog/ReleaseAnchor/be082b27-3730-49a9-aea2-387641a12baf" />
+  <PackageInfoList LandingUrl="https://dev.windowsphone.com/AppSubmission/AssociationLanding?windowsProductId=be082b27-3730-49a9-aea2-387641a12baf" />
 </StoreAssociation>

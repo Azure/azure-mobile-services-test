@@ -23,6 +23,11 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             throw new NotImplementedException();
         }
 
+        public Registration GetUpdatedTemplateRegistrationForToast()
+        {
+            throw new NotImplementedException();
+        }        
+
         public void ValidateTemplateRegistration(Registration registration)
         {
             throw new NotImplementedException();
@@ -33,7 +38,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             throw new NotImplementedException();
         }
 
-        public void ValidateTemplateRegistrationAfterRegister(Registration registration, string zumoInstallationId)
+        public void ValidateTemplateRegistrationAfterRegister(Registration registration)
         {
             throw new NotImplementedException();
         }

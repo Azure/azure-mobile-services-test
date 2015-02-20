@@ -38,6 +38,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             Harness = new TestHarness();
             Harness.Platform = string.Format("Win Phone 8.1|sdk v{0}|", TestPlatform.GetMobileServicesSdkVersion(typeof(App).GetTypeInfo().Assembly));
             Harness.LoadTestAssembly(typeof(FunctionalTestBase).GetTypeInfo().Assembly);
+            Harness.LoadTestAssembly(typeof(PushFunctional).GetTypeInfo().Assembly);
         }
 
         /// <summary>
