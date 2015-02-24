@@ -1,16 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/2010/manifest" xmlns:m2="http://schemas.microsoft.com/appx/2013/manifest" xmlns:m3="http://schemas.microsoft.com/appx/2014/manifest" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest">
-  <Identity Name="90d8932d-7158-463d-9db4-2cbce122d372" Publisher="CN=phvannor" Version="1.0.0.0" />
+  <Identity Name="Microsoft.WindowsAzure.Mobile.WP81.Test" Publisher="CN=B2D1C358-6AF8-4416-BF73-129CC1F3C152" Version="1.1.0.0" />
   <Properties>
     <DisplayName>Microsoft.WindowsAzure.Mobile.WP81.Test</DisplayName>
-    <PublisherDisplayName>phvannor</PublisherDisplayName>
+    <PublisherDisplayName>Azure Mobile Team</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
   <Prerequisites>
     <OSMinVersion>6.3.0</OSMinVersion>
     <OSMaxVersionTested>6.3.0</OSMaxVersionTested>
   </Prerequisites>
-  <mp:PhoneIdentity PhoneProductId="90d8932d-7158-463d-9db4-2cbce122d372" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
+  <mp:PhoneIdentity PhoneProductId="1a2b697b-71bd-454e-8738-867412e35b2d" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Resources>
     <Resource Language="x-generate" />
   </Resources>

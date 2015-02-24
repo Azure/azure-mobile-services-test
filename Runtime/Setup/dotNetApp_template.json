@@ -24,5 +24,23 @@
   "fbClientId":"YOUR_FACEBOOK_CLIENTID",
   "fbClientSecret":"YOUR_FACEBOOK_CLIENTSECRET",
   "twitterApiKey":"YOUR_TWITTER_CLIENTID",
-  "twitterApiSecret":"YOUR_TWITTER_CLIENTSECRET"
+  "twitterApiSecret":"YOUR_TWITTER_CLIENTSECRET",
+  "push": {
+        "apns": {
+            "mode": "",
+            "certPath": "",
+            "certPassword": ""
+        },
+        "gcm": {
+            "apiKey":  ""
+        },
+        "mpns": {
+            "certPath": "",
+            "certPassword":  ""
+        },
+        "wns": {
+            "clientSecret": "",
+            "packageSid":  ""
+        }
+    }
 }

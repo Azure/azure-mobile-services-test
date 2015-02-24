@@ -10,7 +10,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
     {
         public IPushTestUtility PushTestUtility
         {
-            get { return null; }
+            get { return new PushTestUtility(); }
         }
     }
 }
