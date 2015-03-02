@@ -10,7 +10,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Microsoft.WindowsAzure.Mobile.Android.Test</RootNamespace>
-    <AssemblyName>Microsoft.WindowsAzure.Mobile.Android.Test</AssemblyName>
+    <AssemblyName>Microsoft.WindowsAzure.Mobile.Android.Test2</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <AndroidApplication>true</AndroidApplication>
     <AndroidResgenFile>Resources\Resource.Designer.cs</AndroidResgenFile>
@@ -43,11 +43,13 @@
     <AndroidLinkMode>SdkOnly</AndroidLinkMode>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.WindowsAzure.Mobile">
-      <HintPath>..\..\packages\WindowsAzure.MobileServices.1.2.5\lib\monoandroid\Microsoft.WindowsAzure.Mobile.dll</HintPath>
+    <Reference Include="Microsoft.WindowsAzure.Mobile, Version=1.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\WindowsAzure.MobileServices.1.3.0\lib\monoandroid\Microsoft.WindowsAzure.Mobile.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.WindowsAzure.Mobile.Ext">
-      <HintPath>..\..\packages\WindowsAzure.MobileServices.1.2.5\lib\monoandroid\Microsoft.WindowsAzure.Mobile.Ext.dll</HintPath>
+    <Reference Include="Microsoft.WindowsAzure.Mobile.Ext, Version=1.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\WindowsAzure.MobileServices.1.3.0\lib\monoandroid\Microsoft.WindowsAzure.Mobile.Ext.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Android" />
     <Reference Include="mscorlib" />
@@ -68,6 +70,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App.cs" />
+    <Compile Include="Functional\PushFunctional.Test.cs" />
     <Compile Include="GroupDescription.cs" />
     <Compile Include="HarnessActivity.cs" />
     <Compile Include="LoginActivity.cs" />
@@ -79,6 +82,7 @@
     <Compile Include="..\Microsoft.WindowsAzure.MobileServices.WindowsStore.Test\TestPlatform\CurrentTestPlatform.cs">
       <Link>TestPlatform\CurrentTestPlatform.cs</Link>
     </Compile>
+    <Compile Include="TestPlatform\PushTestUtility.cs" />
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\Layout\Login.axml" />
@@ -95,7 +99,9 @@
     </Content>
     <Content Include="Properties\AndroidManifest.xml" />
     <AndroidResource Include="Resources\Drawable\Icon.png" />
-    <AndroidResource Include="Resources\Values\Strings.xml" />
+    <AndroidResource Include="Resources\Values\Strings.xml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.WindowsAzure.MobileServices.TestFramework\Microsoft.WindowsAzure.Mobile.TestFramework.csproj">
