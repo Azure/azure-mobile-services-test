@@ -7,9 +7,9 @@
     <Language Code="en" InMinimumRequirementSet="true" />
   </SupportedLocales>
   <ProductReservedInfo>
-    <MainPackageIdentityName>Microsoft.WindowsAzure.MobileServices.Win8.Test</MainPackageIdentityName>
+    <MainPackageIdentityName>Microsoft.WindowsAzure.Mobile.W8.Test</MainPackageIdentityName>
     <ReservedNames>
-      <ReservedName>Microsoft.WindowsAzure.MobileServices.Win8.Test</ReservedName>
+      <ReservedName>Microsoft.WindowsAzure.Mobile.W8.Test</ReservedName>
     </ReservedNames>
   </ProductReservedInfo>
   <AccountPackageIdentityNames>

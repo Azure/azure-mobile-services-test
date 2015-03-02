@@ -21,6 +21,7 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
             Harness = new TestHarness();
             Harness.Platform = string.Format("Xamarin.iOS|sdk v{0}|", TestPlatform.GetMobileServicesSdkVersion(typeof(AppDelegate).GetTypeInfo().Assembly));
             Harness.LoadTestAssembly(typeof(FunctionalTestBase).GetTypeInfo().Assembly);
+            Harness.LoadTestAssembly(typeof(PushFunctional).GetTypeInfo().Assembly);
         }
 
         public override bool FinishedLaunching(UIApplication app, NSDictionary options)
