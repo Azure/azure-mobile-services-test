@@ -710,11 +710,11 @@ static NSString *parameterTestTableName = @"ParamsTestTable";
                     dict[@"operation"] = @"read";
                     MSQuery *query = [table query];
                     [query setParameters:dict];
-                    [query readWithCompletion:^(NSArray *readItems, NSInteger totalCount, NSError *error) {
+                    [query readWithCompletion:^(MSQueryResult *result, NSError *error) {
                         if ([self handleIfError:error operation:@"read" test:test completion:completion]) {
                             return;
                         }
-                        if (![self validateParameters:test operation:@"read" expected:dict actual:[self parseJson:readItems[0][@"parameters"]]]) {
+                        if (![self validateParameters:test operation:@"read" expected:dict actual:[self parseJson:result.items[0][@"parameters"]]]) {
                             completion(NO);
                             return;
                         }
@@ -903,7 +903,7 @@ static NSString *parameterTestTableName = @"ParamsTestTable";
                     MSQuery *query = [table queryWithPredicate:predicate];
                     [filter setNumberOfRequests:1];
                     [query setSelectFields:@[@"name"]];
-                    [query readWithCompletion:^(NSArray *items, NSInteger totalCount, NSError *error) {
+                    [query readWithCompletion:^(MSQueryResult *result, NSError *error) {
                         BOOL passed = NO;
                         [test addLog:@"Filter logs:"];
                         for (NSString *log in [filter testLogs]) {
@@ -913,11 +913,11 @@ static NSString *parameterTestTableName = @"ParamsTestTable";
                         if (error || [filter testFailed]) {
                             [test addLog:[NSString stringWithFormat:@"Error reading: %@", error]];
                         } else {
-                            if ([items count] == numberOfRequests) {
+                            if ([result.items count] == numberOfRequests) {
                                 [test addLog:@"Got correct number of items inserted"];
                                 passed = YES;
                             } else {
-                                [test addLog:[NSString stringWithFormat:@"Error, expected %d items to be returned, but this is what was: %@", numberOfRequests, items]];
+                                [test addLog:[NSString stringWithFormat:@"Error, expected %d items to be returned, but this is what was: %@", numberOfRequests, result.items]];
                             }
                         }
                         
