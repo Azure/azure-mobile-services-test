@@ -5,6 +5,7 @@
 using System.Linq;
 
 using Microsoft.WindowsAzure.MobileServices.TestFramework;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WindowsAzure.MobileServices.Test
 {
@@ -93,6 +94,87 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             push.UnregisterTemplateAsync(template.Name).Wait();
             registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
             Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterTemplateAsync");
+        }
+
+        [TestMethod]
+        public void RegisterAsyncUnregisterAsyncInstallation()
+        {
+            var channelUri = this.pushTestUtility.GetPushHandle();
+            var push = this.GetClient().GetPush();
+            push.RegisterAsync(channelUri).Wait();
+            //TODO update to use NH SDK to query registrations
+            var registrations = push.ListRegistrationsAsync(channelUri).Result;
+            Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterAsync");
+            Assert.IsTrue(registrations.FirstOrDefault().Tags.Contains("$InstallationId:{" + push.InstallationId + "}"));
+            //TODO Login then register, verify $UserId:{userId} tag exists
+            push.UnregisterAsync().Wait();
+            registrations = push.ListRegistrationsAsync(channelUri).Result;
+            Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterNativeAsync");
+        }
+
+        [TestMethod]
+        public void RegisterAsyncUnregisterAsyncWithTemplates()
+        {
+            var channelUri = this.pushTestUtility.GetPushHandle();
+            JObject templates = GetTemplates();
+
+            var push = this.GetClient().GetPush();
+            push.RegisterAsync(channelUri, templates).Wait();
+            
+            var registrations = push.ListRegistrationsAsync(channelUri).Result;
+            Assert.AreEqual(registrations.Count(), 2, "2 registrations should exist after RegisterAsync with one template");
+            foreach(Registration registration in registrations)
+            {
+                Assert.IsTrue(registration.Tags.Contains("$InstallationId:{" + push.InstallationId + "}"));
+                //Verify runtime strips out any tags added by user
+                Assert.IsFalse(registration.Tags.Contains("foo"));
+            }
+
+            push.UnregisterAsync().Wait();
+            registrations = push.ListRegistrationsAsync(channelUri).Result;
+            Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterNativeAsync");
+        }
+
+        [TestMethod]
+        public void RegisterAsyncUnregisterAsyncWithTemplatesAndSecondaryTiles()
+        {
+            var channelUri = this.pushTestUtility.GetPushHandle();
+            JObject templates = GetTemplates();
+
+            var push = this.GetClient().GetPush();
+            push.RegisterAsync(channelUri, templates,templates).Wait();
+
+            var registrations = push.ListRegistrationsAsync(channelUri).Result;
+            Assert.AreEqual(registrations.Count(), 4, "4 registrations should exist after RegisterAsync with one template");
+            foreach (Registration registration in registrations)
+            {
+                Assert.IsTrue(registration.Tags.Contains("$InstallationId:{" + push.InstallationId + "}"));
+                //Verify runtime strips out any tags added by user
+                Assert.IsFalse(registration.Tags.Contains("foo"));
+            }
+
+            push.UnregisterAsync().Wait();
+            registrations = push.ListRegistrationsAsync(channelUri).Result;
+            Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterNativeAsync");
+        }
+
+        private static JObject GetTemplates()
+        {
+            var toastTemplate = "<toast><visual><binding template=\"ToastText01\"><text id=\"1\">$(message)</text></binding></visual></toast>";
+            JObject templateBody = new JObject();
+            templateBody["body"] = toastTemplate;
+
+            JObject wnsToastHeaders = new JObject();
+            wnsToastHeaders["X-WNS-Type"] = "wns/toast";
+            templateBody["headers"] = wnsToastHeaders;
+
+            JArray tags = new JArray();
+            tags.Add("foo");
+            templateBody["tags"] = tags;
+
+            JObject templates = new JObject();
+            templates["testTemplate"] = templateBody;
+            return templates;
         }
     }
 }
