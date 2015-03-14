@@ -187,10 +187,10 @@ static NSString *stringIdQueryTestsTableName = @"Movies";
                 predicate = [NSPredicate predicateWithFormat:unsupportedPredicate];
             }
             
-            [table readWithPredicate:predicate completion:^(NSArray *items, NSInteger totalCount, NSError *error) {
+            [table readWithPredicate:predicate completion:^(MSQueryResult *result, NSError *error) {
                 BOOL passed = NO;
                 if (!error) {
-                    [test addLog:[NSString stringWithFormat:@"Expected error, got result: %@", items]];
+                    [test addLog:[NSString stringWithFormat:@"Expected error, got result: %@", result.items]];
                 } else {
                     if ([error code] == MSPredicateNotSupported) {
                         [test addLog:[NSString stringWithFormat:@"Got expected error: %@", error]];
@@ -224,15 +224,15 @@ static NSString *stringIdQueryTestsTableName = @"Movies";
         return;
     }
     
-    [query readWithCompletion:^(NSArray *items, NSInteger totalCount, NSError *error) {
+    [query readWithCompletion:^(MSQueryResult *result, NSError *error) {
         if (!error) {
-            if (totalCount == expectCount){
+            if (result.totalCount == expectCount){
                 [test addLog:@"Table is populated and ready for query tests"];
                 [test setTestStatus:TSPassed];
                 completion(YES);
                 return;
             } else {
-                [test addLog:[NSString stringWithFormat:@"Already inserted %zd items, waiting for insertion to complete", (ssize_t)totalCount]];
+                [test addLog:[NSString stringWithFormat:@"Already inserted %zd items, waiting for insertion to complete", (ssize_t)result.totalCount]];
                 [NSThread sleepForTimeInterval: 5];
                 [self isAllDataPopulated:table test:test expectCount:expectCount retryTimes:retryTimes completion:completion];
             }
@@ -254,7 +254,8 @@ typedef BOOL (^QueryValidation)(ZumoTest *test, NSError *error);
         MSTable *table = [client tableWithName:queryTestsTableName];
         MSQuery *query = [table query];
         settings(query);
-        [query readWithCompletion:^(NSArray *items, NSInteger totalCount, NSError *error) {
+        
+        [query readWithCompletion:^(MSQueryResult *result, NSError *error) {
             if (error) {
                 if (queryValidation(test, error)) {
                     [test addLog:[NSString stringWithFormat:@"Got expected error: %@", error]];
@@ -299,15 +300,16 @@ typedef BOOL (^QueryValidation)(ZumoTest *test, NSError *error);
         NSArray *allItems = [ZumoQueryTestData getMovies];
         if (!top && !skip && !orderByClauses && !includeTotalCount && !selectFields) {
             // use simple readWithPredicate
-            [table readWithPredicate:predicate completion:^(NSArray *queriedItems, NSInteger totalCount2, NSError *readWhereError) {
+            [table readWithPredicate:predicate completion:^(MSQueryResult *result, NSError *readWhereError) {
                 if (readWhereError) {
                     [test addLog:[NSString stringWithFormat:@"Error calling readWhere: %@", readWhereError]];
                     [test setTestStatus:TSFailed];
                     completion(NO);
                 } else {
+                    NSArray *queriedItems = result.items;
                     NSArray *filteredArray = [allItems filteredArrayUsingPredicate:predicate];
+                    
                     BOOL passed = [self compareExpectedArray:filteredArray withActual:queriedItems forTest:test];
-
                     NSInteger queriedCount = [queriedItems count];
                     NSInteger maxTrace = queriedCount > 5 ? 5 : queriedCount;
                     NSArray *toTrace = [queriedItems subarrayWithRange:NSMakeRange(0, maxTrace)];
@@ -351,14 +353,16 @@ typedef BOOL (^QueryValidation)(ZumoTest *test, NSError *error);
             if (selectFields) {
                 [query setSelectFields:selectFields];
             }
-                    
-            [query readWithCompletion:^(NSArray *queriedItems, NSInteger totalCount, NSError *queryReadError) {
+            
+            [query readWithCompletion:^(MSQueryResult *result, NSError *queryReadError) {
                 if (queryReadError) {
                     [test addLog:[NSString stringWithFormat:@"Error calling MSQuery readWithCompletion: %@", queryReadError]];
                     [test setTestStatus:TSFailed];
                     completion(NO);
                 } else {
                     NSArray *filteredArray;
+                    NSArray *queriedItems = result.items;
+                    
                     if (predicate) {
                         filteredArray = [NSMutableArray arrayWithArray:[allItems filteredArrayUsingPredicate:predicate]];
                     } else {
@@ -368,8 +372,8 @@ typedef BOOL (^QueryValidation)(ZumoTest *test, NSError *error);
                     BOOL passed = NO;
                     NSInteger expectedTotalItems = [filteredArray count];
                     
-                    if (includeTotalCount && totalCount != expectedTotalItems) {
-                        [test addLog:[NSString stringWithFormat:@"Error in 'totalCount'. Expected: %ld, actual: %ld", (long)expectedTotalItems, (long)totalCount]];
+                    if (includeTotalCount && result.totalCount != expectedTotalItems) {
+                        [test addLog:[NSString stringWithFormat:@"Error in 'totalCount'. Expected: %ld, actual: %ld", (long)expectedTotalItems, (long)result.totalCount]];
                     } else {
                         if (orderByClauses) {
                             if ([orderByClauses count] == 1 && [[orderByClauses[0] fieldName] isEqualToString:@"title"] && [orderByClauses[0] isAscending]) {
