@@ -1,8 +1,8 @@
-﻿using Microsoft.WindowsAzure.MobileServices;
+using Microsoft.WindowsAzure.MobileServices;
 using Microsoft.WindowsAzure.MobileServices.TestFramework;
 using MonoTouch.Dialog;
-using MonoTouch.Foundation;
-using MonoTouch.UIKit;
+using Foundation;
+using UIKit;
 
 namespace Microsoft.WindowsAzure.Mobile.iOS.Test
 {
@@ -23,16 +23,16 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
             string runId = defaults.StringForKey(RunIdKey);
             string runtimeVersion = defaults.StringForKey(RuntimeVersionKey);
 
-            this.uriEntry = new AccessibleEntryElement(null, "Mobile Service URI", mobileServiceUri, accessibilityId: MobileServiceUriKey);
-            this.keyEntry = new AccessibleEntryElement(null, "Mobile Service Key", mobileServiceKey, accessibilityId: MobileServiceKeyKey);
-            this.tagsEntry = new AccessibleEntryElement(null, "Tags", tags, accessibilityId: TagsKey);
+            this.uriEntry = new EntryElement(null, "Mobile Service URI", mobileServiceUri);
+            this.keyEntry = new EntryElement(null, "Mobile Service Key", mobileServiceKey);
+            this.tagsEntry = new EntryElement(null, "Tags", tags);
 
-            this.daylightUriEntry = new AccessibleEntryElement(null, "Daylight URI", daylightUri, accessibilityId: DaylightUriKey);
-            this.daylightProjectEntry = new AccessibleEntryElement(null, "Daylight Project", daylightProject, accessibilityId: DaylightProjectKey);
-            this.clientIdEntry = new AccessibleEntryElement(null, "Client ID", clientId, accessibilityId: ClientIdKey);
-            this.clientSecretEntry = new AccessibleEntryElement(null, "Client Secret", clientSecret, accessibilityId: ClientSecretKey);
-            this.runIdEntry = new AccessibleEntryElement(null, "Run Id", runId, accessibilityId: RunIdKey);
-            this.runtimeVersionEntry = new AccessibleEntryElement(null, "Runtime version", runtimeVersion, accessibilityId: RuntimeVersionKey);
+            this.daylightUriEntry = new EntryElement(null, "Daylight URI", daylightUri);
+            this.daylightProjectEntry = new EntryElement(null, "Daylight Project", daylightProject);
+            this.clientIdEntry = new EntryElement(null, "Client ID", clientId);
+            this.clientSecretEntry = new EntryElement(null, "Client Secret", clientSecret);
+            this.runIdEntry = new EntryElement(null, "Run Id", runId);
+            this.runtimeVersionEntry = new EntryElement(null, "Runtime version", runtimeVersion);
 
             Root = new RootElement("C# Client Library Tests") {
                 new Section("Login") {
@@ -51,7 +51,7 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
                 },
 
                 new Section {
-                    new AccessibleStringElement ("Run Tests", RunTests, accessibilityId: "RunTests")
+                    new StringElement ("Run Tests", RunTests)
                 },
 
                 new Section{
@@ -96,7 +96,6 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
             defaults.SetString(this.runIdEntry.Value, RunIdKey);
             defaults.SetString(this.runtimeVersionEntry.Value, RuntimeVersionKey);
 
-            //AppDelegate.Harness.
             AppDelegate.Harness.SetAutoConfig(new TestConfig()
             {
                 MobileServiceRuntimeUrl = this.uriEntry.Value,
