@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{45E57CDC-7178-4915-8D0B-CF80F5E44AF6}"
 EndProject
@@ -13,6 +13,11 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.WindowsAzure.Mobile.WP8.Test", "test\Microsoft.WindowsAzure.MobileServices.WindowsPhone8.Test\Microsoft.WindowsAzure.Mobile.WP8.Test.csproj", "{46AE537A-1143-48A4-B9A4-4B2C7BD9AB1D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{E0DB6669-9295-4034-8E6D-7C4F2ED297DD}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.WindowsAzure.Mobile.Net45.Test", "test\Microsoft.WindowsAzure.Mobile.Net45.Test\Microsoft.WindowsAzure.Mobile.Net45.Test.csproj", "{7C1A9BC1-3E60-4673-AC08-AC8399032D49}"
 EndProject

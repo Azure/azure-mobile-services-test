@@ -95,30 +95,32 @@ namespace ZumoE2EServerApp.Controllers
                 {
                     nhTemplates = JsonConvert.SerializeObject(nhInstallation.Templates);
                     nhTemplates = Regex.Replace(nhTemplates, @"\s+", String.Empty);
+                    templates = Regex.Replace(templates, @"\s+", String.Empty);
                 }
                 if (nhInstallation.SecondaryTiles != null)
                 {
                     nhSecondaryTiles = JsonConvert.SerializeObject(nhInstallation.SecondaryTiles);
                     nhSecondaryTiles = Regex.Replace(nhSecondaryTiles, @"\s+", String.Empty);
+                    secondaryTiles = Regex.Replace(secondaryTiles, @"\s+", String.Empty);
                 }
-                if (String.Compare(nhInstallation.PushChannel, channelUri, true) != 0)
+                if (nhInstallation.PushChannel != channelUri)
                 {
                     this.Services.Log.Error(string.Format("ChannelUri did not match. Expected {0} Found {1}", channelUri, nhInstallation.PushChannel));
                     return false;
                 }
-                if (String.Compare(templates, nhTemplates, true) != 0)
+                if (templates != nhTemplates)
                 {
                     this.Services.Log.Error(string.Format("Templates did not match. Expected {0} Found {1}", templates, nhTemplates));
                     return false;
                 }
-                if (String.Compare(secondaryTiles, nhSecondaryTiles, true) != 0)
+                if (secondaryTiles != nhSecondaryTiles)
                 {
                     this.Services.Log.Error(string.Format("SecondaryTiles did not match. Expected {0} Found {1}", secondaryTiles, nhSecondaryTiles));
                     return false;
                 }
-                if (nhInstallation.Tags.Count() != 1)
+                if (nhInstallation.Tags == null || nhInstallation.Tags.Count() != 1)
                 {
-                    this.Services.Log.Error(string.Format("Expected tags count {0} but found {1}", 1, nhInstallation.Tags.Count()));
+                    this.Services.Log.Error("Did not find expected number of tags");
                     return false;
                 }
                 if (!nhInstallation.Tags.FirstOrDefault().ToString().Contains("$InstallationId:{" + installationId + "}"))
@@ -132,6 +134,7 @@ namespace ZumoE2EServerApp.Controllers
 
             return false;
         }
+
 
         [Route("api/verifyUnregisterInstallationResult")]
         public async Task<bool> GetVerifyUnregisterInstallationResult()

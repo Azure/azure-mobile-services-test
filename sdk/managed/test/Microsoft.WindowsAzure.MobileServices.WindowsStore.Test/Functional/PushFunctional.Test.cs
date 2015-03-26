@@ -5,6 +5,11 @@
 using System.Linq;
 
 using Microsoft.WindowsAzure.MobileServices.TestFramework;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Microsoft.WindowsAzure.MobileServices.Test
 {
@@ -18,81 +23,146 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             this.pushTestUtility = TestPlatform.Instance.PushTestUtility;
         }
 
-        [TestMethod]
-        public void InitialUnregisterAllAsync()
+        [AsyncTestMethod]
+        public async Task RegisterAsyncUnregisterAsyncInstallation()
         {
             var channelUri = this.pushTestUtility.GetPushHandle();
-            var push = this.GetClient().GetPush();
-            push.UnregisterAllAsync(channelUri).Wait();
-            var registrations = push.ListRegistrationsAsync(channelUri).Result;
-            Assert.IsFalse(registrations.Any(), "Deleting all registrations for a channel should ensure no registrations are returned by List");
+            var mobileServiceClient = this.GetClient();
 
-            channelUri = this.pushTestUtility.GetUpdatedPushHandle();
-            push.UnregisterAllAsync(channelUri).Wait();
-            registrations = push.ListRegistrationsAsync(channelUri).Result;
-            Assert.IsFalse(registrations.Any(), "Deleting all registrations for a channel should ensure no registrations are returned by List");
+            Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
+            {
+                {"channelUri", channelUri}
+            };
+
+            var push = mobileServiceClient.GetPush();
+
+            await push.RegisterAsync(channelUri);
+            try
+            {
+                bool installationVerified = (bool)await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, channelUriParam);
+                Assert.IsTrue(installationVerified);
+            }
+            finally
+            {
+                push.UnregisterAsync().Wait();
+            }
+            ////TODO Login then register, verify $UserId:{userId} tag exists
         }
 
-        [TestMethod]
-        public void RegisterNativeAsyncUnregisterNativeAsync()
+        [AsyncTestMethod]
+        public async Task UnRegisterAsync()
         {
             var channelUri = this.pushTestUtility.GetPushHandle();
+            var mobileServiceClient = this.GetClient();
+            var push = mobileServiceClient.GetPush();
+            await push.UnregisterAsync();
+            bool installationUnregistered = (bool)await this.GetClient().InvokeApiAsync("verifyUnregisterInstallationResult", HttpMethod.Get, null);
+            Assert.IsTrue(installationUnregistered);
+        }
+
+        [AsyncTestMethod]
+        public async Task RegisterAsyncWithTemplates()
+        {
+            var channelUri = this.pushTestUtility.GetPushHandle();
+            JObject templates = GetTemplates();
+            var mobileServiceClient = this.GetClient();
             var push = this.GetClient().GetPush();
-            push.RegisterNativeAsync(channelUri).Wait();
-            var registrations = push.ListRegistrationsAsync(channelUri).Result;
-            Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
-            
-            push.UnregisterNativeAsync().Wait();
-            registrations = push.ListRegistrationsAsync(channelUri).Result;
-            Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterNativeAsync");
+            push.RegisterAsync(channelUri, templates).Wait();
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                {"channelUri", channelUri},
+                {"templates", JsonConvert.SerializeObject(templates)}
+            };
+            try
+            {
+                bool installationVerified = (bool)await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
+                Assert.IsTrue(installationVerified);
+            }
+            finally
+            {
+                push.UnregisterAsync().Wait();
+            }
         }
 
-        [TestMethod]
-        public void RegisterAsyncUnregisterTemplateAsync()
+        [AsyncTestMethod]
+        public async Task RegisterAsyncWithTemplatesAndSecondaryTiles()
         {
-            var mobileClient = this.GetClient();
-            var push = mobileClient.GetPush();
-            var template = this.pushTestUtility.GetTemplateRegistrationForToast();
-            this.pushTestUtility.ValidateTemplateRegistrationBeforeRegister(template);
-            push.RegisterAsync(template).Wait();
-            var registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
-            var registrationAfter = registrations.First();
-            Assert.IsNotNull(registrationAfter, "List and Deserialization of a TemplateRegistration after successful registration should have a value.");
-            
-            this.pushTestUtility.ValidateTemplateRegistrationAfterRegister(registrationAfter);
+            var channelUri = this.pushTestUtility.GetPushHandle();
 
-            push.UnregisterTemplateAsync(template.Name).Wait();
-            registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterTemplateAsync");
+            JObject secondaryTileBody = new JObject();
+            secondaryTileBody["pushChannel"] = channelUri;
+            JArray tags = new JArray();
+            tags.Add("bar");
+            JObject templates = GetTemplates();
+            secondaryTileBody["templates"] = templates;
+            JObject secondaryTiles = new JObject();
+            secondaryTiles["testSecondaryTiles"] = secondaryTileBody;
+
+            var push = this.GetClient().GetPush();
+            await push.RegisterAsync(channelUri, templates, secondaryTiles);
+
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                {"channelUri", channelUri},
+                {"templates", JsonConvert.SerializeObject(templates)},
+                {"secondaryTiles", JsonConvert.SerializeObject(secondaryTiles)}
+            };
+            try
+            {
+                bool installationVerified = (bool)await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
+                Assert.IsTrue(installationVerified);
+            }
+            finally
+            {
+                push.UnregisterAsync().Wait();
+            }
         }
 
-        [TestMethod]
-        public void RegisterRefreshRegisterWithUpdatedChannel()
+        public async Task RegisterAsyncMultiple()
         {
-            var mobileClient = this.GetClient();
-            var push = mobileClient.GetPush();
-            var template = this.pushTestUtility.GetTemplateRegistrationForToast();
-            this.pushTestUtility.ValidateTemplateRegistrationBeforeRegister(template);
-            push.RegisterAsync((Registration)template).Wait();
-            var registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
-            var registrationAfter = registrations.First();
-            Assert.IsNotNull(registrationAfter, "List and Deserialization of a TemplateRegistration after successful registration should have a value.");
-            template = this.pushTestUtility.GetUpdatedTemplateRegistrationForToast();
+            var channelUri = this.pushTestUtility.GetPushHandle();
+            JObject templates = GetTemplates();
+            var mobileServiceClient = this.GetClient();
+            var push = this.GetClient().GetPush();
 
-            push.RegisterAsync(template).Wait();
-            registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
-            var registrationAfterUpdate = registrations.First();
-            Assert.IsNotNull(registrationAfterUpdate, "List and Deserialization of a TemplateRegistration after successful registration should have a value.");
-            Assert.AreEqual(registrationAfter.RegistrationId, registrationAfterUpdate.RegistrationId, "Expected the same RegistrationId to be used even after the refresh");
-            Assert.AreEqual(registrationAfterUpdate.PushHandle, template.PushHandle, "Expected updated channelUri after 2nd register");
-            Assert.AreEqual(push.ListRegistrationsAsync(registrationAfter.PushHandle).Result.Count(), 0, "Original channel should be gone from service");
+            await push.RegisterAsync(channelUri);
+            await push.RegisterAsync(channelUri, templates);
+            await push.RegisterAsync(channelUri);
 
-            push.UnregisterTemplateAsync(template.Name).Wait();
-            registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterTemplateAsync");
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                {"channelUri", channelUri},
+            };
+
+            try
+            {
+                //Verifies templates are removed from the installation registration
+                bool installationVerified = (bool)await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
+                Assert.IsTrue(installationVerified);
+            }
+            finally
+            {
+                push.UnregisterAsync().Wait();
+            }
+        }
+
+        private static JObject GetTemplates()
+        {
+            var toastTemplate = "<toast><visual><binding template=\"ToastText01\"><text id=\"1\">$(message)</text></binding></visual></toast>";
+            JObject templateBody = new JObject();
+            templateBody["body"] = toastTemplate;
+
+            JObject wnsToastHeaders = new JObject();
+            wnsToastHeaders["X-WNS-Type"] = "wns/toast";
+            templateBody["headers"] = wnsToastHeaders;
+
+            JArray tags = new JArray();
+            tags.Add("foo");
+            templateBody["tags"] = tags;
+
+            JObject templates = new JObject();
+            templates["testTemplate"] = templateBody;
+            return templates;
         }
     }
 }
