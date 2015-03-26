@@ -15,11 +15,5 @@ namespace Microsoft.WindowsAzure.MobileServices
         string GetPushHandle();
 
         string GetUpdatedPushHandle();        
-
-        string GetListNativeRegistrationResponse();
-
-        string GetListTemplateRegistrationResponse();
-
-        string GetListMixedRegistrationResponse();
     }
 }

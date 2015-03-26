@@ -16,7 +16,7 @@
     <PackageCertificateKeyFile>Microsoft.WindowsAzure.Mobile.Win8.Test_StoreKey.pfx</PackageCertificateKeyFile>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
-    <PackageCertificateThumbprint>9945AB7728A95C9690A8237FB9B80D87BBF36357</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>061D5E67BEEEB0A16F9DEA9E1680AB1F8361A9CB</PackageCertificateThumbprint>
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <NuGetPackageImportStamp>0f6d7403</NuGetPackageImportStamp>
   </PropertyGroup>

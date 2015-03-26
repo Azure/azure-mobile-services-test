@@ -14,7 +14,7 @@ using Microsoft.Azure.Mobile.Server;
 using Microsoft.Azure.NotificationHubs;
 using Microsoft.Azure.NotificationHubs.Messaging;
 using Newtonsoft.Json;
-using Microsoft.Azure.Mobile.Security;
+using Newtonsoft.Json.Linq;
 
 namespace ZumoE2EServerApp.Controllers
 {
