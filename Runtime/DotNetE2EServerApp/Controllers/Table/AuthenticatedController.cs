@@ -2,15 +2,16 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.WindowsAzure.Mobile.Service.Security;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.OData;
+using Microsoft.Azure.Mobile.Security;
+using Microsoft.Azure.Mobile.Server.Security;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ZumoE2EServerApp.DataObjects;
 
 namespace ZumoE2EServerApp.Controllers
@@ -23,12 +24,12 @@ namespace ZumoE2EServerApp.Controllers
             ServiceUser user = (ServiceUser)this.User;
             var all = (await base.GetAll()).Where(p => p.UserId == user.Id).ToArray();
 
-            var ids = await user.GetIdentitiesAsync();
-            var identities = ids.Where(q => q.Provider == "urn:microsoft:credentials").Select(p => p.UserId).ToArray();
+            //var ids = await user.GetIdentitiesAsync();
+            //var identities = ids.Where(q => q.Provider == "urn:microsoft:credentials").Select(p => p.UserId).ToArray();
             var identitiesOld = user.Identities.Select(q => q.Claims.First(p => p.Type == "urn:microsoft:credentials").Value).ToArray();
             foreach (var item in all)
             {
-                item.Identities = identities;
+                item.Identities = identitiesOld;
             }
 
             return all.AsQueryable();

@@ -275,7 +275,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             await table.InsertAsync(item);
             Log("[client 1] Inserted item: {0}", item);
 
-            var client2 = new MobileServiceClient(client.ApplicationUri, client.ApplicationKey);
+            var client2 = new MobileServiceClient(client.MobileAppUri, client.ApplicationKey);
             var table2 = client.GetTable<VersionedType>();
             var item2 = await table2.LookupAsync(item.Id);
             Log("[client 2] Retrieved the item");
@@ -342,7 +342,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             await table.InsertAsync(item);
             Log("[client 1] Inserted item: {0}", item);
 
-            var client2 = new MobileServiceClient(client.ApplicationUri, client.ApplicationKey);
+            var client2 = new MobileServiceClient(client.MobileAppUri, client.ApplicationKey);
             var table2 = client.GetTable<VersionedType>();
             var item2 = await table2.LookupAsync(item.Id);
             Log("[client 2] Retrieved the item");
@@ -492,7 +492,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
 
             // Delete operation doesn't populate the object with the response, so we'll use a filter to capture that
             var handler = new HandlerToCaptureHttpTraffic();
-            var filteredClient = new MobileServiceClient(client.ApplicationUri, client.ApplicationKey, handler);
+            var filteredClient = new MobileServiceClient(client.MobileAppUri, client.ApplicationKey, handler);
             typed = filteredClient.GetTable<ParamsTestTableItem>();
             untyped = filteredClient.GetTable("ParamsTestTable");
 
@@ -610,7 +610,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             int numberOfRequests = new Random().Next(2, 5);
             var handler = new HandlerWithMultipleRequests(this, numberOfRequests);
             Log("Created a filter which will replay the request {0} times", numberOfRequests);
-            var filteredClient = new MobileServiceClient(client.ApplicationUri, client.ApplicationKey, handler);
+            var filteredClient = new MobileServiceClient(client.MobileAppUri, client.ApplicationKey, handler);
 
             var typedTable = filteredClient.GetTable<RoundTripTableItem>();
             var untypedTable = filteredClient.GetTable("RoundTripTable");

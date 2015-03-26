@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------------------
 
 using AutoMapper;
-using Microsoft.WindowsAzure.Mobile.Service;
+using Microsoft.Azure.Mobile.Server;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.OData;
 using ZumoE2EServerApp.Models;
-using Microsoft.WindowsAzure.Mobile.Service.Tables;
+using Microsoft.Azure.Mobile.Server.Tables;
 using System.Linq.Expressions;
 using System.Data.Entity;
 using AutoMapper.Impl;
@@ -21,7 +21,7 @@ using System.Reflection;
 namespace ZumoE2EServerApp.Utils
 {
     internal class ComplexTypeDomainManager<TData, TModel, TKey> : MappedEntityDomainManager<TData, TModel>
-        where TData : class, Microsoft.WindowsAzure.Mobile.Service.Tables.ITableData
+        where TData : class, Microsoft.Azure.Mobile.Server.Tables.ITableData
         where TModel : class
     {
         public ComplexTypeDomainManager(SDKClientTestContext context, HttpRequestMessage request, ApiServices services)

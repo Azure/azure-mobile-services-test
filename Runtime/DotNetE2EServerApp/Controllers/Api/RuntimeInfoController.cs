@@ -2,15 +2,15 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.WindowsAzure.Mobile.Service;
-using Microsoft.WindowsAzure.Mobile.Service.Security;
-using Microsoft.WindowsAzure.Mobile.Service.Config;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics;
 using System.Web.Http;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Security;
+using Microsoft.Azure.Mobile.Server.Config;
+using Newtonsoft.Json.Linq;
 
 namespace ZumoE2EServerApp.Controllers
 {
