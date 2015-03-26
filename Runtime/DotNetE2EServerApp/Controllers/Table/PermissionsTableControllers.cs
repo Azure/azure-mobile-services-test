@@ -9,8 +9,9 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.OData;
-using Microsoft.Azure.Mobile.Server;
 using Microsoft.Azure.Mobile.Security;
+using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Server.Security;
 using ZumoE2EServerApp.DataObjects;
 using ZumoE2EServerApp.Utils;
 

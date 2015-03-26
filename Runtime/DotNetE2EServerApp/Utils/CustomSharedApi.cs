@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.Mobile.Security;
+using Microsoft.Azure.Mobile.Server.Security;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Microsoft.Azure.Mobile.Server.Security;

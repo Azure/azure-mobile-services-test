@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.OData;
 using ZumoE2EServerApp.DataObjects;
+using Microsoft.Azure.Mobile.Security;
 
 namespace ZumoE2EServerApp.Controllers
 {

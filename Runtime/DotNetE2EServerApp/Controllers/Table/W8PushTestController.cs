@@ -3,8 +3,9 @@
 // ----------------------------------------------------------------------------
 
 using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Server;
 using Microsoft.Azure.Mobile.Server.Notifications;
-using Microsoft.Azure.Mobile.Security;
+using Microsoft.Azure.Mobile.Server.Security;
 using System.Threading.Tasks;
 using System.Web.Http;
 using ZumoE2EServerApp.DataObjects;

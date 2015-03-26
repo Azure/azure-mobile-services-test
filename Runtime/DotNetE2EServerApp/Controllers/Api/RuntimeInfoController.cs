@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------------------
 
 using Microsoft.Azure.Mobile.Server;
-using Microsoft.Azure.Mobile.Security;
+using Microsoft.Azure.Mobile.Server.Security;
 using Microsoft.Azure.Mobile.Server.Config;
 using Newtonsoft.Json.Linq;
 using System;
@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Web.Http;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Azure.Mobile.Security;
 
 namespace ZumoE2EServerApp.Controllers
 {
