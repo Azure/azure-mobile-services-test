@@ -6,6 +6,13 @@ using System.Linq;
 
 using Microsoft.WindowsAzure.MobileServices.TestFramework;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
+using System;
+using Foundation;
+using System.Globalization;
+using Newtonsoft.Json;
 
 namespace Microsoft.WindowsAzure.MobileServices.Test
 {
@@ -19,122 +26,74 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             this.pushTestUtility = TestPlatform.Instance.PushTestUtility;
         }
 
-        [TestMethod]
-        public void InitialUnregisterAllAsync()
+        [AsyncTestMethod]
+        public async void RegisterAsyncUnregisterAsyncInstallation()
         {
-            var channelUri = this.pushTestUtility.GetPushHandle();
-            var push = this.GetClient().GetPush();
-            var registrations = push.ListRegistrationsAsync(channelUri).Result;
-            push.UnregisterAllAsync(channelUri).Wait();
-            registrations = push.ListRegistrationsAsync(channelUri).Result;
-            Assert.IsFalse(registrations.Any(), "Deleting all registrations for a channel should ensure no registrations are returned by List");
+            NSData channelUri = NSDataFromDescription(this.pushTestUtility.GetPushHandle());
+            var mobileServiceClient = this.GetClient();
+            var push = mobileServiceClient.GetPush();
 
-            channelUri = this.pushTestUtility.GetUpdatedPushHandle();
-            push.UnregisterAllAsync(channelUri).Wait();
-            registrations = push.ListRegistrationsAsync(channelUri).Result;
-            Assert.IsFalse(registrations.Any(), "Deleting all registrations for a channel should ensure no registrations are returned by List");
+            await push.RegisterAsync(channelUri);
+
+            Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
+            {
+                {"channelUri", TrimDeviceToken(channelUri.Description)}
+            };
+            
+            bool installationVerified = (bool)await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, channelUriParam);
+            Assert.IsTrue(installationVerified);
+
+            await push.UnregisterAsync();
+            bool installationUnregistered = (bool)await this.GetClient().InvokeApiAsync("verifyUnregisterInstallationResult", HttpMethod.Get, null);
+            Assert.IsTrue(installationUnregistered);
         }
 
-        [TestMethod]
-        public void RegisterNativeAsyncUnregisterNativeAsync()
+        [AsyncTestMethod]
+        public async void RegisterAsyncWithTemplates()
         {
-            var channelUri = this.pushTestUtility.GetPushHandle();
-            var push = this.GetClient().GetPush();
-            push.RegisterNativeAsync(channelUri).Wait();
-            var registrations = push.ListRegistrationsAsync(channelUri).Result;
-            Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
-
-            push.UnregisterNativeAsync().Wait();
-            registrations = push.ListRegistrationsAsync(channelUri).Result;
-            Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterNativeAsync");
-        }
-
-        [TestMethod]
-        public void RegisterAsyncUnregisterTemplateAsync()
-        {
-            var mobileClient = this.GetClient();
-            var push = mobileClient.GetPush();
-            var template = this.pushTestUtility.GetTemplateRegistrationForToast();
-            this.pushTestUtility.ValidateTemplateRegistrationBeforeRegister(template);
-            push.RegisterAsync(template).Wait();
-            var registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
-            var registrationAfter = registrations.First();
-            Assert.IsNotNull(registrationAfter, "List and Deserialization of a TemplateRegistration after successful registration should have a value.");
-
-            this.pushTestUtility.ValidateTemplateRegistrationAfterRegister(registrationAfter);
-
-            push.UnregisterTemplateAsync(template.Name).Wait();
-            registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterTemplateAsync");
-        }
-
-        [TestMethod]
-        public void RegisterRefreshRegisterWithUpdatedChannel()
-        {
-            var mobileClient = this.GetClient();
-            var push = mobileClient.GetPush();
-            var template = this.pushTestUtility.GetTemplateRegistrationForToast();
-            this.pushTestUtility.ValidateTemplateRegistrationBeforeRegister(template);
-            push.RegisterAsync((Registration)template).Wait();
-            var registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
-            var registrationAfter = registrations.First();
-            Assert.IsNotNull(registrationAfter, "List and Deserialization of a TemplateRegistration after successful registration should have a value.");
-            template = this.pushTestUtility.GetUpdatedTemplateRegistrationForToast();
-
-            push.RegisterAsync(template).Wait();
-            registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
-            var registrationAfterUpdate = registrations.First();
-            Assert.IsNotNull(registrationAfterUpdate, "List and Deserialization of a TemplateRegistration after successful registration should have a value.");
-            Assert.AreEqual(registrationAfter.RegistrationId, registrationAfterUpdate.RegistrationId, "Expected the same RegistrationId to be used even after the refresh");
-            Assert.AreEqual(registrationAfterUpdate.PushHandle, template.PushHandle, "Expected updated channelUri after 2nd register");
-
-            Assert.AreEqual(push.ListRegistrationsAsync(registrationAfter.PushHandle).Result.Count(), 0, "Original channel should be gone from service");
-
-            push.UnregisterTemplateAsync(template.Name).Wait();
-            registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterTemplateAsync");
-        }
-
-        [TestMethod]
-        public void RegisterAsyncUnregisterAsyncInstallation()
-        {
-            var channelUri = this.pushTestUtility.GetPushHandle();
-            var push = this.GetClient().GetPush();
-            push.RegisterAsync(channelUri).Wait();
-            //TODO verify registrations and tags
-            //var registrations = push.ListRegistrationsAsync(channelUri).Result;
-            //Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterAsync");
-            //Assert.IsTrue(registrations.FirstOrDefault().Tags.Contains("$InstallationId:{" + push.InstallationId + "}"));
-            //TODO Login then register, verify $UserId:{userId} tag exists
-            push.UnregisterAsync().Wait();
-            //registrations = push.ListRegistrationsAsync(channelUri).Result;
-            //Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterNativeAsync");
-        }
-
-        [TestMethod]
-        public void RegisterAsyncUnregisterAsyncWithTemplates()
-        {
-            var channelUri = this.pushTestUtility.GetPushHandle();
+            NSData channelUri = NSDataFromDescription(this.pushTestUtility.GetPushHandle());
+            var mobileServiceClient = this.GetClient();
+            var push = mobileServiceClient.GetPush();
+         
             JObject templates = GetTemplates();
-
-            var push = this.GetClient().GetPush();
             push.RegisterAsync(channelUri, templates).Wait();
-            //TODO verify registrations and tags
-            //var registrations = push.ListRegistrationsAsync(channelUri).Result;
-            //Assert.AreEqual(registrations.Count(), 2, "2 registrations should exist after RegisterAsync with one template");
-            //foreach (Registration registration in registrations)
-            //{
-            //    Assert.IsTrue(registration.Tags.Contains("$InstallationId:{" + push.InstallationId + "}"));
-            //    //Verify runtime strips out any tags added by user
-            //    Assert.IsFalse(registration.Tags.Contains("foo"));
-            //}
+            
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                {"channelUri", TrimDeviceToken(channelUri.Description)},
+                {"templates", JsonConvert.SerializeObject(templates)}
+            };
 
-            //push.UnregisterAsync().Wait();
-            //registrations = push.ListRegistrationsAsync(channelUri).Result;
-            //Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterNativeAsync");
+            bool installationVerified = (bool)await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
+            Assert.IsTrue(installationVerified);
+
+            await push.UnregisterAsync();
+        }
+
+        public async void RegisterAsyncMultiple()
+        {
+            NSData channelUri = NSDataFromDescription(this.pushTestUtility.GetPushHandle());
+            JObject templates = GetTemplates();
+            var mobileServiceClient = this.GetClient();
+            var push = this.GetClient().GetPush();
+
+            await push.RegisterAsync(channelUri);
+            await push.RegisterAsync(channelUri, templates);
+            await push.RegisterAsync(channelUri);
+
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                {"channelUri", TrimDeviceToken(channelUri.Description)},
+            };
+
+            //Verifies templates are removed from the installation registration
+            bool installationVerified = (bool)await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
+            Assert.IsTrue(installationVerified);
+
+            await push.UnregisterAsync();
+            bool installationUnregistered = (bool)await this.GetClient().InvokeApiAsync("verifyUnregisterInstallationResult", HttpMethod.Get, null);
+            Assert.IsTrue(installationUnregistered);
+
         }
 
         private static JObject GetTemplates()
@@ -150,6 +109,31 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             JObject templates = new JObject();
             templates["testApnsTemplate"] = templateBody;
             return templates;
+        }
+
+        internal static string TrimDeviceToken(string deviceToken)
+        {
+            if (deviceToken == null)
+            {
+                throw new ArgumentNullException("deviceToken");
+            }
+
+            return deviceToken.Trim('<', '>').Replace(" ", string.Empty).ToUpperInvariant();
+        }
+
+        internal static NSData NSDataFromDescription(string hexString)
+        {
+            hexString = hexString.Trim('<', '>').Replace(" ", string.Empty);
+            NSMutableData data = new NSMutableData();
+            byte[] hexAsBytes = new byte[hexString.Length / 2];
+            for (int index = 0; index < hexAsBytes.Length; index++)
+            {
+                string byteValue = hexString.Substring(index * 2, 2);
+                hexAsBytes[index] = byte.Parse(byteValue, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            }
+
+            data.AppendBytes(hexAsBytes);
+            return data;
         }
     }
 }

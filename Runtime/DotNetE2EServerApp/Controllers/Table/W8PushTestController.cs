@@ -2,13 +2,13 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.ServiceBus.Notifications;
-using Microsoft.WindowsAzure.Mobile.Service;
-using Microsoft.WindowsAzure.Mobile.Service.Notifications;
-using Microsoft.WindowsAzure.Mobile.Service.Security;
+using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Server.Notifications;
+using Microsoft.Azure.Mobile.Security;
 using System.Threading.Tasks;
 using System.Web.Http;
 using ZumoE2EServerApp.DataObjects;
+using Microsoft.Azure.NotificationHubs;
 
 namespace ZumoE2EServerApp.Controllers
 {
