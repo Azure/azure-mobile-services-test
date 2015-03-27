@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -84,6 +85,8 @@ namespace ZumoE2EServerApp.Controllers
         [Route("api/verifyRegisterInstallationResult")]
         public async Task<bool> GetVerifyRegisterInstallationResult(string channelUri, string templates = null, string secondaryTiles = null)
         {
+            HttpResponseMessage msg = new HttpResponseMessage();
+            msg.StatusCode = HttpStatusCode.InternalServerError;
             IEnumerable<string> installationIds;
             if (this.Request.Headers.TryGetValues("X-ZUMO-INSTALLATION-ID", out installationIds))
             {
@@ -91,6 +94,7 @@ namespace ZumoE2EServerApp.Controllers
                 Installation nhInstallation = await this.GetNhHubClient().GetInstallationAsync(installationId);
                 string nhTemplates = null;
                 string nhSecondaryTiles = null;
+
                 if (nhInstallation.Templates != null)
                 {
                     nhTemplates = JsonConvert.SerializeObject(nhInstallation.Templates);
@@ -103,43 +107,38 @@ namespace ZumoE2EServerApp.Controllers
                     nhSecondaryTiles = Regex.Replace(nhSecondaryTiles, @"\s+", String.Empty);
                     secondaryTiles = Regex.Replace(secondaryTiles, @"\s+", String.Empty);
                 }
-                if (nhInstallation.PushChannel != channelUri)
+                if (nhInstallation.PushChannel.ToLower() != channelUri.ToLower())
                 {
-                    this.Services.Log.Error(string.Format("ChannelUri did not match. Expected {0} Found {1}", channelUri, nhInstallation.PushChannel));
-                    return false;
+                    msg.Content = new StringContent(string.Format("ChannelUri did not match. Expected {0} Found {1}", channelUri, nhInstallation.PushChannel));
+                    throw new HttpResponseException(msg);
                 }
                 if (templates != nhTemplates)
                 {
-                    this.Services.Log.Error(string.Format("Templates did not match. Expected {0} Found {1}", templates, nhTemplates));
-                    return false;
+                    msg.Content = new StringContent(string.Format("Templates did not match. Expected {0} Found {1}", templates, nhTemplates));
+                    throw new HttpResponseException(msg);
                 }
                 if (secondaryTiles != nhSecondaryTiles)
                 {
-                    this.Services.Log.Error(string.Format("SecondaryTiles did not match. Expected {0} Found {1}", secondaryTiles, nhSecondaryTiles));
-                    return false;
+                    msg.Content = new StringContent(string.Format("SecondaryTiles did not match. Expected {0} Found {1}", secondaryTiles, nhSecondaryTiles));
+                    throw new HttpResponseException(msg);
                 }
-                if (nhInstallation.Tags == null || nhInstallation.Tags.Count() != 1)
+                bool tagsVerified = await VerifyTags(channelUri, installationId);
+                if (!tagsVerified)
                 {
-                    this.Services.Log.Error("Did not find expected number of tags");
-                    return false;
+                    msg.Content = new StringContent("Did not find installationId tag");
+                    throw new HttpResponseException(msg);
                 }
-                if (!nhInstallation.Tags.FirstOrDefault().ToString().Contains("$InstallationId:{" + installationId + "}"))
-                {
-                    this.Services.Log.Error("Did not find installationId tag");
-                    return false;
-                }
-
                 return true;
             }
-
-            return false;
+            msg.Content = new StringContent("Did not find X-ZUMO-INSTALLATION-ID header in the incoming request");
+            throw new HttpResponseException(msg);
         }
-
 
         [Route("api/verifyUnregisterInstallationResult")]
         public async Task<bool> GetVerifyUnregisterInstallationResult()
         {
             IEnumerable<string> installationIds;
+            string responseErrorMessge = null;
             if (this.Request.Headers.TryGetValues("X-ZUMO-INSTALLATION-ID", out installationIds))
             {
                 var installationId = installationIds.FirstOrDefault();
@@ -147,13 +146,25 @@ namespace ZumoE2EServerApp.Controllers
                 {
                     Installation nhInstallation = await this.GetNhHubClient().GetInstallationAsync(installationId);
                 }
-                catch (MessagingEntityNotFoundException ex)
+                catch (MessagingEntityNotFoundException)
                 {
                     return true;
                 }
-                this.Services.Log.Error(string.Format("Found deleted Installation with id {0}", installationId));
+                responseErrorMessge = string.Format("Found deleted Installation with id {0}", installationId);
             }
-            return false;
+
+            HttpResponseMessage msg = new HttpResponseMessage()
+            {
+                StatusCode = HttpStatusCode.InternalServerError,
+                Content = new StringContent(responseErrorMessge)
+            };
+            throw new HttpResponseException(msg);
+        }
+
+        [Route("api/deleteRegistrationsForChannel")]
+        public async Task DeleteRegistrationsForChannel(string channelUri)
+        {
+            await this.GetNhHubClient().DeleteRegistrationsByChannelAsync(channelUri);
         }
 
         private NotificationHubClient GetNhHubClient()
@@ -165,6 +176,29 @@ namespace ZumoE2EServerApp.Controllers
                 throw new Exception("Invalid NH settings");
             }
             return NotificationHubClient.CreateClientFromConnectionString(connString, hubName);
+        }
+
+        private async Task<bool> VerifyTags(string channelUri, string installationId)
+        {
+            string continuationToken = null;
+            do
+            {
+                CollectionQueryResult<RegistrationDescription> regsForChannel = await this.GetNhHubClient().GetRegistrationsByChannelAsync(channelUri, continuationToken, 100);
+                continuationToken = regsForChannel.ContinuationToken;
+                foreach (RegistrationDescription reg in regsForChannel)
+                {
+                    RegistrationDescription registration = await this.GetNhHubClient().GetRegistrationAsync<RegistrationDescription>(reg.RegistrationId);
+                    if (registration.Tags == null || registration.Tags.Count() != 1)
+                    {
+                        return false;
+                    }
+                    if (!registration.Tags.FirstOrDefault().ToString().Contains("$InstallationId:{" + installationId + "}"))
+                    {
+                        return false;
+                    }
+                }
+            } while (continuationToken != null);
+            return true;
         }
     }
 }

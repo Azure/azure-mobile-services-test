@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using System;
 
 namespace Microsoft.WindowsAzure.MobileServices.Test
 {
@@ -24,23 +25,34 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         }
 
         [AsyncTestMethod]
-        public async Task RegisterAsyncUnregisterAsyncInstallation()
+        public async Task InitialDeleteRegistrationsAsync()
         {
             var channelUri = this.pushTestUtility.GetPushHandle();
-            var mobileServiceClient = this.GetClient();
-
             Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
             {
                 {"channelUri", channelUri}
             };
+            await this.GetClient().InvokeApiAsync("deleteRegistrationsForChannel", HttpMethod.Delete, channelUriParam);
+        }
 
-            var push = mobileServiceClient.GetPush();
-
+        [AsyncTestMethod]
+        public async Task RegisterAsync()
+        {
+            var channelUri = this.pushTestUtility.GetPushHandle();
+            Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
+            {
+                {"channelUri", channelUri}
+            };
+            var push = this.GetClient().GetPush();
             await push.RegisterAsync(channelUri);
             try
             {
-                bool installationVerified = (bool)await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, channelUriParam);
-                Assert.IsTrue(installationVerified);
+                await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, channelUriParam);
+            }
+            catch (MobileServiceInvalidOperationException msInvalidOperationEx)
+            {
+                Log(msInvalidOperationEx.Message);
+                throw;
             }
             finally
             {
@@ -50,33 +62,43 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         }
 
         [AsyncTestMethod]
-        public async Task UnRegisterAsync()
+        public async Task UnregisterAsync()
         {
             var channelUri = this.pushTestUtility.GetPushHandle();
-            var mobileServiceClient = this.GetClient();
-            var push = mobileServiceClient.GetPush();
+            var push = this.GetClient().GetPush();
             await push.UnregisterAsync();
-            bool installationUnregistered = (bool)await this.GetClient().InvokeApiAsync("verifyUnregisterInstallationResult", HttpMethod.Get, null);
-            Assert.IsTrue(installationUnregistered);
+            try
+            {
+                await this.GetClient().InvokeApiAsync("verifyUnregisterInstallationResult", HttpMethod.Get, null);
+            }
+            catch (MobileServiceInvalidOperationException msInvalidOperationEx)
+            {
+                Log(msInvalidOperationEx.Message);
+                throw;
+            }
         }
 
         [AsyncTestMethod]
         public async Task RegisterAsyncWithTemplates()
         {
             var channelUri = this.pushTestUtility.GetPushHandle();
-            JObject templates = GetTemplates();
-            var mobileServiceClient = this.GetClient();
+            JObject templates = GetTemplates("foo");
             var push = this.GetClient().GetPush();
             push.RegisterAsync(channelUri, templates).Wait();
+            JObject expectedTemplates = GetTemplates(null);
             Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 {"channelUri", channelUri},
-                {"templates", JsonConvert.SerializeObject(templates)}
+                {"templates", JsonConvert.SerializeObject(expectedTemplates)}
             };
             try
             {
-                bool installationVerified = (bool)await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
-                Assert.IsTrue(installationVerified);
+                await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
+            }
+            catch (MobileServiceInvalidOperationException msInvalidOperationEx)
+            {
+                Log(msInvalidOperationEx.Message);
+                throw;
             }
             finally
             {
@@ -88,29 +110,26 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         public async Task RegisterAsyncWithTemplatesAndSecondaryTiles()
         {
             var channelUri = this.pushTestUtility.GetPushHandle();
-
-            JObject secondaryTileBody = new JObject();
-            secondaryTileBody["pushChannel"] = channelUri;
-            JArray tags = new JArray();
-            tags.Add("bar");
-            JObject templates = GetTemplates();
-            secondaryTileBody["templates"] = templates;
-            JObject secondaryTiles = new JObject();
-            secondaryTiles["testSecondaryTiles"] = secondaryTileBody;
-
+            JObject templates = GetTemplates("bar");
+            JObject secondaryTiles = GetSecondaryTiles(channelUri, "foo");
             var push = this.GetClient().GetPush();
             await push.RegisterAsync(channelUri, templates, secondaryTiles);
-
+            JObject expectedTemplates = GetTemplates(null);
+            JObject expectedSecondaryTiles = GetSecondaryTiles(channelUri, null, true);
             Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 {"channelUri", channelUri},
-                {"templates", JsonConvert.SerializeObject(templates)},
-                {"secondaryTiles", JsonConvert.SerializeObject(secondaryTiles)}
+                {"templates", JsonConvert.SerializeObject(expectedTemplates)},
+                {"secondaryTiles", JsonConvert.SerializeObject(expectedSecondaryTiles)}
             };
             try
             {
-                bool installationVerified = (bool)await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
-                Assert.IsTrue(installationVerified);
+                await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
+            }
+            catch (MobileServiceInvalidOperationException msInvalidOperationEx)
+            {
+                Log(msInvalidOperationEx.Message);
+                throw;
             }
             finally
             {
@@ -118,11 +137,11 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             }
         }
 
+        [AsyncTestMethod]
         public async Task RegisterAsyncMultiple()
         {
             var channelUri = this.pushTestUtility.GetPushHandle();
-            JObject templates = GetTemplates();
-            var mobileServiceClient = this.GetClient();
+            JObject templates = GetTemplates("foo");
             var push = this.GetClient().GetPush();
 
             await push.RegisterAsync(channelUri);
@@ -137,8 +156,12 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             try
             {
                 //Verifies templates are removed from the installation registration
-                bool installationVerified = (bool)await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
-                Assert.IsTrue(installationVerified);
+                await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
+            }
+            catch (MobileServiceInvalidOperationException msInvalidOperationEx)
+            {
+                Log(msInvalidOperationEx.Message);
+                throw;
             }
             finally
             {
@@ -146,7 +169,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             }
         }
 
-        private static JObject GetTemplates()
+        private static JObject GetTemplates(string tag)
         {
             var toastTemplate = "<toast><visual><binding template=\"ToastText01\"><text id=\"1\">$(message)</text></binding></visual></toast>";
             JObject templateBody = new JObject();
@@ -155,14 +178,32 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             JObject wnsToastHeaders = new JObject();
             wnsToastHeaders["X-WNS-Type"] = "wns/toast";
             templateBody["headers"] = wnsToastHeaders;
-
-            JArray tags = new JArray();
-            tags.Add("foo");
-            templateBody["tags"] = tags;
-
+            if (tag != null)
+            {
+                JArray tags = new JArray();
+                tags.Add(tag);
+                templateBody["tags"] = tags;
+            }
             JObject templates = new JObject();
             templates["testTemplate"] = templateBody;
             return templates;
+        }
+
+        private static JObject GetSecondaryTiles(string channelUri, string tag, bool expectedTiles = false)
+        {
+            JObject secondaryTileBody = new JObject();
+            secondaryTileBody["pushChannel"] = channelUri;
+            if (expectedTiles)
+            {
+                secondaryTileBody["pushChannelExpired"] = false;
+            }
+            JArray tags = new JArray();
+            tags.Add("bar");
+            JObject templates = GetTemplates(tag);
+            secondaryTileBody["templates"] = templates;
+            JObject secondaryTiles = new JObject();
+            secondaryTiles["testSecondaryTiles"] = secondaryTileBody;
+            return secondaryTiles;
         }
     }
 }
