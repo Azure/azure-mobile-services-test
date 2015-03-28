@@ -143,18 +143,20 @@ static NSString *pushClientKey = @"PushClientKey";
 + (NSArray *)createTests {
     NSMutableArray *result = [[NSMutableArray alloc] init];
     if ([self isRunningOnSimulator]) {
-        [result addObject:[ZumoTest createTestWithName:@"No push on simulator" andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
-            [test addLog:@"Running on a simulator, no push tests can be executed"];
-            [test setTestStatus:TSPassed];
-            completion(YES);
-        }]];
+        ZumoTestGlobals *globals = [ZumoTestGlobals sharedInstance];
+        globals.deviceToken = [ZumoPushTests bytesFromHexString:@"59D31B14081B92DAA98FAD91EDC0E61FC23767D5B90892C4F22DF56E312045C8"];
+        
+        [result addObject:[self createRegisterUnregisterTest]];
+        [result addObject:[self createTemplateRegisterUnregisterTest]];
+        [result addObject:[self createOverrideRegistrationTest]];
+        
     } else {
         [result addObject:[self createValidatePushRegistrationTest]];
+        [result addObject:[self createRegisterUnregisterTest]];
+        [result addObject:[self createTemplateRegisterUnregisterTest]];
+        [result addObject:[self createOverrideRegistrationTest]];
         
-        if (![ZumoPushTests isNhEnabled]) {
-            [result addObject:[self createFeedbackTest]];
-        }
-        
+        /*
         [result addObject:[self createPushTestWithName:@"Push simple alert" forPayload:@{@"alert":@"push received"} withDelay:0]];
         [result addObject:[self createPushTestWithName:@"Push simple badge" forPayload:@{@"badge":@9} withDelay:0]];
         [result addObject:[self createPushTestWithName:@"Push simple sound and alert" forPayload:@{@"alert":@"push received",@"sound":@"default"} withDelay:0]];
@@ -162,36 +164,21 @@ static NSString *pushClientKey = @"PushClientKey";
         [result addObject:[self createPushTestWithName:@"Push with only custom info (no alert / badge / sound)" forPayload:@{@"aps":@{},@"foo":@"bar"} withDelay:0]];
         [result addObject:[self createPushTestWithName:@"Push with alert, badge and sound" forPayload:@{@"aps":@{@"alert":@"simple alert", @"badge":@7, @"sound":@"default"},@"custom":@"value"} withDelay:0]];
         [result addObject:[self createPushTestWithName:@"Push with alert with non-ASCII characters" forPayload:@{@"alert":@"Latin-ãéìôü ÇñÑ, arabic-لكتاب على الطاولة, chinese-这本书在桌子上"} withDelay:0]];
-    
+        
         [result addObject:[self createPushTestWithName:@"(Neg) Push with large payload" forPayload:@{@"alert":[@"" stringByPaddingToLength:256 withString:@"*" startingAtIndex:0]} withDelay:0 isNegativeTest:YES]];
+         */
     }
     
     return result;
 }
 
-+ (BOOL)isNhEnabled {
-    NSDictionary *runtimeFeatures = [[[ZumoTestGlobals sharedInstance] globalTestParameters] objectForKey:RUNTIME_FEATURES_KEY];
-    NSNumber *nhEnabledPropertyNames = [runtimeFeatures objectForKey:FEATURE_NH_PUSH_ENABLED];
-    return [nhEnabledPropertyNames boolValue];
-}
-
 + (BOOL)isRunningOnSimulator {
-    NSString *deviceModel = [[UIDevice currentDevice] model];
-    if ([deviceModel rangeOfString:@"Simulator" options:NSCaseInsensitiveSearch].location == NSNotFound) {
-        return NO;
-    } else {
-        return YES;
-    }
+    NSString *deviceModel = [UIDevice currentDevice].model;
+    return [deviceModel rangeOfString:@"Simulator" options:NSCaseInsensitiveSearch].location != NSNotFound;
 }
 
 + (ZumoTest *)createValidatePushRegistrationTest {
     ZumoTest *result = [ZumoTest createTestWithName:@"Validate push registration" andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
-        if ([self isRunningOnSimulator]) {
-            [test addLog:@"Test running on a simulator, skipping test."];
-            [test setTestStatus:TSSkipped];
-            completion(YES);
-            return;
-        }
         
         ZumoTestGlobals *globals = [ZumoTestGlobals sharedInstance];
         [test addLog:[globals remoteNotificationRegistrationStatus]];
@@ -200,8 +187,6 @@ static NSString *pushClientKey = @"PushClientKey";
             [test setTestStatus:TSPassed];
             completion(YES);
         } else {
-            UIAlertView *av = [[UIAlertView alloc] initWithTitle:@"Error" message:@"Push tests will not work on the emulator; if this is the case, all subsequent tests will fail, and that's expected." delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
-            [av show];
             [test setTestStatus:TSFailed];
             completion(NO);
         }
@@ -216,8 +201,9 @@ static NSString *pushClientKey = @"PushClientKey";
 
 + (void)sendNotificationViaInsert:(MSClient *)client test:(ZumoTest *)test seconds:(int)seconds deviceToken:(NSString *)deviceToken payload:(NSDictionary *)payload completion:(ZumoTestCompletion)completion isNegative:(BOOL)isNegative {
     MSTable *table = [client tableWithName:tableName];
-    NSURL *appUrl = [client applicationURL];
-    [test addLog:[NSString stringWithFormat:@"Sending a request to %@ / table %@", [appUrl description], tableName]];
+    
+    [test addLog:[NSString stringWithFormat:@"Sending a request to %@ / table %@", client.applicationURL.description, tableName]];
+    
     NSDictionary *item = @{@"method" : @"send", @"payload" : payload, @"token": deviceToken, @"delay": @(seconds)};
     [table insert:item completion:^(NSDictionary *insertedItem, NSError *error) {
         if (error) {
@@ -230,13 +216,205 @@ static NSString *pushClientKey = @"PushClientKey";
             ZumoPushClient *pushClient = [[ZumoPushClient alloc] initForTest:test withPayload:expectedPayload waitFor:timeToWait withTestCompletion:completion];
             [[test propertyBag] setValue:pushClient forKey:pushClientKey];
             
-            // completion will be called on the push client...
+            // completion will be called on the push client
         }
     }];
 }
 
++ (ZumoTest *)createRegisterUnregisterTest
+{
+    ZumoTestExecution testExecution = ^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
+        MSClient *client = [[ZumoTestGlobals sharedInstance] client];
+        NSData *deviceToken = [[ZumoTestGlobals sharedInstance] deviceToken];
+        __block TestStatus overallTestStatus = TSPassed;
+        
+        // Confirm the registration has been removed from the server
+        MSAPIBlock verifyUnregister = ^(id result, NSHTTPURLResponse *response, NSError *error) {
+            if (error) {
+                [test addLog:[NSString stringWithFormat:@"Verification error: %@", error.localizedDescription]];
+                overallTestStatus = TSFailed;
+            }
+            completion(overallTestStatus == TSPassed);
+        };
+        
+        // Now attemp to unregister the installation
+        MSCompletionBlock unregisterInstallation = ^(NSError *error) {
+            // Verify unregister succeeded
+            if (error) {
+                [test addLog:[NSString stringWithFormat:@"Error unregistering: %@", error.localizedDescription]];
+                test.testStatus = TSFailed;
+                completion(NO);
+                return;
+            }
+            
+            [client invokeAPI:@"verifyUnregisterInstallationResult"
+                         body:nil
+                   HTTPMethod:@"GET"
+                   parameters:nil
+                      headers:nil
+                   completion:verifyUnregister];
+        };
+        
+        // Verify that the registration did have the expected format
+        MSAPIBlock checkVerifyReg = ^(id result, NSHTTPURLResponse *response, NSError *error) {
+            if (error) {
+                [test addLog:[NSString stringWithFormat:@"Verification error: %@", error.localizedDescription]];
+                overallTestStatus = TSFailed;
+            }
+            
+            [client.push unregisterWithCompletion:unregisterInstallation];
+        };
+        
+        MSCompletionBlock verifyRegister = ^(NSError *error) {
+            // Verify register call succeeded
+            if (error) {
+                [test addLog:[NSString stringWithFormat:@"Error registering: %@", error.description]];
+                test.testStatus = TSFailed;
+                completion(NO);
+                return;
+            }
+            
+            [client invokeAPI:@"verifyRegisterInstallationResult"
+                         body:nil
+                   HTTPMethod:@"GET"
+                   parameters:@{ @"channelUri" : [ZumoPushTests convertDeviceToken:deviceToken] }
+                      headers:nil
+                   completion:checkVerifyReg];
+        };
+        
+        MSAPIBlock registerToken = ^(id result, NSHTTPURLResponse *response, NSError *error) {
+            if (error) {
+                [test addLog:[NSString stringWithFormat:@"Cleanup failed: %@", error.localizedDescription]];
+                test.testStatus = TSFailed;
+                completion(NO);
+                return;
+            }
+            
+            // Create a new registration on the server
+            [client.push registerDeviceToken:deviceToken completion:verifyRegister];
+        };
+        
+        [client invokeAPI:@"DeleteRegistrationsForChannel" body:nil HTTPMethod:@"DELETE"
+               parameters:@{ @"channelUri": [ZumoPushTests convertDeviceToken:deviceToken] }
+                  headers:nil completion:registerToken];
+    };
+    
+    return[ZumoTest createTestWithName:@"RegisterUnregister" andExecution:testExecution];
+}
+
++ (ZumoTest *)createTemplateRegisterUnregisterTest
+{
+    ZumoTestExecution testExecution = ^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
+        MSClient *client = [[ZumoTestGlobals sharedInstance] client];
+        NSData *deviceToken = [[ZumoTestGlobals sharedInstance] deviceToken];
+
+        MSAPIBlock checkVerifyUnregister = ^(id result, NSHTTPURLResponse *response, NSError *error) {
+            if (error) {
+                [test addLog:[NSString stringWithFormat:@"Verification error: %@", error.localizedDescription]];
+                completion(NO);
+                return;
+            }
+            completion(test.testStatus != TSFailed);
+        };
+        
+        MSCompletionBlock verifyUnregister = ^(NSError *error) {
+            // Verify unregister succeeded
+            if (error) {
+                [test addLog:[NSString stringWithFormat:@"Error unregistering: %@", error.description]];
+                test.testStatus = TSFailed;
+                
+                completion(NO);
+                return;
+            }
+            
+            [client invokeAPI:@"verifyUnregisterInstallationResult"
+                         body:nil
+                   HTTPMethod:@"GET"
+                   parameters:nil
+                      headers:nil
+                   completion:checkVerifyUnregister];
+        };
+
+        MSAPIBlock verifyRegister = ^(id result, NSHTTPURLResponse *response, NSError *error) {
+            if (error) {
+                [test addLog:[NSString stringWithFormat:@"Verification error: %@", error.localizedDescription]];
+                test.testStatus = TSFailed;
+            }
+            
+            [client.push unregisterWithCompletion:verifyUnregister];
+        };
+        
+        [client.push registerDeviceToken:deviceToken
+                                template:@{ @"templateName": @{ @"body": @{ @"aps": @{ @"alert": @"boo!" }, @"extraprop" : @"($message)" }, @"tags": @[@"one", @"two"] } }
+                              completion:^(NSError *error) {
+            // Verify register call succeeded
+            if (error) {
+                [test addLog:[NSString stringWithFormat:@"Encountered error registering with Mobile Service: %@", error.description]];
+                [test setTestStatus:TSFailed];
+                completion(NO);
+                return;
+            }
+
+            NSString *expectedTemplate = @"{\"templateName\":{\"body\":\"{\\\"aps\\\":{\\\"alert\\\":\\\"boo!\\\"},\\\"extraprop\\\":\\\"($message)\\\"}\"}}";
+            [client invokeAPI:@"verifyRegisterInstallationResult"
+                       body:nil
+                 HTTPMethod:@"GET"
+                 parameters:@{ @"channelUri" : [ZumoPushTests convertDeviceToken:deviceToken],
+                               @"templates" : expectedTemplate }
+                    headers:nil
+                 completion:verifyRegister];
+        }];
+    };
+    
+    return [ZumoTest createTestWithName:@"RegisterUnregisterTemplate" andExecution:testExecution];
+}
+
++ (ZumoTest *)createOverrideRegistrationTest {
+    ZumoTestExecution testExecution = ^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
+        MSClient *client = [[ZumoTestGlobals sharedInstance] client];
+        NSData *deviceToken = [[ZumoTestGlobals sharedInstance] deviceToken];
+        
+        MSAPIBlock checkVerify = ^(id result, NSHTTPURLResponse *response, NSError *error) {
+            if (error) {
+                [test addLog:[NSString stringWithFormat:@"Verify error: %@", error.localizedDescription]];
+                test.testStatus = TSFailed;
+            }
+            
+            [client.push unregisterWithCompletion:^(NSError *error) {
+                completion(test.testStatus != TSFailed);
+            }];
+        };
+        
+        MSCompletionBlock verifyPushTwo = ^(NSError *error) {
+            NSString *expectedTemplate = @"{\"t7\":{\"body\":\"{\\\"aps\\\":{\\\"alert\\\":\\\"lookout!\\\"}}\"}}";
+            [client invokeAPI:@"verifyRegisterInstallationResult"
+                         body:nil
+                   HTTPMethod:@"GET"
+                   parameters:@{ @"channelUri" : [ZumoPushTests convertDeviceToken:deviceToken],
+                                 @"templates" : expectedTemplate }
+                      headers:nil
+                   completion:checkVerify];
+        };
+        
+        MSCompletionBlock pushTwo = ^(NSError *error) {
+            [client.push registerDeviceToken:deviceToken
+                                    template:@{ @"t7": @{ @"body": @{ @"aps": @{ @"alert": @"lookout!" } } } }
+                                  completion:verifyPushTwo];
+        };
+        
+        [client.push registerDeviceToken:deviceToken
+                                template:@{ @"t1": @{ @"body": @{ @"aps": @{ @"alert": @"boo!" }, @"extraprop" : @"($message)" } } }
+                              completion:pushTwo];
+        
+        
+    };
+    
+    return [ZumoTest createTestWithName:@"overrideRegistrationTest" andExecution:testExecution];
+}
+
 + (ZumoTest *)createPushTestWithName:(NSString *)name forPayload:(NSDictionary *)payload withDelay:(int)seconds isNegativeTest:(BOOL)isNegative {
-    ZumoTest *result = [ZumoTest createTestWithName:name andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
+    ZumoTest *result = [ZumoTest createTestWithName:name
+                                       andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
         if ([self isRunningOnSimulator]) {
             [test addLog:@"Test running on a simulator, skipping test."];
             [test setTestStatus:TSSkipped];
@@ -245,73 +423,28 @@ static NSString *pushClientKey = @"PushClientKey";
         }
         
         NSData *deviceToken = [[ZumoTestGlobals sharedInstance] deviceToken];
-        NSString *deviceTokenString = [[deviceToken.description stringByReplacingOccurrencesOfString:@" " withString:@""] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"<>"]];
+        
         if (!deviceToken) {
             [test addLog:@"Device not correctly registered for push"];
             [test setTestStatus:TSFailed];
             completion(NO);
         } else {
             MSClient *client = [[ZumoTestGlobals sharedInstance] client];
-            if ([ZumoPushTests isNhEnabled]) {
-                [client.push registerNativeWithDeviceToken:deviceToken tags:@[deviceTokenString] completion:^(NSError *error) {
-                    if (error) {
-                        [test addLog:[NSString stringWithFormat:@"Encountered error registering with Mobile Service: %@", error.description]];
-                        [test setTestStatus:TSFailed];
-                        completion(NO);
-                        return;
-                    }
-                    
-                    [self sendNotificationViaInsert:client test:test seconds:seconds deviceToken:deviceTokenString payload:payload completion:completion isNegative:isNegative];
-                }];
-            } else {
-                [self sendNotificationViaInsert:client test:test seconds:seconds deviceToken:deviceTokenString payload:payload completion:completion isNegative:isNegative];
-            }
-        }
-    }];
-    
-    return result;
-}
-
-+ (ZumoTest *)createFeedbackTest {
-    ZumoTest *result = [ZumoTest createTestWithName:@"Simple feedback test" andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
-        if ([self isRunningOnSimulator]) {
-            [test addLog:@"Test running on a simulator, skipping test."];
-            [test setTestStatus:TSSkipped];
-            completion(YES);
-            return;
-        }
-        
-        if ([ZumoPushTests isNhEnabled]) {
-            [test addLog:@"Service has enhanced push enabled. Skipping feedback test."];
-            [test setTestStatus:TSSkipped];
-            completion(YES);
-            return;
-        }
-
-        if (![[ZumoTestGlobals sharedInstance] deviceToken]) {
-            [test addLog:@"Device not correctly registered for push"];
-            [test setTestStatus:TSFailed];
-            completion(NO);
-        } else {
-            MSClient *client = [[ZumoTestGlobals sharedInstance] client];
-            MSTable *table = [client tableWithName:tableName];
-            NSDictionary *item = @{@"method" : @"getFeedback"};
-            [table insert:item completion:^(NSDictionary *item, NSError *error) {
-                BOOL passed = NO;
+            [client.push registerDeviceToken:deviceToken completion:^(NSError *error) {
                 if (error) {
-                    [test addLog:[NSString stringWithFormat:@"Error requesting feedback: %@", error]];
-                } else {
-                    NSArray *devices = item[@"devices"];
-                    if (devices) {
-                        [test addLog:[NSString stringWithFormat:@"Retrieved devices from feedback script: %@", devices]];
-                        passed = YES;
-                    } else {
-                        [test addLog:[NSString stringWithFormat:@"No 'devices' field in response: %@", item]];
-                    }
+                    [test addLog:[NSString stringWithFormat:@"Encountered error registering with Mobile Service: %@", error.description]];
+                    [test setTestStatus:TSFailed];
+                    completion(NO);
+                    return;
                 }
                 
-                [test setTestStatus:(passed ? TSPassed : TSFailed)];
-                completion(passed);
+                [self sendNotificationViaInsert:client
+                                           test:test
+                                        seconds:seconds
+                                    deviceToken:client.push.installationId
+                                        payload:payload
+                                     completion:completion
+                                     isNegative:isNegative];
             }];
         }
     }];
@@ -321,6 +454,31 @@ static NSString *pushClientKey = @"PushClientKey";
 
 + (NSString *)groupDescription {
     return @"Tests to validate that the server-side push module can correctly deliver messages to the iOS client.";
+}
+
+
++(NSData *) bytesFromHexString:(NSString *)hexString;
+{
+    NSMutableData* data = [NSMutableData data];
+    for (int idx = 0; idx+2 <= hexString.length; idx+=2) {
+        NSRange range = NSMakeRange(idx, 2);
+        NSString* hexStr = [hexString substringWithRange:range];
+        NSScanner* scanner = [NSScanner scannerWithString:hexStr];
+        unsigned int intValue;
+        if ([scanner scanHexInt:&intValue])
+            [data appendBytes:&intValue length:1];
+    }
+    return data;
+}
+
++ (NSString *)convertDeviceToken:(NSData *)deviceTokenData
+{
+    NSCharacterSet *hexFormattingCharacters = [NSCharacterSet characterSetWithCharactersInString:@"<>"];
+    NSString* newDeviceToken = [[[[deviceTokenData description]
+                                  stringByTrimmingCharactersInSet:hexFormattingCharacters]
+                                 stringByReplacingOccurrencesOfString:@" " withString:@""]
+                                uppercaseString];
+    return newDeviceToken;
 }
 
 @end
