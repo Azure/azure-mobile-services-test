@@ -51,9 +51,8 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             {
                 await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, channelUriParam);
             }
-            catch (MobileServiceInvalidOperationException msInvalidOperationEx)
+            catch (MobileServiceInvalidOperationException)
             {
-                Log(msInvalidOperationEx.Message);
                 throw;
             }
             finally
@@ -72,9 +71,8 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             {
                 await this.GetClient().InvokeApiAsync("verifyUnregisterInstallationResult", HttpMethod.Get, null);
             }
-            catch (MobileServiceInvalidOperationException msInvalidOperationEx)
+            catch (MobileServiceInvalidOperationException)
             {
-                Log(msInvalidOperationEx.Message);
                 throw;
             }
         }
@@ -98,9 +96,8 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             {
                 await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
             }
-            catch (MobileServiceInvalidOperationException msInvalidOperationEx)
+            catch (MobileServiceInvalidOperationException)
             {
-                Log(msInvalidOperationEx.Message);
                 throw;
             }
             finally
@@ -129,9 +126,8 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                 //Verifies templates are removed from the installation registration
                 await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
             }
-            catch (MobileServiceInvalidOperationException msInvalidOperationEx)
+            catch (MobileServiceInvalidOperationException)
             {
-                Log(msInvalidOperationEx.Message);
                 throw;
             }
             finally
