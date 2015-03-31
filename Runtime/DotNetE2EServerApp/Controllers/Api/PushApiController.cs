@@ -91,7 +91,7 @@ namespace ZumoE2EServerApp.Controllers
             if (this.Request.Headers.TryGetValues("X-ZUMO-INSTALLATION-ID", out installationIds))
             {
                 var installationId = installationIds.FirstOrDefault();
-                Installation nhInstallation = await this.GetNhHubClient().GetInstallationAsync(installationId);
+                Installation nhInstallation = await this.GetNhClient().GetInstallationAsync(installationId);
                 string nhTemplates = null;
                 string nhSecondaryTiles = null;
 
@@ -138,25 +138,25 @@ namespace ZumoE2EServerApp.Controllers
         public async Task<bool> GetVerifyUnregisterInstallationResult()
         {
             IEnumerable<string> installationIds;
-            string responseErrorMessge = null;
+            string responseErrorMessage = null;
             if (this.Request.Headers.TryGetValues("X-ZUMO-INSTALLATION-ID", out installationIds))
             {
                 var installationId = installationIds.FirstOrDefault();
                 try
                 {
-                    Installation nhInstallation = await this.GetNhHubClient().GetInstallationAsync(installationId);
+                    Installation nhInstallation = await this.GetNhClient().GetInstallationAsync(installationId);
                 }
                 catch (MessagingEntityNotFoundException)
                 {
                     return true;
                 }
-                responseErrorMessge = string.Format("Found deleted Installation with id {0}", installationId);
+                responseErrorMessage = string.Format("Found deleted Installation with id {0}", installationId);
             }
 
             HttpResponseMessage msg = new HttpResponseMessage()
             {
                 StatusCode = HttpStatusCode.InternalServerError,
-                Content = new StringContent(responseErrorMessge)
+                Content = new StringContent(responseErrorMessage)
             };
             throw new HttpResponseException(msg);
         }
@@ -164,10 +164,10 @@ namespace ZumoE2EServerApp.Controllers
         [Route("api/deleteRegistrationsForChannel")]
         public async Task DeleteRegistrationsForChannel(string channelUri)
         {
-            await this.GetNhHubClient().DeleteRegistrationsByChannelAsync(channelUri);
+            await this.GetNhClient().DeleteRegistrationsByChannelAsync(channelUri);
         }
 
-        private NotificationHubClient GetNhHubClient()
+        private NotificationHubClient GetNhClient()
         {
             string connString = null;
             string hubName = null;
@@ -183,11 +183,11 @@ namespace ZumoE2EServerApp.Controllers
             string continuationToken = null;
             do
             {
-                CollectionQueryResult<RegistrationDescription> regsForChannel = await this.GetNhHubClient().GetRegistrationsByChannelAsync(channelUri, continuationToken, 100);
+                CollectionQueryResult<RegistrationDescription> regsForChannel = await this.GetNhClient().GetRegistrationsByChannelAsync(channelUri, continuationToken, 100);
                 continuationToken = regsForChannel.ContinuationToken;
                 foreach (RegistrationDescription reg in regsForChannel)
                 {
-                    RegistrationDescription registration = await this.GetNhHubClient().GetRegistrationAsync<RegistrationDescription>(reg.RegistrationId);
+                    RegistrationDescription registration = await this.GetNhClient().GetRegistrationAsync<RegistrationDescription>(reg.RegistrationId);
                     if (registration.Tags == null || registration.Tags.Count() != 1)
                     {
                         return false;
