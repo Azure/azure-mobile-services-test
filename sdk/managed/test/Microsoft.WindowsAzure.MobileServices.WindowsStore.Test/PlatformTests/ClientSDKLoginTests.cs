@@ -26,7 +26,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         {
             try
             {
-                LiveAuthClient liveAuthClient = new LiveAuthClient(GetClient().ApplicationUri.ToString());
+                LiveAuthClient liveAuthClient = new LiveAuthClient(GetClient().MobileAppUri.ToString());
                 LiveLoginResult result = await liveAuthClient.InitializeAsync(new string[] { "wl.basic", "wl.offline_access", "wl.signin" });
                 if (result.Status != LiveConnectSessionStatus.Connected)
                 {
