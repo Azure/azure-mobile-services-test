@@ -35,7 +35,7 @@
 		87FA8406174FE58A0089EDEA /* ZumoCustomApiTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 87FA8405174FE58A0089EDEA /* ZumoCustomApiTests.m */; };
 		87FA840B17569AB90089EDEA /* TestLoggingFilter.m in Sources */ = {isa = PBXBuildFile; fileRef = 87FA840A17569AB90089EDEA /* TestLoggingFilter.m */; };
 		A20EF08A1993F1F000C64641 /* ZumoDaylightConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = A20EF0891993F1F000C64641 /* ZumoDaylightConnection.m */; };
-		A25E6DC01AA65AD3008C556F /* WindowsAzureMobileServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A25E6DBF1AA65AD3008C556F /* WindowsAzureMobileServices.framework */; };
+		A231946C1AC48170002B728F /* WindowsAzureMobileServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A231946B1AC48170002B728F /* WindowsAzureMobileServices.framework */; };
 		A2B509DD199ABF1A00A914CF /* MessageUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2B509DC199ABF1A00A914CF /* MessageUI.framework */; };
 		A2B509E0199B376C00A914CF /* ZumoTestResultViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A2B509DF199B376C00A914CF /* ZumoTestResultViewController.m */; };
 		A2B509E3199C006600A914CF /* Main_iPad.Storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A2B509E1199C006600A914CF /* Main_iPad.Storyboard */; };
@@ -96,7 +96,7 @@
 		87FA840A17569AB90089EDEA /* TestLoggingFilter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestLoggingFilter.m; sourceTree = "<group>"; };
 		A20EF0881993F1F000C64641 /* ZumoDaylightConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ZumoDaylightConnection.h; sourceTree = "<group>"; };
 		A20EF0891993F1F000C64641 /* ZumoDaylightConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ZumoDaylightConnection.m; sourceTree = "<group>"; };
-		A25E6DBF1AA65AD3008C556F /* WindowsAzureMobileServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WindowsAzureMobileServices.framework; sourceTree = "<group>"; };
+		A231946B1AC48170002B728F /* WindowsAzureMobileServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WindowsAzureMobileServices.framework; sourceTree = "<group>"; };
 		A2B509DC199ABF1A00A914CF /* MessageUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MessageUI.framework; path = System/Library/Frameworks/MessageUI.framework; sourceTree = SDKROOT; };
 		A2B509DE199B376C00A914CF /* ZumoTestResultViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ZumoTestResultViewController.h; sourceTree = "<group>"; };
 		A2B509DF199B376C00A914CF /* ZumoTestResultViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ZumoTestResultViewController.m; sourceTree = "<group>"; };
@@ -115,7 +115,7 @@
 				872B02BF1672A73B003613A1 /* UIKit.framework in Frameworks */,
 				872B02C11672A73B003613A1 /* Foundation.framework in Frameworks */,
 				872B02C31672A73B003613A1 /* CoreGraphics.framework in Frameworks */,
-				A25E6DC01AA65AD3008C556F /* WindowsAzureMobileServices.framework in Frameworks */,
+				A231946C1AC48170002B728F /* WindowsAzureMobileServices.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -142,7 +142,7 @@
 		872B02BD1672A73B003613A1 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				A25E6DBF1AA65AD3008C556F /* WindowsAzureMobileServices.framework */,
+				A231946B1AC48170002B728F /* WindowsAzureMobileServices.framework */,
 				A2B509DC199ABF1A00A914CF /* MessageUI.framework */,
 				872B02BE1672A73B003613A1 /* UIKit.framework */,
 				872B02C01672A73B003613A1 /* Foundation.framework */,

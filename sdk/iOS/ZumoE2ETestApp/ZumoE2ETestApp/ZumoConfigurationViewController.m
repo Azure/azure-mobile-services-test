@@ -41,37 +41,10 @@
     [globals initializeClientWithAppUrl:appUrl andKey:self.appKey.text];
     [globals saveAppInfo:appUrl key:self.appKey.text];
     
-    // Block to begin test suite if runtime features can be loaded
-    void (^block)(BOOL) = ^(BOOL success) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.validationView.hidden = NO;
-            if (success) {
-                [self performSegueWithIdentifier:@"BeginTests" sender:self];
-                self.validationView.hidden = YES;
-            } else {
-                UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Complete" message:@"Failed to load runtime info" delegate:self cancelButtonTitle:@"OK" otherButtonTitles: nil];
-                [alert show];
-                self.validationView.hidden = YES;
-            }
-        });
-    };
-    
-    // Ask runtime what features should be tested
-    MSClient *client = [[ZumoTestGlobals sharedInstance] client];
-    [client invokeAPI:@"runtimeInfo" body:nil HTTPMethod:@"GET" parameters:nil headers:nil
-           completion:^(NSDictionary *runtimeInfo, NSHTTPURLResponse *response, NSError *error) {
-        if (error) {
-            block(NO);
-        } else {
-            NSMutableDictionary *globalTestParams = ZumoTestGlobals.sharedInstance.globalTestParameters;
-            NSDictionary *runtime = runtimeInfo[@"runtime"];
-            
-            globalTestParams[RUNTIME_FEATURES_KEY] = runtimeInfo[@"features"];
-            globalTestParams[RUNTIME_VERSION_TAG] = [NSString stringWithFormat:@"%@:%@", runtime[@"type"], runtime[@"version"]];
-            
-            block(YES);
-        }
-    }];
+    NSMutableDictionary *globalTestParams = globals.globalTestParameters;
+    globalTestParams[RUNTIME_VERSION_TAG] = @"DotNet-App";
+
+    [self performSegueWithIdentifier:@"BeginTests" sender:self];
 }
 
 - (void)viewWillAppear:(BOOL)animated
