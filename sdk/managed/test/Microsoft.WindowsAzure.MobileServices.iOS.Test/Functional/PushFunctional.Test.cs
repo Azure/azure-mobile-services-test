@@ -62,6 +62,33 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         }
 
         [AsyncTestMethod]
+        public async Task LoginRegisterAsync()
+        {
+            MobileServiceUser user = await GetDummyUser();
+            this.GetClient().CurrentUser = user;
+            var channelUri = this.pushTestUtility.GetPushHandle();
+            Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
+            {
+                {"channelUri", channelUri}
+            };
+            var push = this.GetClient().GetPush();
+            await push.RegisterAsync(channelUri);
+            try
+            {
+                await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, channelUriParam);
+            }
+            catch (MobileServiceInvalidOperationException)
+            {
+                throw;
+            }
+            finally
+            {
+                push.UnregisterAsync().Wait();
+                this.GetClient().CurrentUser = null;
+            }
+        }
+
+        [AsyncTestMethod]
         public async Task UnregisterAsync()
         {
             var channelUri = this.pushTestUtility.GetPushHandle();
@@ -152,6 +179,20 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             JObject templates = new JObject();
             templates["testApnsTemplate"] = templateBody;
             return templates;
+        }
+
+        private async Task<MobileServiceUser> GetDummyUser()
+        {
+            var dummyUser = await this.GetClient().InvokeApiAsync("JwtTokenGenerator", HttpMethod.Get, null);
+            JObject token = JObject.Parse(dummyUser["token"].ToString());
+            JObject payload = JObject.Parse(token["payload"].ToString());
+
+            MobileServiceUser user = new MobileServiceUser("")
+            {
+                UserId = payload["uid"].ToString(),
+                MobileServiceAuthenticationToken = token["rawData"].ToString()
+            };
+            return user;
         }
 
         internal static string TrimDeviceToken(string deviceToken)

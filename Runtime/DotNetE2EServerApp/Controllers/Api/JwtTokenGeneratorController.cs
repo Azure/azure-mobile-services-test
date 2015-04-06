@@ -5,11 +5,13 @@
 using System;
 using System.Security.Claims;
 using System.Web.Http;
+using Microsoft.Azure.Mobile.Security;
 using Microsoft.Azure.Mobile.Server;
 using Microsoft.Azure.Mobile.Server.Security;
 
 namespace ZumoE2EServerApp.Controllers
 {
+    [AuthorizeLevel(AuthorizationLevel.Anonymous)]
     public class JwtTokenGeneratorController : ApiController
     {
         public ApiServices Services { get; set; }
