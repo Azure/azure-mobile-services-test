@@ -36,7 +36,7 @@ then
   cp -f $8 sdk.zip
 else
   # Copy in current version of the framework
-  curl --location --output sdk.zip --silent http://aka.ms/kymw2g
+  curl --location --output sdk.zip --silent http://aka.ms/gc6fex
 fi
 
 unzip -o sdk.zip
