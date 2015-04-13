@@ -48,7 +48,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             await push.RegisterAsync(channelUri);
             try
             {
-
                 await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, channelUriParam);
             }
             catch (MobileServiceInvalidOperationException)
@@ -59,7 +58,33 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             {
                 push.UnregisterAsync().Wait();
             }
-            ////TODO Login then register, verify $UserId:{userId} tag exists
+        }
+
+        [AsyncTestMethod]
+        public async Task LoginRegisterAsync()
+        {
+            MobileServiceUser user = await GetDummyUser();
+            this.GetClient().CurrentUser = user;
+            var channelUri = this.pushTestUtility.GetPushHandle();
+            Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
+            {
+                {"channelUri", channelUri}
+            };
+            var push = this.GetClient().GetPush();
+            await push.RegisterAsync(channelUri);
+            try
+            {
+                await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, channelUriParam);
+            }
+            catch (MobileServiceInvalidOperationException)
+            {
+                throw;
+            }
+            finally
+            {
+                push.UnregisterAsync().Wait();
+                this.GetClient().CurrentUser = null;
+            }
         }
 
         [AsyncTestMethod]
@@ -237,6 +262,18 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             secondaryTiles["testSecondaryTiles"] = secondaryTileBody;
             return secondaryTiles;
         }
+        private async Task<MobileServiceUser> GetDummyUser()
+        {
+            var dummyUser = await this.GetClient().InvokeApiAsync("JwtTokenGenerator", HttpMethod.Get, null);
+
+            MobileServiceUser user = new MobileServiceUser((string)dummyUser["token"]["payload"]["uid"])
+            {
+                MobileServiceAuthenticationToken = (string)dummyUser["token"]["rawData"]
+            };
+            return user;
+        }
+
+
 
         private async Task<string> GetChannelUri()
         {

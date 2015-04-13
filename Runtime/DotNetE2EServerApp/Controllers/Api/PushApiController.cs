@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using Microsoft.Azure.Mobile.Security;
 using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Server.Security;
 using Microsoft.Azure.NotificationHubs;
 using Microsoft.Azure.NotificationHubs.Messaging;
 using Newtonsoft.Json;
@@ -85,13 +86,14 @@ namespace ZumoE2EServerApp.Controllers
         [Route("api/verifyRegisterInstallationResult")]
         public async Task<bool> GetVerifyRegisterInstallationResult(string channelUri, string templates = null, string secondaryTiles = null)
         {
+            var nhClient = this.GetNhClient();
             HttpResponseMessage msg = new HttpResponseMessage();
             msg.StatusCode = HttpStatusCode.InternalServerError;
             IEnumerable<string> installationIds;
             if (this.Request.Headers.TryGetValues("X-ZUMO-INSTALLATION-ID", out installationIds))
             {
                 var installationId = installationIds.FirstOrDefault();
-                Installation nhInstallation = await this.GetNhClient().GetInstallationAsync(installationId);
+                Installation nhInstallation = await nhClient.GetInstallationAsync(installationId);
                 string nhTemplates = null;
                 string nhSecondaryTiles = null;
 
@@ -122,7 +124,7 @@ namespace ZumoE2EServerApp.Controllers
                     msg.Content = new StringContent(string.Format("SecondaryTiles did not match. Expected {0} Found {1}", secondaryTiles, nhSecondaryTiles));
                     throw new HttpResponseException(msg);
                 }
-                bool tagsVerified = await VerifyTags(channelUri, installationId);
+                bool tagsVerified = await VerifyTags(channelUri, installationId, nhClient);
                 if (!tagsVerified)
                 {
                     msg.Content = new StringContent("Did not find installationId tag");
@@ -178,21 +180,31 @@ namespace ZumoE2EServerApp.Controllers
             return NotificationHubClient.CreateClientFromConnectionString(connString, hubName);
         }
 
-        private async Task<bool> VerifyTags(string channelUri, string installationId)
+        private async Task<bool> VerifyTags(string channelUri, string installationId, NotificationHubClient nhClient)
         {
+            ServiceUser user = (ServiceUser)this.User;
+            int expectedTagsCount = 1;
+            if (user.Id != null)
+            {
+                expectedTagsCount = 2;
+            }
             string continuationToken = null;
             do
             {
-                CollectionQueryResult<RegistrationDescription> regsForChannel = await this.GetNhClient().GetRegistrationsByChannelAsync(channelUri, continuationToken, 100);
+                CollectionQueryResult<RegistrationDescription> regsForChannel = await nhClient.GetRegistrationsByChannelAsync(channelUri, continuationToken, 100);
                 continuationToken = regsForChannel.ContinuationToken;
                 foreach (RegistrationDescription reg in regsForChannel)
                 {
-                    RegistrationDescription registration = await this.GetNhClient().GetRegistrationAsync<RegistrationDescription>(reg.RegistrationId);
-                    if (registration.Tags == null || registration.Tags.Count() != 1)
+                    RegistrationDescription registration = await nhClient.GetRegistrationAsync<RegistrationDescription>(reg.RegistrationId);
+                    if (registration.Tags == null || registration.Tags.Count() != expectedTagsCount)
                     {
                         return false;
                     }
-                    if (!registration.Tags.FirstOrDefault().ToString().Contains("$InstallationId:{" + installationId + "}"))
+                    if (!registration.Tags.Contains("$InstallationId:{" + installationId + "}"))
+                    {
+                        return false;
+                    }
+                    if (expectedTagsCount > 1 && !registration.Tags.Contains("_UserId:" + user.Id))
                     {
                         return false;
                     }
