@@ -201,6 +201,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controllers\Api\JwtTokenGeneratorController.cs" />
     <Compile Include="Controllers\Api\PushApiController.cs" />
     <Compile Include="Controllers\Table\PermissionsTableControllers.cs" />
     <Compile Include="Controllers\Api\PermissionsApiControllers.cs" />
