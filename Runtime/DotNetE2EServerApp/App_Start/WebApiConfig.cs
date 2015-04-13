@@ -10,6 +10,7 @@ using System.Web.Http;
 using ZumoE2EServerApp.DataObjects;
 using ZumoE2EServerApp.Models;
 using ZumoE2EServerApp.Utils;
+using System.Web.Http.Cors;
 using AutoMapper;
 using Microsoft.Azure.Mobile.Server;
 using Microsoft.Azure.Mobile.Server.AppService.Config;
