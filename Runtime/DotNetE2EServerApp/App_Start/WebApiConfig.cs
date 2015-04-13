@@ -17,7 +17,6 @@ using ZumoE2EServerApp.DataObjects;
 using ZumoE2EServerApp.Models;
 using Newtonsoft.Json.Linq;
 using ZumoE2EServerApp.Utils;
-using System.Web.Http.Cors;
 
 namespace ZumoE2EServerApp
 {
