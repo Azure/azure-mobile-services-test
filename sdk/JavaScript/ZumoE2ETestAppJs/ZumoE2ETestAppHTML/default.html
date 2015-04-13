@@ -7,7 +7,8 @@
 
     <!-- ZumoE2ETestAppJs references -->
     <link href="../../TestFramework/css/default.css" rel="stylesheet" />
-    <script src="http://ajax.aspnetcdn.com/ajax/mobileservices/MobileServices.Web-1.2.5.js"></script>        
+    <!--<script src="http://ajax.aspnetcdn.com/ajax/mobileservices/MobileServices.Web-1.2.5.js"></script>-->        
+    <script src="js/lib/MobileServices.Web.js"></script>
     <script src="../../TestFramework/js/lib/jquery-2.1.1.js"></script>
     <!-- Uncomment for pre-release testing -->
     <!-- <script src="../../TestFramework/js/lib/MobileServices.Web.js"></script>                                                     -->
@@ -48,14 +49,22 @@
 
                     </tr>
                     <tr>
-                        <th id='appKeyLabelCell'>App Key:</th>
-                        <th id='appKeyTextCell'>
-                            <input id='txtAppKey' value="" /></th>
+                        <th id='gatewayUrlLabelCell'>Gateway URL:</th>
+                        <th id='gatewayUrlTextCell'>
+                            <input id='txtGatewayUrl' />
+                        </th>
                         <th id='loadAppInfoCell'>
-                            <button id='btnLoadAppInfo'>Load App Info</button></th>
+                            <button id='btnLoadAppInfo'>Load App Info</button>
+                        </th>
                         <td>
                             <button id="btnRunAllUnattendedTests">Run All Tests (unattended)</button>
                         </td>
+                    </tr>
+                    <tr>
+                        <th id='appKeyLabelCell'>App Key:</th>
+                        <th id='appKeyTextCell'>
+                            <input id='txtAppKey' />
+                        </th>
                     </tr>
                 </table>
             </td>

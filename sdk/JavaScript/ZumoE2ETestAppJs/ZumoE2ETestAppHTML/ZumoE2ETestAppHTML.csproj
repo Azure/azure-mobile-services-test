@@ -119,7 +119,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="default.html" />
-    <None Include="js\lib\MobileServices.intellisense.js" />
+    <Content Include="js\lib\MobileServices.DevIntellisense.js" />
     <Content Include="js\lib\MobileServices.Web.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

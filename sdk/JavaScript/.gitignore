@@ -13,3 +13,4 @@ Components
 
 #ignore publish files
 PublishProfiles/
+*.pubxml

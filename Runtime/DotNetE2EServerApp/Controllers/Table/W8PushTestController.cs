@@ -17,7 +17,7 @@ namespace ZumoE2EServerApp.Controllers
         public async Task<W8PushTestEntity> PostW8PushTestEntity(W8PushTestEntity item)
         {
             IPushMessage message = null;
-            string tag = null;
+            string tag = "";
             if (item.NHNotificationType == "template")
             {
                 message = item.TemplateNotification.ToObject<TemplatePushMessage>();
@@ -37,7 +37,7 @@ namespace ZumoE2EServerApp.Controllers
 
                 windowsMessage.Headers.Add("X-WNS-Type", "wns/" + item.NHNotificationType);
                 message = windowsMessage;
-                tag = "tag1";
+                //tag = "tag1";
             }
 
             NotificationOutcome pushResponse = await this.Services.Push.SendAsync(message, tag);

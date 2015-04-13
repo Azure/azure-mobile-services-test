@@ -83,13 +83,13 @@ function defineTableGenericFunctionalTestsNamespace() {
                        validStringIds = baseValidStringIds();
                        validStringIds.push("...");
                        validStringIds.push("id with 255 characters " + new Array(257 - 24).join('A'));
-                       validStringIds.push("id with allowed ascii characters  !#$%&'()*,-.0123456789:;<=>@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{|}");
+                       validStringIds.push("id with allowed ascii characters  !#$'(),-.0123456789;=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{|}");
                        validStringIds.push("id with allowed extended ascii characters ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþ");
                    }
                    if (runtimeInfo.runtime.type.indexOf("NET") > -1) {
                        validStringIds = baseValidStringIds();
                        validStringIds.push("id with 128 characters " + new Array(129 - 24).join('A'));
-                       validStringIds.push("id with allowed ascii characters  !#$%&'()*,-.0123456789:;<=>@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{|}".substr(0, 127));
+                       validStringIds.push("id with allowed ascii characters  !#$'(),-.0123456789;=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{|}".substr(0, 127));
                        validStringIds.push("id with allowed extended ascii characters ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþ".substr(0, 127));
                    }
                    done(true);
@@ -1435,10 +1435,9 @@ var baseValidStringIds = function () {
                  "id with spaces",
                  " .",
                  "'id' with single quotes",
-                 "id with Japanese 私の車はどこですか？",
+                 "id with Japanese 私の車はどこですか",
                  "id with Arabic أين هو سيارتي؟",
-                 "id with Russian Где моя машина",
-                 "id with some URL significant characters % # &"
+                 "id with Russian Где моя машина"
         ];
     },
     validStringIds = baseValidStringIds(),
@@ -1486,9 +1485,7 @@ invalidStringIds = [
 "id\nwith\n\newline",
 "id with backslash \\",
 "id with forwardslash \/",
-"1/8/2010 8:00:00 AM",
 "\"idWithQuotes\"",
-"?",
 "\\",
 "\/",
 "`",
