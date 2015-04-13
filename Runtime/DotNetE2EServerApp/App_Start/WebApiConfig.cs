@@ -15,6 +15,7 @@ using Microsoft.Azure.Mobile.Server;
 using Microsoft.Azure.Mobile.Server.AppService.Config;
 using Microsoft.Azure.Mobile.Server.Config;
 using Newtonsoft.Json;
+using System.Web.Http.Cors;
 
 namespace ZumoE2EServerApp
 {
@@ -27,6 +28,8 @@ namespace ZumoE2EServerApp
             ConfigOptions options = new ConfigOptions();
             
             HttpConfiguration config = ServiceConfig.Initialize(new ConfigBuilder(options));
+
+            config.EnableCors(new EnableCorsAttribute("*", "*", "*"));
 
             // Now add any missing connection strings and app settings from the environment.
             // Any envrionment variables found with names that match existing connection

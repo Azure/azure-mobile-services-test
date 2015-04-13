@@ -280,18 +280,18 @@ function createZumoNamespace() {
     var currentGroup = -1;
 
     // Returns 'true' if the initialization was successful; false otherwise
-    function initializeClient(appUrl, gatewayUrl, appKey) {
+    function initializeClient(appUrl, appKey) {
         var mustInitialize = true;
-        if (client && client.applicationUrl === appUrl && client.gatewayUrl === gatewayUrl && client.applicationKey === appKey) {
+        if (client && client.applicationUrl === appUrl && client.applicationKey === appKey) {
             mustInitialize = false;
         }
 
         if (mustInitialize) {
             if (appUrl && appKey) {
-                client = new WindowsAzure.MobileServiceClient(appUrl, gatewayUrl, appKey);
+                client = new WindowsAzure.MobileServiceClient(appUrl, appKey);
                 return true;
             } else {
-                testPlatform.alert('Please enter valid application URL, gateway URL and key', 'Error', function () {
+                testPlatform.alert('Please enter valid application URL and key', 'Error', function () {
                     return false;
                 });
             }

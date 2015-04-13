@@ -43,8 +43,7 @@ function defineLoginTestsNamespace() {
 
     var lastUserIdentityObject = null;
 
-    //var providers = ['facebook', 'google', 'twitter', 'microsoftaccount'];
-    var providers = ['facebook'];
+    var providers = ['facebook', 'google', 'twitter', 'microsoftaccount'];
     for (i = 0; i < providers.length; i++) {
         var provider = providers[i];
         tests.push(createLogoutTest());

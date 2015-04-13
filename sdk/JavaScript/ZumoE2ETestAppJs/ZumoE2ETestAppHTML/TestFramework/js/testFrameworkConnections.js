@@ -33,10 +33,10 @@ setDefaultButtonEventHandler();
 
 function saveLastUsedAppInfo() {
     var lastAppUrl = document.getElementById('txtAppUrl').value;
-    var lastGatewayUrl = document.getElementById('txtGatewayUrl').value;
     var lastAppKey = document.getElementById('txtAppKey').value;
 
-    testPlatform.saveAppInfo(lastAppUrl, lastGatewayUrl, lastAppKey);
+    testPlatform.saveAppInfo(lastAppUrl, lastAppKey);
+
 }
 
 function getTestDisplayColor(test) {
@@ -61,10 +61,9 @@ function btnRunTestClick(evt) {
     def = $.Deferred();
     var currentGroup = zumo.testGroups[zumo.currentGroup];
     var appUrl = document.getElementById('txtAppUrl').value;
-    var gatewayUrl = document.getElementById('txtGatewayUrl').value;
     var appKey = document.getElementById('txtAppKey').value;
 
-    if (zumo.initializeClient(appUrl, gatewayUrl, appKey)) {
+    if (zumo.initializeClient(appUrl, appKey)) {
 
         saveLastUsedAppInfo();
 

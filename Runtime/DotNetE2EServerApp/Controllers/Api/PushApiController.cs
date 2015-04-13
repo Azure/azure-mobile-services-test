@@ -18,6 +18,7 @@ using Microsoft.Azure.NotificationHubs;
 using Microsoft.Azure.NotificationHubs.Messaging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Microsoft.Azure.Mobile.Server.Notifications;
 
 namespace ZumoE2EServerApp.Controllers
 {
@@ -174,6 +175,13 @@ namespace ZumoE2EServerApp.Controllers
             //Waiting for a second to make sure NH completes deleting registrations
             System.Threading.Thread.Sleep(1000);
             await this.GetNhClient().DeleteRegistrationsByChannelAsync(channelUri);
+        }
+
+        [Route("api/register")]
+        public void Register(string data)
+        {
+            var installation = JsonConvert.DeserializeObject<Installation>(data);
+            new PushClient(Services).HubClient.CreateOrUpdateInstallation(installation);
         }
 
         private NotificationHubClient GetNhClient()
