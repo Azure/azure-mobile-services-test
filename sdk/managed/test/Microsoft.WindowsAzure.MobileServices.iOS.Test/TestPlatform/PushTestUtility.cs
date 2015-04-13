@@ -25,10 +25,5 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         {
             return DefaultDeviceToken;
         }
-
-        public string GetUpdatedPushHandle()
-        {
-            return DefaultDeviceToken.Replace('b', 'a').Replace('B', 'a');
-        }
     }
 }

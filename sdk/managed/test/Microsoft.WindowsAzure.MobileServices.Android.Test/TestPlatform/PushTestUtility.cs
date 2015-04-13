@@ -24,10 +24,5 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         {
             return DefaultChannelUri;
         }
-
-        public string GetUpdatedPushHandle()
-        {
-            return DefaultChannelUri.Replace('A', 'B');
-        }
     }
 }

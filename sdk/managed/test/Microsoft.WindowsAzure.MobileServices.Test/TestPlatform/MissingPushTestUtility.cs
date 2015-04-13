@@ -12,10 +12,5 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         {
             throw new NotImplementedException();
         }
-
-        public string GetUpdatedPushHandle()
-        {
-            throw new NotImplementedException();
-        }
     }
 }

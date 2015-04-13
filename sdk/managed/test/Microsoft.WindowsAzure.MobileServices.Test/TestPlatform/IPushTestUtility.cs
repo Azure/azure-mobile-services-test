@@ -3,6 +3,7 @@
 // ----------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Microsoft.WindowsAzure.MobileServices
 {
@@ -13,7 +14,5 @@ namespace Microsoft.WindowsAzure.MobileServices
     public interface IPushTestUtility
     {
         string GetPushHandle();
-
-        string GetUpdatedPushHandle();        
     }
 }
