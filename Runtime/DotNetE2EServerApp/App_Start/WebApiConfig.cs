@@ -29,8 +29,6 @@ namespace ZumoE2EServerApp
             
             HttpConfiguration config = ServiceConfig.Initialize(new ConfigBuilder(options));
 
-            config.EnableCors(new EnableCorsAttribute("*", "*", "*"));
-
             // Now add any missing connection strings and app settings from the environment.
             // Any envrionment variables found with names that match existing connection
             // string and app setting names will be used to replace the value.
