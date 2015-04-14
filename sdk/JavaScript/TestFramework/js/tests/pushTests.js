@@ -81,7 +81,6 @@ function definePushTestsNamespace() {
             pushManager.createPushNotificationChannelForApplicationAsync().done(function (channel) {
                 test.addLog('Created push channel: ', { uri: channel.uri, expirationTime: channel.expirationTime });
                 channel.onpushnotificationreceived = onPushNotificationReceived;
-                //zumo.getClient().push.register('wns', channel.uri, templates).done(function () {
                 zumo.getClient().invokeApi('register', { parameters: { data: JSON.stringify({
                     installationId: WindowsAzure.MobileServiceClient._applicationInstallationId,
                     platform: 'Wns',
