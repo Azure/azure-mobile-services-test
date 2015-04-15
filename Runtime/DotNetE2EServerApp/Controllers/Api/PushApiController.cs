@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using Microsoft.Azure.Mobile.Security;
 using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Server.Config;
 using Microsoft.Azure.Mobile.Server.Security;
 using Microsoft.Azure.NotificationHubs;
 using Microsoft.Azure.NotificationHubs.Messaging;
@@ -171,13 +172,9 @@ namespace ZumoE2EServerApp.Controllers
 
         private NotificationHubClient GetNhClient()
         {
-            string connString = null;
-            string hubName = null;
-            if (!this.Services.Settings.TryGetValue("MS_NotificationHubConnectionString", out connString) || !this.Services.Settings.TryGetValue("MS_NotificationHubName", out hubName))
-            {
-                throw new Exception("Invalid NH settings");
-            }
-            return NotificationHubClient.CreateClientFromConnectionString(connString, hubName);
+            string notificationHubName = this.Services.Settings.NotificationHubName;
+            string notificationHubConnection = this.Services.Settings.Connections[ServiceSettingsKeys.NotificationHubConnectionString].ConnectionString;
+            return NotificationHubClient.CreateClientFromConnectionString(notificationHubConnection, notificationHubName);
         }
 
         private async Task<bool> VerifyTags(string channelUri, string installationId, NotificationHubClient nhClient)

@@ -17,18 +17,13 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
     [Tag("push")]
     public class PushFunctional : FunctionalTestBase
     {
-        readonly IPushTestUtility pushTestUtility;
         private static Queue<PushNotificationReceivedEventArgs> pushesReceived = new Queue<PushNotificationReceivedEventArgs>();
-
-        public PushFunctional()
-        {
-            this.pushTestUtility = TestPlatform.Instance.PushTestUtility;
-        }
+        public const string PushTestTableName = "w8PushTest";
 
         [AsyncTestMethod]
         public async Task InitialDeleteRegistrationsAsync()
         {
-            var channelUri = this.pushTestUtility.GetPushHandle();
+            string channelUri = await this.GetChannelUri();
             Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
             {
                 {"channelUri", channelUri}
@@ -39,7 +34,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         [AsyncTestMethod]
         public async Task RegisterAsync()
         {
-            var channelUri = this.pushTestUtility.GetPushHandle();
+            string channelUri = await this.GetChannelUri();
             Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
             {
                 {"channelUri", channelUri}
@@ -63,9 +58,9 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         [AsyncTestMethod]
         public async Task LoginRegisterAsync()
         {
+            string channelUri = await this.GetChannelUri();
             MobileServiceUser user = await GetDummyUser();
             this.GetClient().CurrentUser = user;
-            var channelUri = this.pushTestUtility.GetPushHandle();
             Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
             {
                 {"channelUri", channelUri}
@@ -90,13 +85,11 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         [AsyncTestMethod]
         public async Task UnregisterAsync()
         {
-            var channelUri = this.pushTestUtility.GetPushHandle();
             var push = this.GetClient().GetPush();
             await push.UnregisterAsync();
             try
             {
                 await this.GetClient().InvokeApiAsync("verifyUnregisterInstallationResult", HttpMethod.Get, null);
-
             }
             catch (MobileServiceInvalidOperationException)
             {
@@ -107,7 +100,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         [AsyncTestMethod]
         public async Task RegisterAsyncWithTemplates()
         {
-            var channelUri = this.pushTestUtility.GetPushHandle();
+            string channelUri = await this.GetChannelUri();
             JObject templates = GetTemplates("foo");
             var push = this.GetClient().GetPush();
             push.RegisterAsync(channelUri, templates).Wait();
@@ -134,7 +127,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         [AsyncTestMethod]
         public async Task RegisterAsyncWithTemplatesAndSecondaryTiles()
         {
-            var channelUri = this.pushTestUtility.GetPushHandle();
+            string channelUri = await this.GetChannelUri();
             JObject templates = GetTemplates("bar");
             JObject secondaryTiles = GetSecondaryTiles(channelUri, "foo");
             var push = this.GetClient().GetPush();
@@ -164,7 +157,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         [AsyncTestMethod]
         public async Task RegisterAsyncMultiple()
         {
-            var channelUri = this.pushTestUtility.GetPushHandle();
+            var channelUri = await this.GetChannelUri();
             JObject templates = GetTemplates("foo");
             var push = this.GetClient().GetPush();
 
@@ -194,35 +187,54 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
 
 
         [AsyncTestMethod]
-        public async Task ToastPushTest()
+        public async Task WnsToastPushTest()
         {
+            PushWatcher watcher = new PushWatcher();
+            var client = this.GetClient();
+            var push = this.GetClient().GetPush();
+
+            //Build push payload
             string wnsMethod = "sendToastText01";
             string text = "Hello World";
+            string pushChannelUri = await GetChannelUri();
             var payload = new JObject();
             payload.Add("text1", text);
             XElement expectedResult = BuildXmlToastPayload(wnsMethod, text);
-            PushWatcher watcher = new PushWatcher();
-            var pushResult = await table.InsertAsync(item);
-            var notificationResult = await watcher.WaitForPush(TimeSpan.FromSeconds(10));
-            if (notificationResult == null)
+            var item = new JObject();
+            item.Add("payload", expectedResult.ToString());
+            item.Add("nhNotificationType", "wns");
+            try
             {
-                Log("Error, push not received on the timeout allowed");
-                Assert.Fail("Error, push not received on the timeout allowed");
-            }
-            else
-            {
-                Log("Push notification received:");
-                XElement receivedPushInfo = XElement.Parse(notificationResult.ToastNotification.Content.GetXml());
-                Log("  {0}: {1}", notificationResult.NotificationType, receivedPushInfo);
+                //Register for Push
+                await push.RegisterAsync(pushChannelUri);
 
-                if (expectedResult.ToString(SaveOptions.DisableFormatting) == receivedPushInfo.ToString(SaveOptions.DisableFormatting))
+                //Invoke push send on insert
+                var table = client.GetTable(PushTestTableName);
+                var pushResult = await table.InsertAsync(item);
+                var notificationResult = await watcher.WaitForPush(TimeSpan.FromSeconds(10));
+                if (notificationResult == null)
                 {
-                    Log("Received notification is the expected one.");
+                    Assert.Fail("Error, push not received on the timeout allowed");
                 }
                 else
                 {
-                    Log(string.Format("Received notification is not the expected one. \r\nExpected:{0} \r\nActual:{1}", expectedResult.ToString(), receivedPushInfo.ToString()));
+                    Log("Push notification received:");
+                    XElement receivedPushInfo = XElement.Parse(notificationResult.ToastNotification.Content.GetXml());
+                    Log("  {0}: {1}", notificationResult.NotificationType, receivedPushInfo);
+
+                    if (expectedResult.ToString(SaveOptions.DisableFormatting) == receivedPushInfo.ToString(SaveOptions.DisableFormatting))
+                    {
+                        Log("Received notification is the expected one.");
+                    }
+                    else
+                    {
+                        Assert.Fail(string.Format("Received notification is not the expected one. \r\nExpected:{0} \r\nActual:{1}", expectedResult.ToString(), receivedPushInfo.ToString()));
+                    }
                 }
+            }
+            finally
+            {
+                push.UnregisterAsync().Wait();
             }
         }
 
@@ -272,8 +284,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             };
             return user;
         }
-
-
 
         private async Task<string> GetChannelUri()
         {

@@ -2,12 +2,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.Azure.NotificationHubs;
-using Microsoft.Azure.Mobile.Server;
-using Microsoft.Azure.Mobile.Server.Notifications;
-using Microsoft.Azure.Mobile.Server.Security;
+using System;
 using System.Threading.Tasks;
 using System.Web.Http;
+using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Server.Config;
+using Microsoft.Azure.NotificationHubs;
 using ZumoE2EServerApp.DataObjects;
 
 namespace ZumoE2EServerApp.Controllers
@@ -16,32 +16,22 @@ namespace ZumoE2EServerApp.Controllers
     {
         public async Task<W8PushTestEntity> PostW8PushTestEntity(W8PushTestEntity item)
         {
-            IPushMessage message = null;
-            string tag = null;
-            if (item.NHNotificationType == "template")
-            {
-                message = item.TemplateNotification.ToObject<TemplatePushMessage>();
-                tag = "World";
-            }
-            else
-            {
-                var windowsMessage = new WindowsPushMessage();
-                if (item.NHNotificationType == "raw")
-                {
-                    windowsMessage.XmlPayload = item.Payload;
-                }
-                else
-                {
-                    windowsMessage.XmlPayload = "<?xml version=\"1.0\" encoding=\"utf-8\"?>" + item.XmlPayload;
-                }
+            string notificationHubName = this.Services.Settings.NotificationHubName;
+            string notificationHubConnection = this.Services.Settings.Connections[ServiceSettingsKeys.NotificationHubConnectionString].ConnectionString;
+            NotificationHubClient nhClient = NotificationHubClient.CreateClientFromConnectionString(notificationHubConnection, notificationHubName);
 
-                windowsMessage.Headers.Add("X-WNS-Type", "wns/" + item.NHNotificationType);
-                message = windowsMessage;
-                tag = "tag1";
-            }
+            NotificationOutcome pushResponse = null;
 
-            NotificationOutcome pushResponse = await this.Services.Push.SendAsync(message, tag);
-            this.Services.Log.Info("WNS push sent: " + pushResponse, this.Request);
+            switch (item.NHNotificationType)
+            {
+                case "wns": pushResponse = await nhClient.SendWindowsNativeNotificationAsync(item.Payload);
+                    break;
+                case "apns": pushResponse = await nhClient.SendAppleNativeNotificationAsync(item.Payload);
+                    break;
+                default:
+                    throw new NotImplementedException("Push is not supported on this platform");
+            }
+            this.Services.Log.Info("Push sent: " + pushResponse, this.Request);
             return new W8PushTestEntity()
             {
                 Id = "1",
