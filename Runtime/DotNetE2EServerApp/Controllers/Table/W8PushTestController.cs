@@ -24,9 +24,11 @@ namespace ZumoE2EServerApp.Controllers
 
             switch (item.NHNotificationType)
             {
-                case "wns": pushResponse = await nhClient.SendWindowsNativeNotificationAsync(item.Payload);
+                case "wns":
+                    pushResponse = await nhClient.SendWindowsNativeNotificationAsync(item.Payload);
                     break;
-                case "apns": pushResponse = await nhClient.SendAppleNativeNotificationAsync(item.Payload);
+                case "apns":
+                    pushResponse = await nhClient.SendAppleNativeNotificationAsync(item.Payload);
                     break;
                 default:
                     throw new NotImplementedException("Push is not supported on this platform");
