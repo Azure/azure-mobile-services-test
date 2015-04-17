@@ -7,15 +7,23 @@
 function definePushTestsNamespace() {
     var tests = [],
         client = zumo.getClient(),
-        channelUri = 'https://bn1.notify.windows.com/?token=AgYAAADs42685sa5PFCEy82eYpuG8WCPB098AWHnwR8kNRQLwUwf%2f9p%2fy0r82m4hxrLSQ%2bfl5aNlSk99E4jrhEatfsWgyutFzqQxHcLk0Xun3mufO2G%2fb2b%2ftjQjCjVcBESjWvY%3d';
+        channelUri;
 
     tests.push(new zumo.Test('InitialDeleteRegistrations', function (test, done) {
-        zumo.getClient().invokeApi('deleteRegistrationsForChannel', { method: 'DELETE', parameters: { channelUri: channelUri } })
+        getChannel()
+            .then(function (channel) {
+                channelUri = channel.uri;
+                return zumo.getClient().invokeApi('deleteRegistrationsForChannel', { method: 'DELETE', parameters: { channelUri: channelUri } });
+            })
             .done(done, fail(test, done));
     }));
 
     tests.push(new zumo.Test('Register', function (test, done) {
-        zumo.getClient().push.register('wns', channelUri)
+        getChannel()
+            .then(function (channel) {
+                channelUri = channel.uri;
+                return zumo.getClient().push.register('wns', channelUri);
+            })
             .then(function () {
                 return zumo.getClient().invokeApi('verifyRegisterInstallationResult', { method: 'GET', parameters: { channelUri: channelUri } });
             })
@@ -26,7 +34,11 @@ function definePushTestsNamespace() {
     }));
 
     tests.push(new zumo.Test('Unregister', function (test, done) {
-        zumo.getClient().push.unregister(channelUri)
+        getChannel()
+            .then(function (channel) {
+                channelUri = channel.uri;
+                return zumo.getClient().push.unregister(channelUri)
+            })
             .then(function () {
                 return zumo.getClient().invokeApi('verifyUnregisterInstallationResult', { method: 'GET' });
             })
@@ -34,7 +46,11 @@ function definePushTestsNamespace() {
     }));
 
     tests.push(new zumo.Test('RegisterWithTemplates', function (test, done) {
-        zumo.getClient().push.register('wns', channelUri, createTemplates(['foo']))
+        getChannel()
+            .then(function (channel) {
+                channelUri = channel.uri;
+                return zumo.getClient().push.register('wns', channelUri, createTemplates(['foo']))
+            })
             .then(function () {
                 return zumo.getClient().invokeApi('verifyRegisterInstallationResult', { method: 'GET', parameters: { channelUri: channelUri, templates: createTemplates() } });
             })
@@ -45,7 +61,11 @@ function definePushTestsNamespace() {
     }));
 
     tests.push(new zumo.Test('RegisterWithTemplatesAndSecondaryTiles', function (test, done) {
-        zumo.getClient().push.register('wns', channelUri, createTemplates(['bar']), createSecondaryTiles(channelUri, ['foo']))
+        getChannel()
+            .then(function (channel) {
+                channelUri = channel.uri;
+                return zumo.getClient().push.register('wns', channelUri, createTemplates(['bar']), createSecondaryTiles(channelUri, ['foo']))
+            })
             .then(function () {
                 return zumo.getClient().invokeApi('verifyRegisterInstallationResult', { method: 'GET', parameters: { channelUri: channelUri, templates: createTemplates(), secondaryTiles: createSecondaryTiles(channelUri, undefined, true) } });
             })
@@ -56,7 +76,11 @@ function definePushTestsNamespace() {
     }));
 
     tests.push(new zumo.Test('RegisterMultiple', function (test, done) {
-        zumo.getClient().push.register('wns', channelUri)
+        getChannel()
+            .then(function (channel) {
+                channelUri = channel.uri;
+                return zumo.getClient().push.register('wns', channelUri)
+            })
             .then(function () {
                 return zumo.getClient().push.register('wns', channelUri, createTemplates(['foo']));
             })
@@ -98,6 +122,10 @@ function createSecondaryTiles(channelUri, tags, expectedTiles) {
             templates: createTemplates(tags)
         }
     };
+}
+
+function getChannel() {
+    return Windows.Networking.PushNotifications.PushNotificationChannelManager.createPushNotificationChannelForApplicationAsync();
 }
 
 function fail(test, done) {
