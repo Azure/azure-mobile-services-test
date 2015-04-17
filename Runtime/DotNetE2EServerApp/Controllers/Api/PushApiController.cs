@@ -94,6 +94,8 @@ namespace ZumoE2EServerApp.Controllers
             if (this.Request.Headers.TryGetValues("X-ZUMO-INSTALLATION-ID", out installationIds))
             {
                 var installationId = installationIds.FirstOrDefault();
+                //Waiting for a second before querying for installation to make sure NH completes registration
+                System.Threading.Thread.Sleep(1000);
                 Installation nhInstallation = await nhClient.GetInstallationAsync(installationId);
                 string nhTemplates = null;
                 string nhSecondaryTiles = null;
@@ -147,6 +149,8 @@ namespace ZumoE2EServerApp.Controllers
                 var installationId = installationIds.FirstOrDefault();
                 try
                 {
+                    //Waiting for a second before querying for installation to make sure NH completes deleting registration
+                    System.Threading.Thread.Sleep(1000);
                     Installation nhInstallation = await this.GetNhClient().GetInstallationAsync(installationId);
                 }
                 catch (MessagingEntityNotFoundException)
@@ -167,6 +171,8 @@ namespace ZumoE2EServerApp.Controllers
         [Route("api/deleteRegistrationsForChannel")]
         public async Task DeleteRegistrationsForChannel(string channelUri)
         {
+            //Waiting for a second to make sure NH completes deleting registrations
+            System.Threading.Thread.Sleep(1000);
             await this.GetNhClient().DeleteRegistrationsByChannelAsync(channelUri);
         }
 
