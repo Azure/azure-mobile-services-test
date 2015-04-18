@@ -29,10 +29,15 @@ function createPlatformSpecificFunctions() {
         WinJS.Application.local.writeText('savedAppInfo.txt', JSON.stringify(state));
     }
 
+    function getPushChannel() {
+        return Windows.Networking.PushNotifications.PushNotificationChannelManager.createPushNotificationChannelForApplicationAsync();
+    }
+
     return {
         alert: alertFunction,
         saveAppInfo: saveAppInfo,
         IsHTMLApplication: false,
+        getPushChannel: getPushChannel
     };
 }
 

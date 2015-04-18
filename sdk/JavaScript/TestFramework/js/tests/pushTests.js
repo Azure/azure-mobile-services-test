@@ -10,7 +10,7 @@ function definePushTestsNamespace() {
         channelUri;
 
     tests.push(new zumo.Test('InitialDeleteRegistrations', function (test, done) {
-        getChannel()
+        testPlatform.getPushChannel()
             .then(function (channel) {
                 channelUri = channel.uri;
                 return zumo.getClient().invokeApi('deleteRegistrationsForChannel', { method: 'DELETE', parameters: { channelUri: channelUri } });
@@ -19,7 +19,7 @@ function definePushTestsNamespace() {
     }));
 
     tests.push(new zumo.Test('Register', function (test, done) {
-        getChannel()
+        testPlatform.getPushChannel()
             .then(function (channel) {
                 channelUri = channel.uri;
                 return zumo.getClient().push.register('wns', channelUri);
@@ -34,7 +34,7 @@ function definePushTestsNamespace() {
     }));
 
     tests.push(new zumo.Test('Unregister', function (test, done) {
-        getChannel()
+        testPlatform.getPushChannel()
             .then(function (channel) {
                 channelUri = channel.uri;
                 return zumo.getClient().push.unregister(channelUri)
@@ -46,7 +46,7 @@ function definePushTestsNamespace() {
     }));
 
     tests.push(new zumo.Test('RegisterWithTemplates', function (test, done) {
-        getChannel()
+        testPlatform.getPushChannel()
             .then(function (channel) {
                 channelUri = channel.uri;
                 return zumo.getClient().push.register('wns', channelUri, createTemplates(['foo']))
@@ -61,7 +61,7 @@ function definePushTestsNamespace() {
     }));
 
     tests.push(new zumo.Test('RegisterWithTemplatesAndSecondaryTiles', function (test, done) {
-        getChannel()
+        testPlatform.getPushChannel()
             .then(function (channel) {
                 channelUri = channel.uri;
                 return zumo.getClient().push.register('wns', channelUri, createTemplates(['bar']), createSecondaryTiles(channelUri, ['foo']))
@@ -76,7 +76,7 @@ function definePushTestsNamespace() {
     }));
 
     tests.push(new zumo.Test('RegisterMultiple', function (test, done) {
-        getChannel()
+        testPlatform.getPushChannel()
             .then(function (channel) {
                 channelUri = channel.uri;
                 return zumo.getClient().push.register('wns', channelUri)
@@ -122,10 +122,6 @@ function createSecondaryTiles(channelUri, tags, expectedTiles) {
             templates: createTemplates(tags)
         }
     };
-}
-
-function getChannel() {
-    return Windows.Networking.PushNotifications.PushNotificationChannelManager.createPushNotificationChannelForApplicationAsync();
 }
 
 function fail(test, done) {
