@@ -124,6 +124,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="js\platformSpecificFunctions.js" />
+    <Content Include="js\Promises.js" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
