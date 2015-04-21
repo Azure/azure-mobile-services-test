@@ -19,7 +19,7 @@ using System.Net.Http.Headers;
 
 namespace ZumoE2EServerApp.Controllers
 {
-    public class SoftDeleteRoundTripTableItemController : TableController<SoftDeleteRoundTripTableItem>
+    public class SoftDeleteRoundTripTableController : TableController<SoftDeleteRoundTripTableItem>
     {
         SDKClientTestContext context;
         protected override void Initialize(HttpControllerContext controllerContext)
