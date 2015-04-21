@@ -56,7 +56,7 @@ import java.util.concurrent.ExecutionException;
 public class UpdateDeleteTests extends TestGroup {
 
     protected static final String ROUNDTRIP_TABLE_NAME = "IntIdRoundTripTable";
-    protected static final String STRING_ID_ROUNDTRIP_SOFT_DELETE_TABLE_NAME = "SoftDeleteRoundTripTableItem";
+    protected static final String STRING_ID_ROUNDTRIP_SOFT_DELETE_TABLE_NAME = "StringIdRoundTripTableSoftDelete";
 
     public UpdateDeleteTests() {
         super("Insert/Update/Delete Tests");
