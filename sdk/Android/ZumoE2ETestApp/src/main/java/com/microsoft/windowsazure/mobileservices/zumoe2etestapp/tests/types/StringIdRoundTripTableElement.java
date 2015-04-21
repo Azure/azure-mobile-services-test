@@ -40,8 +40,7 @@ public class StringIdRoundTripTableElement {
 
     public Date date1;
 
-    // Complex type
-    public ComplexType complex;
+    public Integer integer;
 
     @SerializedName("__createdAt")
     public Date CreatedAt;
@@ -67,14 +66,13 @@ public class StringIdRoundTripTableElement {
             number = 10.5;
             bool = true;
             date1 = new GregorianCalendar().getTime();
-            Random rndGen = new Random();
-            complex = new ComplexType(rndGen);
+            integer = 42;
         } else {
             name = null;
             number = null;
             bool = null;
             date1 = null;
-            complex = null;
+            integer = null;
         }
     }
 
@@ -84,7 +82,7 @@ public class StringIdRoundTripTableElement {
         bool = rndGen.nextBoolean();
         date1 = new GregorianCalendar(rndGen.nextInt(20) + 1980, rndGen.nextInt(12), rndGen.nextInt(27) + 1, rndGen.nextInt(24), rndGen.nextInt(60),
                 rndGen.nextInt(60)).getTime();
-        complex = new ComplexType(rndGen);
+        integer = rndGen.nextInt();
     }
 
     public StringIdRoundTripTableElement(StringIdRoundTripTableElement other) {
@@ -93,7 +91,7 @@ public class StringIdRoundTripTableElement {
         number = Double.valueOf(other.number);
         bool = Boolean.valueOf(other.bool);
         date1 = new Date(other.date1.getTime());
-        complex = new ComplexType(other.complex);
+        integer = Integer.valueOf(other.integer);
     }
 
     @Override
@@ -106,22 +104,21 @@ public class StringIdRoundTripTableElement {
             return false;
         if (!Util.compare(element.name, name))
             return false;
-        if (!Util.compare(element.bool, bool))
-            return false;
         if (!Util.compare(element.number, number))
+            return false;
+        if (!Util.compare(element.bool, bool))
             return false;
         if (!Util.compare(element.date1, date1))
             return false;
-        if (!Util.compare(element.complex, complex))
+        if (!Util.compare(element.integer, integer))
             return false;
         return true;
     }
 
     @Override
     public String toString() {
-        return String.format("StringIdRoundTripTableItem[Bool=%B,ComplexType=%s,Date1=%s,Name=%s,Number=%s]", bool == null ? "<<NULL>>" : bool.toString(),
-                complex == null ? "<<NULL>>" : complex.toString(), date1 == null ? "<<NULL>>" : Util.dateToString(date1), name, number == null ? "<NULL>"
+        return String.format("StringIdRoundTripTableItem[Bool=%B,Date1=%s,Integer=%s,Name=%s,Number=%s]", bool == null ? "<<NULL>>" : bool.toString(),
+                date1 == null ? "<<NULL>>" : Util.dateToString(date1), integer == null ? "<<NULL>>" : integer.toString(), name, number == null ? "<<NULL>>"
                         : number.toString());
-
     }
 }

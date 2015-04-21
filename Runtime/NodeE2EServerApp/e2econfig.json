@@ -38,10 +38,17 @@
       "columns": "name=string,date1=date,bool=boolean,integer=number,number=number",
       "options": "--integerId"
     },
-
+	{
+      "name":    "stringIdRoundTripTableSoftDelete",
+      "columns": "name=string,date1=date,bool=boolean,integer=number,number=number"
+    },
     { "name":"public" },
     { "name":"application" },
     { "name":"user" },
-    { "name":"admin" }
+    { "name":"admin" },
+	{
+      "name":    "offlineReady",
+      "columns": "name=string,date=date,bool=boolean,age=number,float=number"
+    }
   ]
 }

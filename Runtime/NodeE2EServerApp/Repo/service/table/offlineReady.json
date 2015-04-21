@@ -1,16 +1,13 @@
 {
   "routes": {
-    "*": {
-      "get": {
+    "/": {
+      "insert": {
         "permission": "application"
       },
-      "post": {
+      "read": {
         "permission": "application"
       },
-      "put": {
-        "permission": "application"
-      },
-      "patch": {
+      "update": {
         "permission": "application"
       },
       "delete": {

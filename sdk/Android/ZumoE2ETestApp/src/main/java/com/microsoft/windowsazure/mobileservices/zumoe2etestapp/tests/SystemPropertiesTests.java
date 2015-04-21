@@ -2,19 +2,19 @@
 Copyright (c) Microsoft Open Technologies, Inc.
 All Rights Reserved
 Apache 2.0 License
- 
+
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
- 
+
      http://www.apache.org/licenses/LICENSE-2.0
- 
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
- 
+
 See the Apache Version 2.0 License for specific language governing permissions and limitations under the License.
  */
 package com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests;
@@ -27,6 +27,7 @@ import android.util.Pair;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
+import com.microsoft.windowsazure.mobileservices.table.DateTimeOffset;
 import com.microsoft.windowsazure.mobileservices.table.MobileServiceConflictException;
 import com.microsoft.windowsazure.mobileservices.table.MobileServiceConflictExceptionJson;
 import com.microsoft.windowsazure.mobileservices.table.MobileServiceJsonTable;
@@ -46,11 +47,9 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestSt
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.Util.IPredicate;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.StringIdJsonElement;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.StringIdRoundTripTableElement;
-import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.StringIdRoundTripTableSoftDeleteElement;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.SystemPropertiesTestData;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -60,9 +59,11 @@ import static com.microsoft.windowsazure.mobileservices.table.query.QueryOperati
 import static com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.Util.compare;
 import static com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.Util.filter;
 
+//import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.StringIdRoundTripTableSoftDeleteElement;
+
 public class SystemPropertiesTests extends TestGroup {
 
-    protected static final String STRING_ID_TABLE_NAME = "stringIdRoundTripTable";
+    protected static final String STRING_ID_TABLE_NAME = "RoundTripTable";
 
     public SystemPropertiesTests() {
         super("System Properties tests");
@@ -144,23 +145,23 @@ public class SystemPropertiesTests extends TestGroup {
                                     });
 
                             log("Filter table - Version");
-                            List<StringIdRoundTripTableElement> filteredVersionElements = read(table, field("__version").eq().val(versionFilter));
+                            //List<StringIdRoundTripTableElement> filteredVersionElements = read(table, field("__version").eq().val(versionFilter));
 
-                            log("Verify response size");
-                            if (filteredVersionElements == null || filteredVersionElements.size() != filteredVersionResponseElements.size()) {
-                                throw new Exception("Filter response - Version - incorrect number of records");
-                            }
+                            //log("Verify response size");
+                            //if (filteredVersionElements == null || filteredVersionElements.size() != filteredVersionResponseElements.size()) {
+                            //    throw new Exception("Filter response - Version - incorrect number of records");
+                            //}
 
-                            log("Verify system properties are not null");
-                            for (StringIdRoundTripTableElement filteredVersionElement : filteredVersionElements) {
-                                if (filteredVersionElement.Version == null) {
-                                    throw new Exception("Filter response - Version is null");
-                                } else if (!filteredVersionElement.Version.equals(versionFilter)) {
-                                    throw new ExpectedValueException(versionFilter, filteredVersionElement.Version);
-                                }
-                            }
+                            //log("Verify system properties are not null");
+                            //for (StringIdRoundTripTableElement filteredVersionElement : filteredVersionElements) {
+                            //    if (filteredVersionElement.Version == null) {
+                            //        throw new Exception("Filter response - Version is null");
+                            //    } else if (!filteredVersionElement.Version.equals(versionFilter)) {
+                            //        throw new ExpectedValueException(versionFilter, filteredVersionElement.Version);
+                            //    }
+                            //}
 
-                            final Date createdAtFilter = responseElement1.CreatedAt;
+                            final DateTimeOffset createdAtFilter = new DateTimeOffset(responseElement1.CreatedAt);
 
                             List<StringIdRoundTripTableElement> filteredCreatedAtResponseElements = filter(responseElements2,
                                     new IPredicate<StringIdRoundTripTableElement>() {
@@ -171,7 +172,7 @@ public class SystemPropertiesTests extends TestGroup {
                                     });
 
                             log("Filter table - CreatedAt");
-                            List<StringIdRoundTripTableElement> filteredCreatedAtElements = read(table, field("__createdAt").eq().val(createdAtFilter));
+                            List<StringIdRoundTripTableElement> filteredCreatedAtElements = read(table, field("__createdAt").ge().val(createdAtFilter));
 
                             log("verify response size");
                             if (filteredCreatedAtElements == null || filteredCreatedAtElements.size() != filteredCreatedAtResponseElements.size()) {
@@ -187,7 +188,7 @@ public class SystemPropertiesTests extends TestGroup {
                                 }
                             }
 
-                            final Date updatedAtFilter = responseElement1.UpdatedAt;
+                            final DateTimeOffset updatedAtFilter = new DateTimeOffset(responseElement1.UpdatedAt);
 
                             List<StringIdRoundTripTableElement> filteredUpdatedAtResponseElements = filter(responseElements2,
                                     new IPredicate<StringIdRoundTripTableElement>() {
@@ -198,7 +199,7 @@ public class SystemPropertiesTests extends TestGroup {
                                     });
 
                             log("Filter table - UpdatedAt");
-                            List<StringIdRoundTripTableElement> filteredUpdatedAtElements = read(table, field("__updatedAt").eq().val(updatedAtFilter));
+                            List<StringIdRoundTripTableElement> filteredUpdatedAtElements = read(table, field("__updatedAt").ge().val(updatedAtFilter));
 
                             log("verify response size");
                             if (filteredUpdatedAtElements == null || filteredUpdatedAtElements.size() != filteredUpdatedAtResponseElements.size()) {
@@ -930,9 +931,9 @@ public class SystemPropertiesTests extends TestGroup {
         verifySystemProperties(message, true, true, true, true, element);
     }
 
-    private void verifySystemProperties(String message, StringIdRoundTripTableSoftDeleteElement element) throws Exception {
+    /*private void verifySystemProperties(String message, StringIdRoundTripTableSoftDeleteElement element) throws Exception {
         verifySystemProperties(message, true, true, true, true, element);
-    }
+    }*/
 
     private void verifySystemProperties(String message, boolean shouldHaveCreatedAt, boolean shouldHaveUpdatedAt, boolean shouldHaveVersion, boolean shouldHaveDeleted,
                                         StringIdRoundTripTableElement element) throws Exception {
@@ -965,7 +966,7 @@ public class SystemPropertiesTests extends TestGroup {
         }
     }
 
-    private void verifySystemProperties(String message, boolean shouldHaveCreatedAt, boolean shouldHaveUpdatedAt, boolean shouldHaveVersion, boolean shouldHaveDeleted,
+    /*private void verifySystemProperties(String message, boolean shouldHaveCreatedAt, boolean shouldHaveUpdatedAt, boolean shouldHaveVersion, boolean shouldHaveDeleted,
                                         StringIdRoundTripTableSoftDeleteElement element) throws Exception {
         if ((shouldHaveCreatedAt && element.CreatedAt == null) || (!shouldHaveCreatedAt && element.CreatedAt != null)
                 || (shouldHaveUpdatedAt && element.UpdatedAt == null) || (!shouldHaveUpdatedAt && element.UpdatedAt != null)
@@ -996,6 +997,7 @@ public class SystemPropertiesTests extends TestGroup {
             throw new Exception(builder.toString());
         }
     }
+    */
 
     class ResultsContainer<T> {
         private Exception mException;

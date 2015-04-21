@@ -27,6 +27,9 @@ namespace ZumoE2EServerApp.Models
         public DbSet<IntIdMovie> IntIdMovies { get; set; }
 
         public DbSet<RoundTripTableItem> RoundTripTableItems { get; set; }
+
+        public DbSet<SoftDeleteRoundTripTableItem> SoftDeleteRoundTripTableItems { get; set; }
+
         public DbSet<IntIdRoundTripTableItem> IntIdRoundTripTableItems { get; set; }
 
         public DbSet<Dates> Dates { get; set; }
@@ -34,7 +37,7 @@ namespace ZumoE2EServerApp.Models
         public DbSet<BlogPost> BlogPosts { get; set; }
 
         public DbSet<BlogComments> BlogComments { get; set; }
-
+public DbSet<OfflineReady> OfflineReadyItems { get; set; }
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             string schema = ServiceSettingsDictionary.GetSchemaName();

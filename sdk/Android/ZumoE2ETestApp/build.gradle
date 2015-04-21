@@ -17,13 +17,16 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    lintOptions {
+        abortOnError false
+    }
 }
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:21.0.3'
     compile 'com.google.android.gms:play-services:3.1.+'
-    compile 'com.microsoft.azure:azure-mobile-services-android-sdk:2.0.2-beta'
     compile 'com.google.code.gson:gson:2.3'
     compile 'com.google.guava:guava:18.0'
 }

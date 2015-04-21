@@ -47,8 +47,8 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestGr
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestResult;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestStatus;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.Util;
+import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.IntIdRoundTripTableElement;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.ParamsTestTableItem;
-import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.types.RoundTripTableElement;
 
 import org.apache.http.Header;
 import org.apache.http.client.methods.HttpGet;
@@ -278,7 +278,7 @@ public class MiscTests extends TestGroup {
                 log("add custom AndroidHttpClientFactory with Froyo support");
                 froyoClient.setAndroidHttpClientFactory(new FroyoAndroidHttpClientFactory());
 
-                MobileServiceTable<RoundTripTableElement> table = froyoClient.getTable(ROUND_TRIP_TABLE_NAME, RoundTripTableElement.class);
+                MobileServiceTable<IntIdRoundTripTableElement> table = froyoClient.getTable(ROUND_TRIP_TABLE_NAME, IntIdRoundTripTableElement.class);
 
                 try {
 
@@ -438,10 +438,10 @@ public class MiscTests extends TestGroup {
                 mUUID = UUID.randomUUID().toString();
                 log("insert item " + mUUID);
                 if (typed) {
-                    MobileServiceTable<RoundTripTableElement> filteredClientTable = filteredClient.getTable(ROUND_TRIP_TABLE_NAME, RoundTripTableElement.class);
+                    MobileServiceTable<IntIdRoundTripTableElement> filteredClientTable = filteredClient.getTable(ROUND_TRIP_TABLE_NAME, IntIdRoundTripTableElement.class);
 
-                    RoundTripTableElement item = new RoundTripTableElement();
-                    item.string1 = mUUID;
+                    IntIdRoundTripTableElement item = new IntIdRoundTripTableElement();
+                    item.name = mUUID;
 
                     try {
                         filteredClientTable.insert(item).get();
