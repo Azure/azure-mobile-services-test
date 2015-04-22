@@ -327,7 +327,13 @@ function setup_auth_AllProviders(callback) {
 			var clientId = nconf.get('twitterApiKey');  
 			var clientSecret = nconf.get('twitterApiSecret');   
 			setup_auth('twitter',clientId,clientSecret,done);
-		}
+		},
+
+    function(done) {
+      var clientId = nconf.get('aadClientId');
+      var tenant = nconf.get('aadTenant');
+      setup_aad(clientId, tenant, done);
+    }
 	], callback);  
 }
 
@@ -338,24 +344,31 @@ function setup_auth(authprovider,clientId,clientSecret,callback) {
   if (!clientSecret) {
     return callback();
   }
-  process.stdout.write('   Setting up '+ authprovider + ' auth. clientId (' + clientId + ') clientsecret (' + clientSecret + ')...');
+  var indent = '   ';
+  process.stdout.write(indent + 'Setting up '+ authprovider + ' auth. clientId (' + clientId + ') clientsecret (' + clientSecret + ')...');
   if(authprovider == 'microsoftaccount') {
-	var msPackageSID = nconf.get('msPackageSID');  		
-	scripty.invoke('mobile auth '+ authprovider +' set --packageSid ' + msPackageSID + ' ' + nconf.get('name') + ' ' + clientId + ' '+ clientSecret, function(err, results) {
-		if (!err) {
-		console.log(' OK'.green.bold);
-		}
-		callback(err);
-	});
+    var msPackageSID = nconf.get('msPackageSID');  		
+    invoke_scripty(indent, 'mobile auth '+ authprovider +' set --packageSid ' + msPackageSID + ' ' + nconf.get('name') + ' ' + clientId + ' '+ clientSecret, callback);
   }  
   else {
-	scripty.invoke('mobile auth '+ authprovider +' set ' + nconf.get('name') + ' ' + clientId + ' '+ clientSecret, function(err, results) {
-		if (!err) {
-		console.log(' OK'.green.bold);
-		}
-		callback(err);
-	});
+    invoke_scripty(indent, 'mobile auth '+ authprovider +' set ' + nconf.get('name') + ' ' + clientId + ' '+ clientSecret, callback);
   }
+}
+
+function setup_aad(clientId, tenant, callback) {
+  if (!clientId || !tenant) {
+    return callback();
+  }
+  var indent = '   ';
+  process.stdout.write(indent + 'Setting up aad auth. clientId (' + clientId + ') tenant (' + tenant + ')...');
+  async.series([
+    function(done) {
+      invoke_scripty(indent, 'mobile auth aad set ' + nconf.get('name') + ' ' + clientId, done);
+    },
+    function(done) {
+      invoke_scripty(indent, 'mobile auth aad tenant add ' + nconf.get('name') + ' ' + tenant, done);
+    }
+  ], callback);
 }
 
 function setup_node_app(callback) {
