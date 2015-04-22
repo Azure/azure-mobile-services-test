@@ -397,13 +397,13 @@ public class LoginTests extends TestGroup {
                 item.addProperty("name", "John Doe");
                 log("insert item");
 
-                int id = 1;
+                String id = "1";
 
                 try {
 
                     JsonObject jsonEntityInsert = table.insert(item).get();
 
-                    id = jsonEntityInsert.get("id").getAsInt();
+                    id = jsonEntityInsert.get("id").getAsString();
 
                     item.addProperty("id", id);
                 } catch (Exception exception) {
@@ -429,7 +429,7 @@ public class LoginTests extends TestGroup {
 
                 try {
 
-                    JsonElement jsonEntityLookUp = table.lookUp(item.get("id").getAsInt()).get();
+                    JsonElement jsonEntityLookUp = table.lookUp(item.get("id").getAsString()).get();
                     if (userIsAuthenticated && tableType == TablePermission.User) {
                         lastUserIdentityObject = jsonEntityLookUp.getAsJsonObject();
                     }
@@ -444,7 +444,7 @@ public class LoginTests extends TestGroup {
                 }
 
                 try {
-                    table.delete(item.get("id").getAsInt()).get();
+                    table.delete(item.get("id").getAsString()).get();
                 } catch (Exception exception) {
                     if (!validateExecution(crudShouldWork, exception, result)) {
                         callback.onTestComplete(testCase, result);
@@ -571,9 +571,9 @@ public class LoginTests extends TestGroup {
 
                     @Override
                     public void onCompleted(JsonObject jsonEntity, Exception exception, ServiceFilterResponse response) {
-                        int id = 1;
+                        String id = "1";
                         if (exception == null) {
-                            id = jsonEntity.get("id").getAsInt();
+                            id = jsonEntity.get("id").getAsString();
                         }
 
                         item.addProperty("id", id);
@@ -595,7 +595,7 @@ public class LoginTests extends TestGroup {
                                 }
 
                                 log("lookup item");
-                                table.lookUp(item.get("id").getAsInt(), new TableJsonOperationCallback() {
+                                table.lookUp(item.get("id").getAsString(), new TableJsonOperationCallback() {
 
                                     @Override
                                     public void onCompleted(JsonObject jsonEntity, Exception exception, ServiceFilterResponse response) {
@@ -609,7 +609,7 @@ public class LoginTests extends TestGroup {
                                         }
 
                                         log("delete item");
-                                        table.delete(item.get("id").getAsInt(), new TableDeleteCallback() {
+                                        table.delete(item.get("id").getAsString(), new TableDeleteCallback() {
 
                                             @Override
                                             public void onCompleted(Exception exception, ServiceFilterResponse response) {

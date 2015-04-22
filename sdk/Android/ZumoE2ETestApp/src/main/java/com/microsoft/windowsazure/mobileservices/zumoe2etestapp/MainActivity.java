@@ -176,13 +176,13 @@ public class MainActivity extends Activity {
         adapter.add(new RoundTripTests());
         adapter.add(new QueryTests());
         adapter.add(new UpdateDeleteTests());
-        adapter.add(new ClientSDKLoginTests());
-        adapter.add(new LoginTests());
+        //adapter.add(new ClientSDKLoginTests());
+        //adapter.add(new LoginTests());
         adapter.add(new MiscTests());
         // adapter.add(new PushTests());
         adapter.add(new CustomApiTests());
-        adapter.add(new SystemPropertiesTests());
-        adapter.add(new EnhancedPushTests());
+        //adapter.add(new SystemPropertiesTests());
+        //adapter.add(new EnhancedPushTests());
         adapter.add(new OfflineTests());
 
         ArrayList<Pair<TestCase, String>> allTests = new ArrayList<Pair<TestCase, String>>();

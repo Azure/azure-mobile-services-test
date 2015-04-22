@@ -214,7 +214,7 @@
     <Compile Include="Controllers\Table\IntIdRoundTripTableController.cs" />
     <Compile Include="Controllers\Table\IntIdMoviesController.cs" />
     <Compile Include="Controllers\Api\RuntimeInfoController.cs" />
-    <Compile Include="Controllers\Table\SoftDeleteRoundTripTableItemController.cs" />
+    <Compile Include="Controllers\Table\StringIdRoundTripTableSoftDeleteController.cs" />
     <Compile Include="DataObjects\BlogComments.cs" />
     <Compile Include="DataObjects\Dates.cs" />
     <Compile Include="DataObjects\BlogPost.cs" />

@@ -349,7 +349,7 @@ public class UpdateDeleteTests extends TestGroup {
 
                             String message = "An item with id '" + entity.id + "' does not exist.";
 
-                            if (!ex.getMessage().contains(message)) {
+                            if (!ex.getMessage().contains(message) && !ex.getMessage().contains("404")) {
                                 createResultFromException(result, new ExpectedValueException(message, ex.getMessage()));
                             }
                         }
@@ -414,7 +414,7 @@ public class UpdateDeleteTests extends TestGroup {
 
                         String message = "An item with id '" + entity.id + "' does not exist.";
 
-                        if (!ex.getMessage().contains(message)) {
+                        if (!ex.getMessage().contains(message) && !ex.getMessage().contains("404")) {
                             createResultFromException(result, new ExpectedValueException(message, ex.getMessage()));
                         }
                     }
@@ -556,7 +556,7 @@ public class UpdateDeleteTests extends TestGroup {
 
                         String message = "An item with id '" + element.id + "' does not exist.";
 
-                        if (!ex.getMessage().contains(message)) {
+                        if (!ex.getMessage().contains(message) && !ex.getMessage().contains("404")) {
                             createResultFromException(result, new ExpectedValueException(message, ex.getMessage()));
                         }
                     }

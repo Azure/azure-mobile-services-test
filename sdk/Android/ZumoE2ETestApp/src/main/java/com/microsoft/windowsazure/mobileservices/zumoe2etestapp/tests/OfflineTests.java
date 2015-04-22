@@ -277,6 +277,7 @@ public class OfflineTests extends TestGroup {
 
                     log("Cleaning up");
                     localTable.delete(item).get();
+
                     localTable.delete(newItem).get();
                     log("Local table cleaned up. Now sync'ing once more");
                     client.getSyncContext().push().get();
@@ -1709,7 +1710,6 @@ public class OfflineTests extends TestGroup {
                     }
 
                     log("Inserted New Items on table");
-
                     Query pullQuery =
                             QueryOperations
                                     .tableName(tableName)

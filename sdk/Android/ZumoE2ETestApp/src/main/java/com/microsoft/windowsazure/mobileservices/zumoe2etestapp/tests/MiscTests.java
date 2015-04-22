@@ -64,9 +64,9 @@ import static com.microsoft.windowsazure.mobileservices.table.query.QueryOperati
 
 public class MiscTests extends TestGroup {
 
-    protected static final String ROUND_TRIP_TABLE_NAME = "droidRoundTripTable";
+    protected static final String ROUND_TRIP_TABLE_NAME = "intIdRoundTripTable";
     protected static final String PARAM_TEST_TABLE_NAME = "ParamsTestTable";
-    private static final String APP_API_NAME = "application";
+    private static final String APP_API_NAME = "applicationPermission";
 
     public MiscTests() {
         super("Misc tests");
@@ -99,13 +99,12 @@ public class MiscTests extends TestGroup {
                 try {
 
                     client.getTable(ROUND_TRIP_TABLE_NAME).top(5).execute().get();
-
-                    if (callback != null)
-                        callback.onTestComplete(testCase, testResult);
-
                 } catch (Exception exception) {
                     createResultFromException(testResult, exception);
                 }
+
+                if (callback != null)
+                    callback.onTestComplete(testCase, testResult);
             }
 
         };
@@ -453,7 +452,7 @@ public class MiscTests extends TestGroup {
                     MobileServiceJsonTable filteredClientTable = filteredClient.getTable(ROUND_TRIP_TABLE_NAME);
 
                     JsonObject item = new JsonObject();
-                    item.addProperty("string1", mUUID);
+                    item.addProperty("name", mUUID);
 
                     try {
                         filteredClientTable.insert(item).get();
@@ -483,7 +482,7 @@ public class MiscTests extends TestGroup {
 
                 try {
 
-                    JsonElement result = mTable.where(field("string1").eq(mUUID)).select("string1", "id").execute().get();
+                    JsonElement result = mTable.where(field("name").eq(mUUID)).select("name", "id").execute().get();
 
                     log("verify that there are " + mNumberOfRequest + " elements in the JsonArray");
 
