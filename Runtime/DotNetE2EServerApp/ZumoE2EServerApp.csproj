@@ -205,6 +205,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\Api\PushApiController.cs" />
+    <Compile Include="Controllers\Table\DroidPushTestController.cs" />
     <Compile Include="Controllers\Table\OfflineReadyController.cs" />
     <Compile Include="Controllers\Table\PermissionsTableControllers.cs" />
     <Compile Include="Controllers\Api\PermissionsApiControllers.cs" />
@@ -216,6 +217,7 @@
     <Compile Include="Controllers\Api\RuntimeInfoController.cs" />
     <Compile Include="Controllers\Table\StringIdRoundTripTableSoftDeleteController.cs" />
     <Compile Include="DataObjects\BlogComments.cs" />
+    <Compile Include="DataObjects\DroidPushTestEntity.cs" />
     <Compile Include="DataObjects\Dates.cs" />
     <Compile Include="DataObjects\BlogPost.cs" />
     <Compile Include="DataObjects\OfflineReady.cs" />

@@ -281,7 +281,7 @@ public class MiscTests extends TestGroup {
 
                 try {
 
-                    table.where().field("id").eq(1).execute().get();
+                    table.where().field("id").eq("1").execute().get();
                 } catch (Exception exception) {
                     createResultFromException(result, exception);
                 } finally {

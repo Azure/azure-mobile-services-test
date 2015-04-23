@@ -60,6 +60,7 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.EnhancedPu
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.LoginTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.MiscTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.OfflineTests;
+import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.PushTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.QueryTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.RoundTripTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.SystemPropertiesTests;
@@ -154,8 +155,8 @@ public class MainActivity extends Activity {
 
         ClientSDKLoginTests.mainActivity = this;
 
-        // PushTests.mainActivity = this;
-        // EnhancedPushTests.mainActivity = this;
+        PushTests.mainActivity = this;
+        EnhancedPushTests.mainActivity = this;
 
         refreshTestGroupsAndLog();
     }
@@ -177,12 +178,12 @@ public class MainActivity extends Activity {
         adapter.add(new QueryTests());
         adapter.add(new UpdateDeleteTests());
         //adapter.add(new ClientSDKLoginTests());
-        //adapter.add(new LoginTests());
+        adapter.add(new LoginTests());
         adapter.add(new MiscTests());
         // adapter.add(new PushTests());
         adapter.add(new CustomApiTests());
         //adapter.add(new SystemPropertiesTests());
-        //adapter.add(new EnhancedPushTests());
+        adapter.add(new EnhancedPushTests());
         adapter.add(new OfflineTests());
 
         ArrayList<Pair<TestCase, String>> allTests = new ArrayList<Pair<TestCase, String>>();
