@@ -140,8 +140,9 @@ public class SystemPropertiesTestData {
 
     public static String[] ValidSystemPropertyQueryStringsForNet = new String[]{
             // General
-            "__systemProperties=*", "__systemProperties=__createdAt", "__systemProperties=__createdAt,__updatedAt", "__systemProperties=__createdAt,__version",
-            "__systemProperties=__createdAt,__updatedAt,__version", "__systemProperties=__createdAt,__version,__updatedAt",
+            "__systemProperties=*", "__systemProperties=__createdAt",
+            "__systemProperties=__createdAt,__updatedAt,__version",
+            "__systemProperties=__createdAt,__version,__updatedAt",
             "__systemProperties=__updatedAt,__createdAt,__version",
             "__systemProperties=__updatedAt,__version, __createdAt",
             "__systemProperties=__version,__createdAt,__updatedAt",

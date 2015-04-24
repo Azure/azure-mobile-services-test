@@ -74,7 +74,10 @@ public class SystemPropertiesTests extends TestGroup {
         this.isNetBackend = isNetBackend;
 
         this.addTest(createTypeSystemPropertiesTest("Operations with All System Properties from Type"));
-        this.addTest(createCustomSystemPropertiesTest("Operations with Custom System Properties set on Table"));
+
+        if (!this.isNetBackend) {
+            this.addTest(createCustomSystemPropertiesTest("Operations with Custom System Properties set on Table"));
+        }
 
         if (isNetBackend) {
             for (String systemProperties : SystemPropertiesTestData.ValidSystemPropertyQueryStringsForNet) {

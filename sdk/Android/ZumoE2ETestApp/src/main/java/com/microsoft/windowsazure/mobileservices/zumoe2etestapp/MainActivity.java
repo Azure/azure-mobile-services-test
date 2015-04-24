@@ -655,11 +655,13 @@ public class MainActivity extends Activity {
                 throw new IOException(statusLine.getReasonPhrase());
             }
 
-            if (runtimeType == ".NET") {
+            if (runtimeType.equals(".NET")) {
                 return true;
             }
+
+            return false;
         }
-        finally {
+        catch(Exception ex) {
             return false;
         }
     }
