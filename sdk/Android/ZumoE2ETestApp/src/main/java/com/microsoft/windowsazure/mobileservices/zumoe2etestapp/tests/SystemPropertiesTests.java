@@ -22,6 +22,7 @@ package com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests;
 import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.util.Base64;
 import android.util.Pair;
 
 import com.google.gson.JsonObject;
@@ -99,6 +100,9 @@ public class SystemPropertiesTests extends TestGroup {
                         result.setTestCase(test);
 
                         try {
+
+                            boolean netBackend = true;
+
                             MobileServiceTable<StringIdRoundTripTableElement> table = client
                                     .getTable(STRING_ID_TABLE_NAME, StringIdRoundTripTableElement.class);
 
@@ -106,7 +110,7 @@ public class SystemPropertiesTests extends TestGroup {
                             final StringIdRoundTripTableElement responseElement1 = insert(table, element);
 
                             log("Verify system properties are not null");
-                            verifySystemProperties("Insert response", responseElement1);
+                            verifySystemProperties("Insert response", responseElement1, netBackend) ;
 
                             log("Read table");
 
@@ -132,7 +136,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement2 = filteredResponseElements.get(0);
 
                             log("Verify system properties are not null");
-                            verifySystemProperties("Read response", responseElement2);
+                            verifySystemProperties("Read response", responseElement2, netBackend);
 
                             final String versionFilter = responseElement1.Version;
 
@@ -145,21 +149,31 @@ public class SystemPropertiesTests extends TestGroup {
                                     });
 
                             log("Filter table - Version");
-                            //List<StringIdRoundTripTableElement> filteredVersionElements = read(table, field("__version").eq().val(versionFilter));
 
-                            //log("Verify response size");
-                            //if (filteredVersionElements == null || filteredVersionElements.size() != filteredVersionResponseElements.size()) {
-                            //    throw new Exception("Filter response - Version - incorrect number of records");
-                            //}
+                            List<StringIdRoundTripTableElement> filteredVersionElements = null;
 
-                            //log("Verify system properties are not null");
-                            //for (StringIdRoundTripTableElement filteredVersionElement : filteredVersionElements) {
-                            //    if (filteredVersionElement.Version == null) {
-                            //        throw new Exception("Filter response - Version is null");
-                            //    } else if (!filteredVersionElement.Version.equals(versionFilter)) {
-                            //        throw new ExpectedValueException(versionFilter, filteredVersionElement.Version);
-                            //    }
-                            //}
+                            boolean netBacked = true;
+
+                            if (netBacked) {
+                                byte[] versionFilterBytes = Base64.decode(versionFilter.getBytes(), Base64.DEFAULT);
+                                filteredVersionElements = read(table, field("__version").eq(versionFilterBytes));
+                            } else {
+                                filteredVersionElements = read(table, field("__version").eq().val(versionFilter));
+                            }
+
+                            log("Verify response size");
+                            if (filteredVersionElements == null || filteredVersionElements.size() != filteredVersionResponseElements.size()) {
+                                throw new Exception("Filter response - Version - incorrect number of records");
+                            }
+
+                            log("Verify system properties are not null");
+                            for (StringIdRoundTripTableElement filteredVersionElement : filteredVersionElements) {
+                                if (filteredVersionElement.Version == null) {
+                                    throw new Exception("Filter response - Version is null");
+                                } else if (!filteredVersionElement.Version.equals(versionFilter)) {
+                                    throw new ExpectedValueException(versionFilter, filteredVersionElement.Version);
+                                }
+                            }
 
                             final DateTimeOffset createdAtFilter = new DateTimeOffset(responseElement1.CreatedAt);
 
@@ -307,6 +321,9 @@ public class SystemPropertiesTests extends TestGroup {
                         result.setTestCase(test);
 
                         try {
+
+                            boolean netBackend = true;
+
                             MobileServiceTable<StringIdRoundTripTableElement> table = client
                                     .getTable(STRING_ID_TABLE_NAME, StringIdRoundTripTableElement.class);
 
@@ -317,7 +334,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement1 = insert(table, element1);
 
                             log("Verify system properties are not null");
-                            verifySystemProperties("Insert response", responseElement1);
+                            verifySystemProperties("Insert response", responseElement1, netBackend);
 
                             StringIdRoundTripTableElement element2 = new StringIdRoundTripTableElement(true);
                             element2.id = UUID.randomUUID().toString();
@@ -332,7 +349,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement2 = insert(table, element2);
 
                             log("Verify Version|CreatedAt System Properties are not null, and UpdateAt and Delete is null or default");
-                            verifySystemProperties("Insert response", true, false, true, false, responseElement2);
+                            verifySystemProperties("Insert response", true, false, true, false, responseElement2, netBackend);
 
                             EnumSet<MobileServiceSystemProperty> systemProperties3 = EnumSet.noneOf(MobileServiceSystemProperty.class);
                             systemProperties3.add(MobileServiceSystemProperty.Version);
@@ -353,7 +370,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement3 = responseElements3.get(0);
 
                             log("Verify Version|UpdatedAt|Deleted System Properties are not null, and CreatedAt is null or default");
-                            verifySystemProperties("Read response", false, true, true, true, responseElement3);
+                            verifySystemProperties("Read response", false, true, true, true, responseElement3, netBackend);
 
                             EnumSet<MobileServiceSystemProperty> systemProperties4 = EnumSet.noneOf(MobileServiceSystemProperty.class);
 
@@ -363,7 +380,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement4 = lookUp(table, element2.id);
 
                             log("Verify Version|CreatedAt|UpdatedAt|Deleted System Properties are null");
-                            verifySystemProperties("Read response", false, false, false, false, responseElement4);
+                            verifySystemProperties("Read response", false, false, false, false, responseElement4, netBackend);
 
                             log("Delete element");
                             delete(table, responseElement1);
@@ -404,6 +421,9 @@ public class SystemPropertiesTests extends TestGroup {
                         result.setTestCase(test);
 
                         try {
+
+                            boolean netBackend = true;
+
                             MobileServiceTable<StringIdRoundTripTableElement> table = client
                                     .getTable(STRING_ID_TABLE_NAME, StringIdRoundTripTableElement.class);
 
@@ -429,7 +449,7 @@ public class SystemPropertiesTests extends TestGroup {
                             final StringIdRoundTripTableElement responseElement1 = insert(table, element1, userParameters);
 
                             log("Verify Query Parameter System Properties");
-                            verifySystemProperties("Insert Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement1);
+                            verifySystemProperties("Insert Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement1, netBackend);
 
                             Query query = QueryOperations.field("id");
 
@@ -454,7 +474,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement2 = filteredResponseElements.get(0);
 
                             log("Verify Query Parameter System Properties");
-                            verifySystemProperties("Read Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement2);
+                            verifySystemProperties("Read Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement2, netBackend);
 
                             log("Filter element1 id with Query Parameter System Properties - " + systemProperties);
                             List<StringIdRoundTripTableElement> responseElements3 = read(table, field("id").eq().val(element1.id), userParameters);
@@ -467,13 +487,13 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement3 = responseElements3.get(0);
 
                             log("Verify Query Parameter System Properties");
-                            verifySystemProperties("Filter Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement3);
+                            verifySystemProperties("Filter Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement3, netBackend);
 
                             log("Lookup element1 id with Query Parameter System Properties - " + systemProperties);
                             StringIdRoundTripTableElement responseElement4 = lookUp(table, element1.id, userParameters);
 
                             log("Verify Query Parameter System Properties");
-                            verifySystemProperties("Lookup Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement4);
+                            verifySystemProperties("Lookup Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement4, netBackend);
 
                             StringIdRoundTripTableElement updateElement1 = new StringIdRoundTripTableElement(element1);
                             updateElement1.name = "Other Sample Data";
@@ -482,7 +502,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement5 = update(table, updateElement1, userParameters);
 
                             log("Verify Query Parameter System Properties");
-                            verifySystemProperties("Update Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement5);
+                            verifySystemProperties("Update Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement5, netBackend);
 
                             log("Delete element");
                             delete(table, responseElement5);
@@ -542,7 +562,7 @@ public class SystemPropertiesTests extends TestGroup {
                             JsonObject responseJsonElement1Copy = new JsonParser().parse(responseJsonElement1.toString()).getAsJsonObject();
 
                             responseJsonElement1Copy.remove("__version");
-                            responseJsonElement1Copy.addProperty("__version", "random");
+                            responseJsonElement1Copy.addProperty("__version", "BAAAAAAAdkw=");
 
                             log("Update response Json element 1 copy - " + responseJsonElement1Copy.toString());
                             update(jsonTable, responseJsonElement1Copy);
@@ -617,7 +637,7 @@ public class SystemPropertiesTests extends TestGroup {
 
                             StringIdRoundTripTableElement responseElement1Copy = new StringIdRoundTripTableElement(responseElement1);
 
-                            responseElement1Copy.Version = "random";
+                            responseElement1Copy.Version = "BAAAAAAAdkw=";
 
                             log("Update response element 1 copy - " + responseElement1Copy.toString());
                             update(table, responseElement1Copy);
@@ -927,8 +947,8 @@ public class SystemPropertiesTests extends TestGroup {
         }
     }
 
-    private void verifySystemProperties(String message, StringIdRoundTripTableElement element) throws Exception {
-        verifySystemProperties(message, true, true, true, true, element);
+    private void verifySystemProperties(String message, StringIdRoundTripTableElement element, boolean netBackend) throws Exception {
+        verifySystemProperties(message, true, true, true, true, element, netBackend);
     }
 
     /*private void verifySystemProperties(String message, StringIdRoundTripTableSoftDeleteElement element) throws Exception {
@@ -936,33 +956,64 @@ public class SystemPropertiesTests extends TestGroup {
     }*/
 
     private void verifySystemProperties(String message, boolean shouldHaveCreatedAt, boolean shouldHaveUpdatedAt, boolean shouldHaveVersion, boolean shouldHaveDeleted,
-                                        StringIdRoundTripTableElement element) throws Exception {
-        if ((shouldHaveCreatedAt && element.CreatedAt == null) || (!shouldHaveCreatedAt && element.CreatedAt != null)
-                || (shouldHaveUpdatedAt && element.UpdatedAt == null) || (!shouldHaveUpdatedAt && element.UpdatedAt != null)
-                || (shouldHaveVersion && element.Version == null) || (!shouldHaveVersion && element.Version != null)) {
-            StringBuilder builder = new StringBuilder();
-            builder.append(message);
-            builder.append(" - System Properties");
+                                        StringIdRoundTripTableElement element, boolean netBackend) throws Exception {
 
-            if (shouldHaveCreatedAt && element.CreatedAt == null) {
-                builder.append(" - CreatedAt is null");
-            } else if (!shouldHaveCreatedAt && element.CreatedAt != null) {
-                builder.append(" - CreatedAt is not null");
+        if (netBackend) {
+            if ((shouldHaveCreatedAt && element.CreatedAt == null) || (!shouldHaveCreatedAt && element.CreatedAt != null)
+                    || (shouldHaveUpdatedAt && element.UpdatedAt == null) || (!shouldHaveUpdatedAt && (element.UpdatedAt != null && !element.UpdatedAt.equals(element.CreatedAt)))
+                    || (shouldHaveVersion && element.Version == null) || (!shouldHaveVersion && element.Version != null)) {
+                StringBuilder builder = new StringBuilder();
+                builder.append(message);
+                builder.append(" - System Properties");
+
+                if (shouldHaveCreatedAt && element.CreatedAt == null) {
+                    builder.append(" - CreatedAt is null");
+                } else if (!shouldHaveCreatedAt && element.CreatedAt != null) {
+                    builder.append(" - CreatedAt is not null");
+                }
+
+                if (shouldHaveUpdatedAt && element.UpdatedAt == null) {
+                    builder.append(" - UpdatedAt is null");
+                } else if (!shouldHaveUpdatedAt && element.UpdatedAt != null) {
+                    builder.append(" - UpdatedAt is not null");
+                }
+
+                if (shouldHaveVersion && element.Version == null) {
+                    builder.append(" - Version is null");
+                } else if (!shouldHaveVersion && element.Version != null) {
+                    builder.append(" - Version is not null");
+                }
+
+                throw new Exception(builder.toString());
             }
+        } else {
+            if ((shouldHaveCreatedAt && element.CreatedAt == null) || (!shouldHaveCreatedAt && element.CreatedAt != null)
+                    || (shouldHaveUpdatedAt && element.UpdatedAt == null) || (!shouldHaveUpdatedAt && element.UpdatedAt != null)
+                    || (shouldHaveVersion && element.Version == null) || (!shouldHaveVersion && element.Version != null)) {
+                StringBuilder builder = new StringBuilder();
+                builder.append(message);
+                builder.append(" - System Properties");
 
-            if (shouldHaveUpdatedAt && element.UpdatedAt == null) {
-                builder.append(" - UpdatedAt is null");
-            } else if (!shouldHaveUpdatedAt && element.UpdatedAt != null) {
-                builder.append(" - UpdatedAt is not null");
+                if (shouldHaveCreatedAt && element.CreatedAt == null) {
+                    builder.append(" - CreatedAt is null");
+                } else if (!shouldHaveCreatedAt && element.CreatedAt != null) {
+                    builder.append(" - CreatedAt is not null");
+                }
+
+                if (shouldHaveUpdatedAt && element.UpdatedAt == null) {
+                    builder.append(" - UpdatedAt is null");
+                } else if (!shouldHaveUpdatedAt && element.UpdatedAt != null) {
+                    builder.append(" - UpdatedAt is not null");
+                }
+
+                if (shouldHaveVersion && element.Version == null) {
+                    builder.append(" - Version is null");
+                } else if (!shouldHaveVersion && element.Version != null) {
+                    builder.append(" - Version is not null");
+                }
+
+                throw new Exception(builder.toString());
             }
-
-            if (shouldHaveVersion && element.Version == null) {
-                builder.append(" - Version is null");
-            } else if (!shouldHaveVersion && element.Version != null) {
-                builder.append(" - Version is not null");
-            }
-
-            throw new Exception(builder.toString());
         }
     }
 

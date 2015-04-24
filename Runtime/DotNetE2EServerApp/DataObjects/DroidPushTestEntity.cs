@@ -12,9 +12,9 @@ namespace ZumoE2EServerApp.DataObjects
         public string Method { get; set; }
         public string Tag { get; set; }
         public string Data { get; set; }
-        public JToken Payload { get; set; }
+        public JObject Payload { get; set; }
         public bool UsingNH { get; set; }
         public bool? TemplatePush { get; set; }
-        public JToken TemplateNotification { get; set; }
+        public JObject TemplateNotification { get; set; }
     }
 }

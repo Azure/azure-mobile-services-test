@@ -39,9 +39,6 @@ public class StringIdJsonElement {
 
     public Date date1;
 
-    // Complex type
-    public ComplexType complex;
-
     public StringIdJsonElement() {
         this(false);
     }
@@ -58,13 +55,11 @@ public class StringIdJsonElement {
             bool = true;
             date1 = new GregorianCalendar().getTime();
             Random rndGen = new Random();
-            complex = new ComplexType(rndGen);
         } else {
             name = null;
             number = null;
             bool = null;
             date1 = null;
-            complex = null;
         }
     }
 
@@ -74,7 +69,6 @@ public class StringIdJsonElement {
         bool = rndGen.nextBoolean();
         date1 = new GregorianCalendar(rndGen.nextInt(20) + 1980, rndGen.nextInt(12), rndGen.nextInt(27) + 1, rndGen.nextInt(24), rndGen.nextInt(60),
                 rndGen.nextInt(60)).getTime();
-        complex = new ComplexType(rndGen);
     }
 
     public StringIdJsonElement(StringIdJsonElement other) {
@@ -83,7 +77,6 @@ public class StringIdJsonElement {
         number = Double.valueOf(other.number);
         bool = Boolean.valueOf(other.bool);
         date1 = new Date(other.date1.getTime());
-        complex = new ComplexType(other.complex);
     }
 
     @Override
@@ -102,15 +95,13 @@ public class StringIdJsonElement {
             return false;
         if (!Util.compare(element.date1, date1))
             return false;
-        if (!Util.compare(element.complex, complex))
-            return false;
         return true;
     }
 
     @Override
     public String toString() {
-        return String.format("StringIdRoundTripTableItem[Bool=%B,ComplexType=%s,Date1=%s,Name=%s,Number=%s]", bool == null ? "<<NULL>>" : bool.toString(),
-                complex == null ? "<<NULL>>" : complex.toString(), date1 == null ? "<<NULL>>" : Util.dateToString(date1), name, number == null ? "<<NULL>>"
+        return String.format("StringIdRoundTripTableItem[Bool=%B,Date1=%s,Name=%s,Number=%s]", bool == null ? "<<NULL>>" : bool.toString(),
+                 date1 == null ? "<<NULL>>" : Util.dateToString(date1), name, number == null ? "<<NULL>>"
                         : number.toString());
 
     }

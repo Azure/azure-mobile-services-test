@@ -34,6 +34,11 @@ namespace ZumoE2EServerApp.Controllers.Table
                 message = googleMessage;
             }
 
+            if (tag == null)
+            {
+                tag = "";
+            }
+
             NotificationOutcome pushResponse = await this.Services.Push.SendAsync(message, tag);
 
             this.Services.Log.Info("GCM push sent: " + pushResponse, this.Request);
