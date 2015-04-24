@@ -45,6 +45,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Spinner;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.CompositeTestGroup;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestCase;
@@ -66,7 +69,15 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.RoundTripT
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.SystemPropertiesTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.UpdateDeleteTests;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -172,52 +183,70 @@ public class MainActivity extends Activity {
     private void refreshTestGroupsAndLog() {
         mLog = new StringBuilder();
 
-        ArrayAdapter<TestGroup> adapter = (ArrayAdapter<TestGroup>) mTestGroupSpinner.getAdapter();
-        adapter.clear();
-        adapter.add(new RoundTripTests());
-        adapter.add(new QueryTests());
-        adapter.add(new UpdateDeleteTests());
-        //adapter.add(new ClientSDKLoginTests());
-        adapter.add(new LoginTests());
-        adapter.add(new MiscTests());
-        // adapter.add(new PushTests());
-        adapter.add(new CustomApiTests());
-        adapter.add(new SystemPropertiesTests());
-        adapter.add(new EnhancedPushTests());
-        adapter.add(new OfflineTests());
+        Thread thread = new Thread() {
 
-        ArrayList<Pair<TestCase, String>> allTests = new ArrayList<Pair<TestCase, String>>();
-        ArrayList<Pair<TestCase, String>> allUnattendedTests = new ArrayList<Pair<TestCase, String>>();
-        for (int i = 0; i < adapter.getCount(); i++) {
-            TestGroup group = adapter.getItem(i);
-            allTests.add(new Pair<TestCase, String>(Util.createSeparatorTest("Start of group: " + group.getName()), "Separator"));
-            allUnattendedTests.add(new Pair<TestCase, String>(Util.createSeparatorTest("Start of group: " + group.getName()), "Separator"));
+            @Override
+            public void run() {
 
-            List<TestCase> testsForGroup = group.getTestCases();
-            for (TestCase test : testsForGroup) {
-                allTests.add(new Pair<TestCase, String>(test, group.getName()));
-                if (test.canRunUnattended()) {
-                    allUnattendedTests.add(new Pair<TestCase, String>(test, group.getName()));
-                }
+                final boolean isNetBackend = IsNetBackend();
+
+                runOnUiThread(new Runnable() {
+
+                    @Override
+                    public void run() {
+
+                        ArrayAdapter<TestGroup> adapter = (ArrayAdapter<TestGroup>) mTestGroupSpinner.getAdapter();
+                        adapter.clear();
+                        adapter.add(new RoundTripTests());
+                        adapter.add(new QueryTests());
+                        adapter.add(new UpdateDeleteTests());
+                        //adapter.add(new ClientSDKLoginTests());
+                        adapter.add(new LoginTests());
+                        adapter.add(new MiscTests());
+                        // adapter.add(new PushTests());
+                        adapter.add(new CustomApiTests());
+                        adapter.add(new SystemPropertiesTests(isNetBackend));
+                        adapter.add(new EnhancedPushTests(isNetBackend));
+                        adapter.add(new OfflineTests());
+
+                        ArrayList<Pair<TestCase, String>> allTests = new ArrayList<Pair<TestCase, String>>();
+                        ArrayList<Pair<TestCase, String>> allUnattendedTests = new ArrayList<Pair<TestCase, String>>();
+                        for (int i = 0; i < adapter.getCount(); i++) {
+                            TestGroup group = adapter.getItem(i);
+                            allTests.add(new Pair<TestCase, String>(Util.createSeparatorTest("Start of group: " + group.getName()), "Separator"));
+                            allUnattendedTests.add(new Pair<TestCase, String>(Util.createSeparatorTest("Start of group: " + group.getName()), "Separator"));
+
+                            List<TestCase> testsForGroup = group.getTestCases();
+                            for (TestCase test : testsForGroup) {
+                                allTests.add(new Pair<TestCase, String>(test, group.getName()));
+                                if (test.canRunUnattended()) {
+                                    allUnattendedTests.add(new Pair<TestCase, String>(test, group.getName()));
+                                }
+                            }
+                            allTests.add(new Pair<TestCase, String>(Util.createSeparatorTest("----" + group.getName() + "----"), "Separator"));
+                            allUnattendedTests.add(new Pair<TestCase, String>(Util.createSeparatorTest("----" + group.getName() + "----"), "Separator"));
+                        }
+
+                        int unattendedTestsIndex = adapter.getCount();
+
+                        adapter.add(new CompositeTestGroup(TestGroup.AllUnattendedTestsGroupName, allUnattendedTests));
+                        adapter.add(new CompositeTestGroup(TestGroup.AllTestsGroupName, allTests));
+
+                        if (shouldRunUnattended()) {
+                            mTestGroupSpinner.setSelection(unattendedTestsIndex);
+                            selectTestGroup(unattendedTestsIndex);
+                            changeCheckAllTests(true);
+                            runTests();
+                        } else {
+                            mTestGroupSpinner.setSelection(0);
+                            selectTestGroup(0);
+                        }
+                    }
+                });
             }
-            allTests.add(new Pair<TestCase, String>(Util.createSeparatorTest("----" + group.getName() + "----"), "Separator"));
-            allUnattendedTests.add(new Pair<TestCase, String>(Util.createSeparatorTest("----" + group.getName() + "----"), "Separator"));
-        }
+        };
 
-        int unattendedTestsIndex = adapter.getCount();
-
-        adapter.add(new CompositeTestGroup(TestGroup.AllUnattendedTestsGroupName, allUnattendedTests));
-        adapter.add(new CompositeTestGroup(TestGroup.AllTestsGroupName, allTests));
-
-        if (shouldRunUnattended()) {
-            mTestGroupSpinner.setSelection(unattendedTestsIndex);
-            selectTestGroup(unattendedTestsIndex);
-            changeCheckAllTests(true);
-            runTests();
-        } else {
-            mTestGroupSpinner.setSelection(0);
-            selectTestGroup(0);
-        }
+        thread.start();
     }
 
     @Override
@@ -600,5 +629,38 @@ public class MainActivity extends Activity {
         builder.setMessage(message);
         builder.setTitle(title);
         builder.create().show();
+    }
+
+    private boolean IsNetBackend() {
+
+        try {
+
+            HttpClient httpclient = new DefaultHttpClient();
+            HttpResponse response = httpclient.execute(new HttpGet(getMobileServiceURL() + "api/runtimeinfo"));
+            String runtimeType;
+
+            StatusLine statusLine = response.getStatusLine();
+            if (statusLine.getStatusCode() == HttpStatus.SC_OK) {
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                response.getEntity().writeTo(out);
+                String responseString = out.toString();
+
+                JsonObject jsonResult = new JsonParser().parse(responseString).getAsJsonObject();
+
+                runtimeType = jsonResult.get("runtime").getAsJsonObject().get("type").getAsString();
+
+                out.close();
+            } else {
+                response.getEntity().getContent().close();
+                throw new IOException(statusLine.getReasonPhrase());
+            }
+
+            if (runtimeType == ".NET") {
+                return true;
+            }
+        }
+        finally {
+            return false;
+        }
     }
 }

@@ -66,14 +66,26 @@ public class SystemPropertiesTests extends TestGroup {
 
     protected static final String STRING_ID_TABLE_NAME = "RoundTripTable";
 
-    public SystemPropertiesTests() {
+    boolean isNetBackend;
+
+    public SystemPropertiesTests(boolean isNetBackend) {
         super("System Properties tests");
+
+        this.isNetBackend = isNetBackend;
 
         this.addTest(createTypeSystemPropertiesTest("Operations with All System Properties from Type"));
         this.addTest(createCustomSystemPropertiesTest("Operations with Custom System Properties set on Table"));
-        for (String systemProperties : SystemPropertiesTestData.ValidSystemPropertyQueryStrings) {
-            this.addTest(createQueryParameterSystemPropertiesTest("Operations with Query Parameter System Properties set on Table - " + systemProperties,
-                    systemProperties));
+
+        if (isNetBackend) {
+            for (String systemProperties : SystemPropertiesTestData.ValidSystemPropertyQueryStringsForNet) {
+                this.addTest(createQueryParameterSystemPropertiesTest("Operations with Query Parameter System Properties set on Table - " + systemProperties,
+                        systemProperties));
+            }
+        } else {
+            for (String systemProperties : SystemPropertiesTestData.ValidSystemPropertyQueryStringsForNode) {
+                this.addTest(createQueryParameterSystemPropertiesTest("Operations with Query Parameter System Properties set on Table - " + systemProperties,
+                        systemProperties));
+            }
         }
         this.addTest(createMergeConflictTest("Merge Conflict"));
         this.addTest(createMergeConflictGenericTest("Merge Conflict Generic"));
@@ -101,8 +113,6 @@ public class SystemPropertiesTests extends TestGroup {
 
                         try {
 
-                            boolean netBackend = true;
-
                             MobileServiceTable<StringIdRoundTripTableElement> table = client
                                     .getTable(STRING_ID_TABLE_NAME, StringIdRoundTripTableElement.class);
 
@@ -110,7 +120,7 @@ public class SystemPropertiesTests extends TestGroup {
                             final StringIdRoundTripTableElement responseElement1 = insert(table, element);
 
                             log("Verify system properties are not null");
-                            verifySystemProperties("Insert response", responseElement1, netBackend) ;
+                            verifySystemProperties("Insert response", responseElement1, isNetBackend) ;
 
                             log("Read table");
 
@@ -136,7 +146,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement2 = filteredResponseElements.get(0);
 
                             log("Verify system properties are not null");
-                            verifySystemProperties("Read response", responseElement2, netBackend);
+                            verifySystemProperties("Read response", responseElement2, isNetBackend);
 
                             final String versionFilter = responseElement1.Version;
 
@@ -322,8 +332,6 @@ public class SystemPropertiesTests extends TestGroup {
 
                         try {
 
-                            boolean netBackend = true;
-
                             MobileServiceTable<StringIdRoundTripTableElement> table = client
                                     .getTable(STRING_ID_TABLE_NAME, StringIdRoundTripTableElement.class);
 
@@ -334,7 +342,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement1 = insert(table, element1);
 
                             log("Verify system properties are not null");
-                            verifySystemProperties("Insert response", responseElement1, netBackend);
+                            verifySystemProperties("Insert response", responseElement1, isNetBackend);
 
                             StringIdRoundTripTableElement element2 = new StringIdRoundTripTableElement(true);
                             element2.id = UUID.randomUUID().toString();
@@ -349,7 +357,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement2 = insert(table, element2);
 
                             log("Verify Version|CreatedAt System Properties are not null, and UpdateAt and Delete is null or default");
-                            verifySystemProperties("Insert response", true, false, true, false, responseElement2, netBackend);
+                            verifySystemProperties("Insert response", true, false, true, false, responseElement2, isNetBackend);
 
                             EnumSet<MobileServiceSystemProperty> systemProperties3 = EnumSet.noneOf(MobileServiceSystemProperty.class);
                             systemProperties3.add(MobileServiceSystemProperty.Version);
@@ -370,7 +378,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement3 = responseElements3.get(0);
 
                             log("Verify Version|UpdatedAt|Deleted System Properties are not null, and CreatedAt is null or default");
-                            verifySystemProperties("Read response", false, true, true, true, responseElement3, netBackend);
+                            verifySystemProperties("Read response", false, true, true, true, responseElement3, isNetBackend);
 
                             EnumSet<MobileServiceSystemProperty> systemProperties4 = EnumSet.noneOf(MobileServiceSystemProperty.class);
 
@@ -380,7 +388,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement4 = lookUp(table, element2.id);
 
                             log("Verify Version|CreatedAt|UpdatedAt|Deleted System Properties are null");
-                            verifySystemProperties("Read response", false, false, false, false, responseElement4, netBackend);
+                            verifySystemProperties("Read response", false, false, false, false, responseElement4, isNetBackend);
 
                             log("Delete element");
                             delete(table, responseElement1);
@@ -422,8 +430,6 @@ public class SystemPropertiesTests extends TestGroup {
 
                         try {
 
-                            boolean netBackend = true;
-
                             MobileServiceTable<StringIdRoundTripTableElement> table = client
                                     .getTable(STRING_ID_TABLE_NAME, StringIdRoundTripTableElement.class);
 
@@ -449,7 +455,7 @@ public class SystemPropertiesTests extends TestGroup {
                             final StringIdRoundTripTableElement responseElement1 = insert(table, element1, userParameters);
 
                             log("Verify Query Parameter System Properties");
-                            verifySystemProperties("Insert Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement1, netBackend);
+                            verifySystemProperties("Insert Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement1, isNetBackend);
 
                             Query query = QueryOperations.field("id");
 
@@ -474,7 +480,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement2 = filteredResponseElements.get(0);
 
                             log("Verify Query Parameter System Properties");
-                            verifySystemProperties("Read Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement2, netBackend);
+                            verifySystemProperties("Read Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement2, isNetBackend);
 
                             log("Filter element1 id with Query Parameter System Properties - " + systemProperties);
                             List<StringIdRoundTripTableElement> responseElements3 = read(table, field("id").eq().val(element1.id), userParameters);
@@ -487,13 +493,13 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement3 = responseElements3.get(0);
 
                             log("Verify Query Parameter System Properties");
-                            verifySystemProperties("Filter Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement3, netBackend);
+                            verifySystemProperties("Filter Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement3, isNetBackend);
 
                             log("Lookup element1 id with Query Parameter System Properties - " + systemProperties);
                             StringIdRoundTripTableElement responseElement4 = lookUp(table, element1.id, userParameters);
 
                             log("Verify Query Parameter System Properties");
-                            verifySystemProperties("Lookup Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement4, netBackend);
+                            verifySystemProperties("Lookup Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement4, isNetBackend);
 
                             StringIdRoundTripTableElement updateElement1 = new StringIdRoundTripTableElement(element1);
                             updateElement1.name = "Other Sample Data";
@@ -502,7 +508,7 @@ public class SystemPropertiesTests extends TestGroup {
                             StringIdRoundTripTableElement responseElement5 = update(table, updateElement1, userParameters);
 
                             log("Verify Query Parameter System Properties");
-                            verifySystemProperties("Update Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement5, netBackend);
+                            verifySystemProperties("Update Response", shouldHaveCreatedAt, shouldHaveUpdatedAt, shouldHaveVersion, shouldHaveDeleted, responseElement5, isNetBackend);
 
                             log("Delete element");
                             delete(table, responseElement5);

@@ -20,10 +20,11 @@ namespace ZumoE2EServerApp.Controllers.Table
         {
             IPushMessage message = null;
             string tag = item.Tag;
+            var template = item.TemplateNotification;
 
             if (item.TemplatePush.GetValueOrDefault())
             {
-                message = item.TemplateNotification.ToObject<TemplatePushMessage>();
+                message = template.ToObject<TemplatePushMessage>();
             }
             else
             {

@@ -58,14 +58,18 @@ public class EnhancedPushTests extends TestGroup {
     private static final String tableName = "droidPushTest";
     private static final String DEFAULT_REGISTRATION_NAME = "$Default";
     private static final String REGISTRATION_NAME_STORAGE_KEY = "__NH_REG_NAME_";
+    private boolean isNetBackend = true;
+
     /*
      * Pointer to the main activity used to register with GCM
      */
     public static MainActivity mainActivity;
     public static String registrationId;
 
-    public EnhancedPushTests() {
+    public EnhancedPushTests(boolean isNetBackend) {
         super("Enhanced Push tests");
+
+        this.isNetBackend = isNetBackend;
 
         // Notification Roundtrip Tests
 
@@ -378,7 +382,10 @@ public class EnhancedPushTests extends TestGroup {
         };
 
         register.setName(name);
-        register.setExpectedExceptionClass(MobileServiceException.class);
+
+        if (!isNetBackend) {
+            register.setExpectedExceptionClass(MobileServiceException.class);
+        }
 
         return register;
     }
@@ -448,7 +455,10 @@ public class EnhancedPushTests extends TestGroup {
         };
 
         register.setName(name);
-        register.setExpectedExceptionClass(MobileServiceException.class);
+
+        if (!isNetBackend) {
+            register.setExpectedExceptionClass(MobileServiceException.class);
+        }
 
         return register;
     }
@@ -492,7 +502,10 @@ public class EnhancedPushTests extends TestGroup {
         };
 
         register.setName(name);
-        register.setExpectedExceptionClass(MobileServiceException.class);
+
+        if (!isNetBackend) {
+            register.setExpectedExceptionClass(MobileServiceException.class);
+        }
 
         return register;
     }
@@ -536,7 +549,9 @@ public class EnhancedPushTests extends TestGroup {
         };
 
         register.setName(name);
-        register.setExpectedExceptionClass(MobileServiceException.class);
+        if (!isNetBackend) {
+            register.setExpectedExceptionClass(MobileServiceException.class);
+        }
 
         return register;
     }
@@ -655,6 +670,8 @@ public class EnhancedPushTests extends TestGroup {
 
                     registerTemplate(this, MobileServicePush, registrationId, templateName, template, tags);
 
+                    JsonElement templateNotificationJsonElement = new JsonParser().parse(templateNotification);
+
                     GCMMessageManager.instance.clearPushMessages();
                     MobileServiceJsonTable table = client.getTable(tableName);
                     JsonObject item = new JsonObject();
@@ -662,7 +679,7 @@ public class EnhancedPushTests extends TestGroup {
                     item.addProperty("tag", tag);
                     item.addProperty("payload", "not used");
                     item.addProperty("templatePush", true);
-                    item.addProperty("templateNotification", templateNotification);
+                    item.add("templateNotification", templateNotificationJsonElement);
                     item.addProperty("usingNH", true);
 
                     JsonObject jsonObject = table.insert(item).get();
@@ -842,6 +859,8 @@ public class EnhancedPushTests extends TestGroup {
 
                     unregisterTemplate(test, client.getPush(), templateName);
 
+                    JsonElement templateNotificationJsonElement = new JsonParser().parse(templateNotification);
+
                     GCMMessageManager.instance.clearPushMessages();
                     MobileServiceJsonTable table = client.getTable(tableName);
                     JsonObject item = new JsonObject();
@@ -849,7 +868,7 @@ public class EnhancedPushTests extends TestGroup {
                     item.addProperty("tag", tag);
                     item.addProperty("payload", "not used");
                     item.addProperty("templatePush", true);
-                    item.addProperty("templateNotification", templateNotification);
+                    item.add("templateNotification", templateNotificationJsonElement);
                     item.addProperty("usingNH", true);
 
                     JsonObject jsonObject = table.insert(item).get();
