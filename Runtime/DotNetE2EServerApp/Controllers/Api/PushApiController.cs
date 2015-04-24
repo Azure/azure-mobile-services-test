@@ -7,9 +7,7 @@ using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
-using ZumoE2EServerApp.Utils;
 using Microsoft.WindowsAzure.Mobile.Service;
-using System;
 using Newtonsoft.Json;
 
 namespace ZumoE2EServerApp.Controllers

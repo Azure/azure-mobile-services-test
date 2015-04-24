@@ -4,7 +4,6 @@
 
 using Microsoft.WindowsAzure.Mobile.Service;
 using System;
-using System.Collections.Generic;
 using ZumoE2EServerApp.Utils;
 
 namespace ZumoE2EServerApp.DataObjects
