@@ -26,7 +26,7 @@
   "twitterApiKey":"YOUR_TWITTER_CLIENTID",
   "twitterApiSecret":"YOUR_TWITTER_CLIENTSECRET",
   "aadClientId":"YOUR_AAD_CLIENTID",
-  "aadTenant":"YOUR_AAD_TENANT",
+  "aadTenant":"YOUR_AAD_TENANT, must be valid if specified or IIS will throw 500s",
   "push": {
         "apns": {
             "mode": "",

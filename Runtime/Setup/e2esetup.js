@@ -1,13 +1,14 @@
-var argv     = require('optimist').argv,
-    archiver = require('archiver'),
-    async    = require('async'),
-    colors   = require('colors'),
-    fse      = require('fs-extra'),
-    git      = require('gift'),
-    nconf    = require('nconf'),
-    request  = require('request'),
-    scripty  = require('azure-scripty'),
-    tmpDirs  = require('tmp');
+var argv = require('optimist').argv,
+  archiver = require('archiver'),
+  async = require('async'),
+  colors = require('colors'),
+  fse = require('fs-extra'),
+  git = require('gift'),
+  nconf = require('nconf'),
+  request = require('request'),
+  scripty = require('azure-scripty'),
+  tmpDirs = require('tmp'),
+  validator = require('validator');
 
 var state = {};
 var NumRetries = 3;
@@ -56,7 +57,9 @@ function read_config(callback) {
   }
   var configFile = argv._[0];
   process.stdout.write('Reading config...');
-  nconf.argv().file({ file: configFile });
+  nconf.argv().file({
+    file: configFile
+  });
 
   console.log(' OK'.green.bold);
   callback();
@@ -64,12 +67,12 @@ function read_config(callback) {
 
 function read_existing_apps(callback) {
   process.stdout.write('Reading existing apps...');
-  scripty.invoke('mobile list', function(err, results) {
+  scripty.invoke('mobile list', function (err, results) {
     if (!err) {
       state.existingApps = results;
       process.stdout.write(' OK'.green.bold + '\n');
       process.stdout.write('   Found ' + state.existingApps.length + ' apps:\n');
-      state.existingApps.forEach(function(a) {
+      state.existingApps.forEach(function (a) {
         process.stdout.write('      ' + a.name + '\n');
       });
       process.stdout.write('\n');
@@ -81,13 +84,13 @@ function read_existing_apps(callback) {
 function make_app(callback) {
   console.log('');
   console.log('======== Processing app: '.white.bold + nconf.get('name') + ' ========');
-  
+
   async.series(
     [
-      function(done) {
+      function (done) {
         var existingApp = null;
         var appName = nconf.get('name');
-        state.existingApps.forEach(function(i) {
+        state.existingApps.forEach(function (i) {
           if (i.name.toLowerCase() == appName.toLowerCase()) {
             existingApp = i;
           }
@@ -137,12 +140,12 @@ function create_app(callback) {
     backend: nconf.get('platform'),
     positional: [nconf.get('name'), nconf.get('sql:user'), nconf.get('sql:password')]
   };
-  scripty.invoke(cmd, function(err, results) {
-      if (!err) {
-        console.log(' OK'.green.bold);
-      }
-      callback(err);
-    });
+  scripty.invoke(cmd, function (err, results) {
+    if (!err) {
+      console.log(' OK'.green.bold);
+    }
+    callback(err);
+  });
 }
 
 
@@ -152,7 +155,7 @@ function scale_app(callback) {
     return callback();
   }
   process.stdout.write('   Scaling the app to \'' + tier + '\' tier...');
-  scripty.invoke('mobile scale change --tier '+ nconf.get('tier') + ' ' + nconf.get('name'), function(err, results) {
+  scripty.invoke('mobile scale change --tier ' + nconf.get('tier') + ' ' + nconf.get('name'), function (err, results) {
     if (!err) {
       console.log(' OK'.green.bold);
     }
@@ -166,14 +169,13 @@ function setup_app(callback) {
     setup_app_keys,
     setup_cors,
     setup_auth_AllProviders,
-    
+
     // Platform-specific setup
-    function(done) {
+    function (done) {
       var lower = nconf.get('platform').toLowerCase();
       if (lower == 'node') {
         setup_node_app(done);
-      }
-      else if (lower == 'dotnet') {
+      } else if (lower == 'dotnet') {
         setup_dotnet_app(done);
       } else {
         done('Invalid app platform in config file: ' + lower + '\n');
@@ -183,40 +185,40 @@ function setup_app(callback) {
     setup_push,
 
     // Wait some time before pinging the site
-    function(done) {
+    function (done) {
       var pingDelay = nconf.get('pingDelay') || defaultPingDelay;
       process.stdout.write('   Waiting ' + pingDelay + ' ms before pinging the app...');
-      setTimeout(function() {
+      setTimeout(function () {
         console.log(' OK'.green.bold);
         done();
       }, pingDelay);
     },
-    
+
     // Ping the app
-    function(done) {
+    function (done) {
       process.stdout.write('   Pinging ' + state.appPingUri + '...');
       request.get({
-                    uri: state.appPingUri,
-                    timeout: 60 * 1000,
-                    headers: {
-                      'x-zumo-application': nconf.get('appKey') || ''
-                    }
-                  },
-                  function(err, resp, body) {
-                    if (!err) {
-                      if (resp.statusCode == 200) {
-                        console.log(' OK'.green.bold);
-                      } else {
-                        console.log(' Err: '.red.bold + resp.statusCode + '\n' + body);
-                        err = 'endpoint returned ' + resp.statusCode;
-                      }
-                    }
-                    done(err);
-                  });
+          uri: state.appPingUri,
+          timeout: 60 * 1000,
+          headers: {
+            'x-zumo-application': nconf.get('appKey') || ''
+          }
+        },
+        function (err, resp, body) {
+          if (!err) {
+            if (resp.statusCode == 200) {
+              console.log(' OK'.green.bold);
+            } else {
+              console.log(' Err: '.red.bold + resp.statusCode + '\n' + body);
+              err = 'endpoint returned ' + resp.statusCode;
+            }
+          }
+          done(err);
+        });
     },
-	
+
     // Done
-    function(done) {
+    function (done) {
       console.log('   Done!'.green.bold);
       done();
     }
@@ -229,7 +231,7 @@ function setup_app_keys(callback) {
     return callback();
   }
   process.stdout.write('   Setting AppKey...');
-  scripty.invoke('mobile key set ' + nconf.get('name') + ' application ' + appKey, function(err, results) {
+  scripty.invoke('mobile key set ' + nconf.get('name') + ' application ' + appKey, function (err, results) {
     if (!err) {
       console.log(' OK'.green.bold);
     }
@@ -243,7 +245,7 @@ function setup_cors(callback) {
     return callback();
   }
   process.stdout.write('   Setting up CORS (' + corsWhitelist + ')...');
-  scripty.invoke('mobile config set ' + nconf.get('name') + ' crossDomainWhitelist ' + corsWhitelist, function(err, results) {
+  scripty.invoke('mobile config set ' + nconf.get('name') + ' crossDomainWhitelist ' + corsWhitelist, function (err, results) {
     if (!err) {
       console.log(' OK'.green.bold);
     }
@@ -255,103 +257,99 @@ function setup_push(callback) {
   var indent = '   ';
   process.stdout.write(indent + 'Configuring Push...');
   async.series([
-		function (done) {
-		  var gcmApiKey = nconf.get('push:gcm:apiKey');
-		  if (gcmApiKey && gcmApiKey!="") {
-		    invoke_scripty(indent, 'mobile push gcm set ' + nconf.get('name') + ' ' + gcmApiKey, done);
-		  } else {
-		    done();
-		  }
-		},
+    function (done) {
+      var gcmApiKey = nconf.get('push:gcm:apiKey');
+      if (gcmApiKey && gcmApiKey != "") {
+        invoke_scripty(indent, 'mobile push gcm set ' + nconf.get('name') + ' ' + gcmApiKey, done);
+      } else {
+        done();
+      }
+    },
 
-		function (done) {
-		  var apnsMode = nconf.get('push:apns:mode');
-		  var apnsCertPath = nconf.get('push:apns:certPath');
-		  var apnsCertPassword = nconf.get('push:apns:certPassword') || '';
+    function (done) {
+      var apnsMode = nconf.get('push:apns:mode');
+      var apnsCertPath = nconf.get('push:apns:certPath');
+      var apnsCertPassword = nconf.get('push:apns:certPassword') || '';
 
-		  if (apnsMode && apnsMode!="" && apnsCertPath && apnsCertPath!="" && apnsCertPassword && apnsCertPassword!="") {
-		    var cmd = 'mobile push apns set ' + nconf.get('name') + ' ' + apnsMode + ' ' + apnsCertPath;
-		    if (apnsCertPassword) {
-		      cmd = cmd + ' -p ' + apnsCertPassword;
-		    }
+      if (apnsMode && apnsMode != "" && apnsCertPath && apnsCertPath != "" && apnsCertPassword && apnsCertPassword != "") {
+        var cmd = 'mobile push apns set ' + nconf.get('name') + ' ' + apnsMode + ' ' + apnsCertPath;
+        if (apnsCertPassword) {
+          cmd = cmd + ' -p ' + apnsCertPassword;
+        }
 
-		    invoke_scripty(indent, cmd, done);
-		  } else {
-		    done();
-		  }
-		},
+        invoke_scripty(indent, cmd, done);
+      } else {
+        done();
+      }
+    },
 
-		function (done) {
-		  var mpnsCertPath = nconf.get('push:mpns:certPath');
-		  var mpnsCertPassword = nconf.get('push:mpns:certPassword') || '';
-		  if (mpnsCertPath && mpnsCertPath!="") {
-		    invoke_scripty(indent, 'mobile push mpns set ' + nconf.get('name') + ' ' + mpnsCertPath + ' ' + mpnsCertPassword, done);
-		  } else {
-		    done();
-		  }
-		},
+    function (done) {
+      var mpnsCertPath = nconf.get('push:mpns:certPath');
+      var mpnsCertPassword = nconf.get('push:mpns:certPassword') || '';
+      if (mpnsCertPath && mpnsCertPath != "") {
+        invoke_scripty(indent, 'mobile push mpns set ' + nconf.get('name') + ' ' + mpnsCertPath + ' ' + mpnsCertPassword, done);
+      } else {
+        done();
+      }
+    },
 
-		function (done) {
-		  var wnsClientSecret = nconf.get('push:wns:clientSecret');
-		  var wnsPackageSid = nconf.get('push:wns:packageSid');
-		  if (wnsClientSecret && wnsClientSecret!="" && wnsPackageSid && wnsPackageSid!="" ) {
-		    invoke_scripty(indent, 'mobile push wns set ' + nconf.get('name') + ' ' + wnsClientSecret + ' ' + wnsPackageSid, done);
-		  } else {
-		    done();
-		  }
-		}
+    function (done) {
+      var wnsClientSecret = nconf.get('push:wns:clientSecret');
+      var wnsPackageSid = nconf.get('push:wns:packageSid');
+      if (wnsClientSecret && wnsClientSecret != "" && wnsPackageSid && wnsPackageSid != "") {
+        invoke_scripty(indent, 'mobile push wns set ' + nconf.get('name') + ' ' + wnsClientSecret + ' ' + wnsPackageSid, done);
+      } else {
+        done();
+      }
+    }
   ], callback);
 }
 
-function setup_auth_AllProviders(callback) {  
-	async.series([
-		function(done) {
-			var clientId = nconf.get('googleClientId');  
-			var clientSecret = nconf.get('googleClientSecret');  
-			setup_auth('google',clientId,clientSecret,done);
-		},
-	
-		function(done) {
-			var clientId = nconf.get('msClientId');  
-			var clientSecret = nconf.get('msClientSecret');  			
-			setup_auth('microsoftaccount',clientId,clientSecret,done);
-		},
-	
-		function(done) {
-			var clientId = nconf.get('fbClientId');  
-			var clientSecret = nconf.get('fbClientSecret');
-			setup_auth('facebook',clientId,clientSecret,done);
-		},
-	
-		function(done) {
-			var clientId = nconf.get('twitterApiKey');  
-			var clientSecret = nconf.get('twitterApiSecret');   
-			setup_auth('twitter',clientId,clientSecret,done);
-		},
+function setup_auth_AllProviders(callback) {
+  async.series([
+    function (done) {
+      var clientId = nconf.get('googleClientId');
+      var clientSecret = nconf.get('googleClientSecret');
+      setup_auth('google', clientId, clientSecret, done);
+    },
 
-    function(done) {
+    function (done) {
+      var clientId = nconf.get('msClientId');
+      var clientSecret = nconf.get('msClientSecret');
+      setup_auth('microsoftaccount', clientId, clientSecret, done);
+    },
+
+    function (done) {
+      var clientId = nconf.get('fbClientId');
+      var clientSecret = nconf.get('fbClientSecret');
+      setup_auth('facebook', clientId, clientSecret, done);
+    },
+
+    function (done) {
+      var clientId = nconf.get('twitterApiKey');
+      var clientSecret = nconf.get('twitterApiSecret');
+      setup_auth('twitter', clientId, clientSecret, done);
+    },
+
+    function (done) {
       var clientId = nconf.get('aadClientId');
       var tenant = nconf.get('aadTenant');
       setup_aad(clientId, tenant, done);
     }
-	], callback);  
+  ], callback);
 }
 
-function setup_auth(authprovider,clientId,clientSecret,callback) {  
-  if (!clientId) {
-    return callback();
-  }  
-  if (!clientSecret) {
+function setup_auth(authprovider, clientId, clientSecret, callback) {
+  if (!clientId || !clientSecret) {
     return callback();
   }
   var indent = '   ';
-  process.stdout.write(indent + 'Setting up '+ authprovider + ' auth. clientId (' + clientId + ') clientsecret (' + clientSecret + ')...');
-  if(authprovider == 'microsoftaccount') {
-    var msPackageSID = nconf.get('msPackageSID');  		
-    invoke_scripty(indent, 'mobile auth '+ authprovider +' set --packageSid ' + msPackageSID + ' ' + nconf.get('name') + ' ' + clientId + ' '+ clientSecret, callback);
-  }  
-  else {
-    invoke_scripty(indent, 'mobile auth '+ authprovider +' set ' + nconf.get('name') + ' ' + clientId + ' '+ clientSecret, callback);
+  process.stdout.write(indent + 'Setting up ' + authprovider + ' auth. clientId (' + clientId + ') clientsecret (' + clientSecret + ')...');
+  if (authprovider == 'microsoftaccount') {
+    var msPackageSID = nconf.get('msPackageSID');
+    invoke_scripty(indent, 'mobile auth ' + authprovider + ' set --packageSid ' + msPackageSID + ' ' + nconf.get('name') + ' ' + clientId + ' ' + clientSecret, callback);
+  } else {
+    invoke_scripty(indent, 'mobile auth ' + authprovider + ' set ' + nconf.get('name') + ' ' + clientId + ' ' + clientSecret, callback);
   }
 }
 
@@ -359,13 +357,21 @@ function setup_aad(clientId, tenant, callback) {
   if (!clientId || !tenant) {
     return callback();
   }
+  if (!validator.isUUID(clientId)) {
+    console.log('   Warn: supplied ClientId is not a GUID, skipping AAD Auth...'.yellow.bold);
+    return callback();
+  }
+  if (!validator.isFQDN(tenant)) {
+    console.log('   Warn: supplied Tenant is not a FQDN, skipping AAD Auth...'.yellow.bold);
+    return callback();
+  }
   var indent = '   ';
   process.stdout.write(indent + 'Setting up aad auth. clientId (' + clientId + ') tenant (' + tenant + ')...');
   async.series([
-    function(done) {
+    function (done) {
       invoke_scripty(indent, 'mobile auth aad set ' + nconf.get('name') + ' ' + clientId, done);
     },
-    function(done) {
+    function (done) {
       invoke_scripty(indent, 'mobile auth aad tenant add ' + nconf.get('name') + ' ' + tenant, done);
     }
   ], callback);
@@ -376,11 +382,11 @@ function setup_node_app(callback) {
   var appConfig = require(nconf.get('configFile'));
   var tables = appConfig.tables;
   async.series([
-    function(done) {
+    function (done) {
       // Create tables
       create_node_tables(tables, done);
     },
-    function(done) {
+    function (done) {
       // Upload user code and site extension
       upload_site_and_siteextension(done);
     }
@@ -391,14 +397,14 @@ function create_node_tables(tables, callback) {
   if (!tables) {
     return callback();
   }
-  
-  async.eachSeries(tables, function(table, done) {
+
+  async.eachSeries(tables, function (table, done) {
     async.series([
-      function(_done) {
+      function (_done) {
         // Create table
-        async.retry(NumRetries, function(__done) {
+        async.retry(NumRetries, function (__done) {
           process.stdout.write('     Creating table ' + table.name + '...');
-          scripty.invoke('mobile table create ' + (table.options || '') + ' ' + nconf.get('name') + ' ' + table.name, function(err, results) {
+          scripty.invoke('mobile table create ' + (table.options || '') + ' ' + nconf.get('name') + ' ' + table.name, function (err, results) {
             if (!err) {
               console.log(' OK'.green.bold);
             }
@@ -406,16 +412,16 @@ function create_node_tables(tables, callback) {
           });
         }, _done);
       },
-      function(_done) {
+      function (_done) {
         // Add columns if specified
         if (!table.columns) {
           return _done();
         }
         var columns = table.columns.split(',');
-        async.eachSeries(columns, function(column, __done) {
+        async.eachSeries(columns, function (column, __done) {
           process.stdout.write('        Creating column ' + column + '...');
-          async.retry(NumRetries, function(___done) {
-            scripty.invoke('mobile table update --addColumn ' + column + ' ' + nconf.get('name') + ' ' + table.name, function(err, results) {
+          async.retry(NumRetries, function (___done) {
+            scripty.invoke('mobile table update --addColumn ' + column + ' ' + nconf.get('name') + ' ' + table.name, function (err, results) {
               if (!err) {
                 console.log(' OK'.green.bold);
               }
@@ -430,11 +436,7 @@ function create_node_tables(tables, callback) {
 
 function setup_dotnet_app(callback) {
   console.log('   Setting up DotNet app:');
-  async.series([
-    function(done) {
-      upload_site_and_siteextension(done);
-    }
-  ], callback);
+  upload_site_and_siteextension(callback);
 }
 
 function upload_site_and_siteextension(callback) {
@@ -442,15 +444,15 @@ function upload_site_and_siteextension(callback) {
   var kuduUsername = {};
   var kuduPassword = {};
   var scmEndpoint = {};
-  
+
   async.series([
-    function(done) {
+    function (done) {
       // Get git uri
       process.stdout.write('     Reading Azure git uri and credentials...');
-      scripty.invoke('mobile list', function(err, results) {
+      scripty.invoke('mobile list', function (err, results) {
         if (!err) {
           var existingApp = null;
-          results.forEach(function(i) {
+          results.forEach(function (i) {
             if (i.name.toLowerCase() == nconf.get('name').toLowerCase()) {
               existingApp = i;
             }
@@ -458,25 +460,25 @@ function upload_site_and_siteextension(callback) {
           if (!existingApp) {
             return done('App does not exist in Azure, but it should have just been created!');
           }
-          
+
           /* existingApp.deploymentTriggerUrl looks like:
            *   https://$mobile$APPNAME:PASSWORD@APPNAME.scm.azure-mobile.net/deploy
            * We need to transform it into:
            *   https://%24mobile%24APPNAME:PASSWORD@APPNAME.scm.azure-mobile.net/APPNAME.git
            * Note that we replace '$' with '%24' since otherwise a Mac / Linux computer would
            * look for an environment variable with that name, so it has to be escaped.
-          */
+           */
           gitUri = existingApp.deploymentTriggerUrl.replace('/deploy', '/' + nconf.get('name') + '.git').replace(/\$/g, '%24');
           var regex = /^https:\/\/([^:]*):([^@]*)@/g;
           var matches = regex.exec(existingApp.deploymentTriggerUrl);
           kuduUsername = matches[1];
           kuduPassword = matches[2];
-          
+
           // Add .scm in the middle of the uri
           regex = /^(http(?:s?):\/\/[^.]*)(\..*$)/g;
           matches = regex.exec(existingApp.applicationUrl);
-          scmEndpoint = matches[1].replace('http:','https:') + '.scm' + matches[2];
-          
+          scmEndpoint = matches[1].replace('http:', 'https:') + '.scm' + matches[2];
+
           state.appPingUri = existingApp.applicationUrl.replace('https://', 'http://') + nconf.get('pingEndpoint');
           console.log(' OK'.green.bold + ': ' + gitUri);
         }
@@ -511,11 +513,10 @@ function upload_site_and_siteextension(callback) {
       // Restart the site
       process.stdout.write('     Restarting site...');
       call_kudu('delete', scmEndpoint + 'api/diagnostics/processes/0', null, kuduUsername, kuduPassword, 5,
-        function(err, resp, body) {
+        function (err, resp, body) {
           if (!err) {
             console.log(' OK'.green.bold + ': ' + resp.statusCode);
-          }
-          else
+          } else
             console.log('Ignoring error (' + err + ')');
           return done();
         });
@@ -523,16 +524,16 @@ function upload_site_and_siteextension(callback) {
   ], callback);
 }
 
-function upload_user_binaries(scmEndpoint, kuduUsername, kuduPassword, binFilesPath, callback){
+function upload_user_binaries(scmEndpoint, kuduUsername, kuduPassword, binFilesPath, callback) {
   var binContents = {};
   var tmpPath = {};
   var zipPath = {};
-  
+
   console.log('   Uploading user binaries:');
   async.series([
-    function(done) {
+    function (done) {
       process.stdout.write('     Creating temp folder...');
-      tmpDirs.dir(function(err, _path) {
+      tmpDirs.dir(function (err, _path) {
         if (!err) {
           tmpPath = _path;
           console.log(' OK'.green.bold + ': ' + tmpPath);
@@ -540,14 +541,14 @@ function upload_user_binaries(scmEndpoint, kuduUsername, kuduPassword, binFilesP
         done(err);
       });
     },
-    function(done) {
+    function (done) {
       process.stdout.write('     Zipping user site binaries...');
       zipPath = tmpPath + '/userSite.zip';
       zip_folder(binFilesPath, zipPath, 'site/wwwroot', done);
     },
-    function(done) {
+    function (done) {
       process.stdout.write('     Reading zipped file...');
-      fse.readFile(zipPath, function(err, results) {
+      fse.readFile(zipPath, function (err, results) {
         if (err) {
           return done(err);
         }
@@ -556,20 +557,22 @@ function upload_user_binaries(scmEndpoint, kuduUsername, kuduPassword, binFilesP
         done();
       });
     },
-    function(done) {
+    function (done) {
       process.stdout.write('     Removing old user site binaries...');
       call_kudu('delete', scmEndpoint + 'api/vfs/Site/wwwroot/?recursive=true', null, kuduUsername, kuduPassword, 60,
-        function(err, resp, body) {
+        function (err, resp, body) {
           if (!err) {
             console.log(' OK'.green.bold + ': ' + resp.statusCode);
           }
           return done(err);
         });
     },
-    function(done) {
+    function (done) {
       process.stdout.write('     Uploading user site binaries (' + (binContents.length / 1024).toFixed(1) + ' KB)...');
-      call_kudu('put', scmEndpoint + 'api/zip', {body:binContents}, kuduUsername, kuduPassword, 150,
-        function(err, resp, body) {
+      call_kudu('put', scmEndpoint + 'api/zip', {
+          body: binContents
+        }, kuduUsername, kuduPassword, 150,
+        function (err, resp, body) {
           if (!err) {
             if (resp.statusCode == 200) {
               console.log(' OK'.green.bold);
@@ -581,9 +584,9 @@ function upload_user_binaries(scmEndpoint, kuduUsername, kuduPassword, binFilesP
           done(err);
         });
     },
-    function(done) {
+    function (done) {
       process.stdout.write('     Deleting temp folder...');
-      fse.remove(tmpPath, function(err) {
+      fse.remove(tmpPath, function (err) {
         if (!err) {
           console.log(' OK'.green.bold);
         }
@@ -596,31 +599,34 @@ function upload_user_binaries(scmEndpoint, kuduUsername, kuduPassword, binFilesP
 function zip_folder(srcPath, destPath, contentPrefix, callback) {
   var output = fse.createWriteStream(destPath);
   var zip = archiver('zip');
-  
+
   output.on('close', function () {
     console.log(' OK'.green.bold);
     callback();
   });
-  
-  zip.on('error', function(err){
+
+  zip.on('error', function (err) {
     callback(err);
   });
-  
+
   zip.pipe(output);
-  zip.bulk([
-      { expand: true, cwd: srcPath, src: ['**'], dest: contentPrefix }
-  ]);
+  zip.bulk([{
+    expand: true,
+    cwd: srcPath,
+    src: ['**'],
+    dest: contentPrefix
+  }]);
   zip.finalize();
 }
 
 function push_repo(gitUri, srcFilesPath, callback) {
   var tmpPath = {};
   var repo = {};
-  
+
   async.series([
-    function(done) {
+    function (done) {
       process.stdout.write('     Creating temp folder...');
-      tmpDirs.dir(function(err, _path) {
+      tmpDirs.dir(function (err, _path) {
         if (!err) {
           tmpPath = _path;
           console.log(' OK'.green.bold + ': ' + tmpPath);
@@ -628,18 +634,18 @@ function push_repo(gitUri, srcFilesPath, callback) {
         done(err);
       });
     },
-    function(done) {
+    function (done) {
       process.stdout.write('     Copying source files to temp folder...');
-      fse.copy(srcFilesPath, tmpPath, function(err) {
+      fse.copy(srcFilesPath, tmpPath, function (err) {
         if (!err) {
           console.log(' OK'.green.bold);
         }
         done(err);
       });
     },
-    function(done) {
+    function (done) {
       process.stdout.write('     Initializing local git repo...');
-      git.init(tmpPath, function(err, _repo) {
+      git.init(tmpPath, function (err, _repo) {
         if (!err) {
           repo = _repo;
           console.log(' OK'.green.bold);
@@ -647,49 +653,51 @@ function push_repo(gitUri, srcFilesPath, callback) {
         done(err);
       });
     },
-    function(done) {
+    function (done) {
       // git add *
       process.stdout.write('     Staging files in local repo...');
-      repo.add('*', function(err) {
+      repo.add('*', function (err) {
         if (!err) {
           console.log(' OK'.green.bold);
         }
         done(err);
       });
     },
-    function(done) {
+    function (done) {
       // git commit
       process.stdout.write('     Commiting files in local repo...');
-      repo.commit('Created automatically by E2E testing infrastructure.', {all:true}, function(err) {
+      repo.commit('Created automatically by E2E testing infrastructure.', {
+        all: true
+      }, function (err) {
         if (!err) {
           console.log(' OK'.green.bold);
         }
         done(err);
       });
     },
-    function(done) {
+    function (done) {
       // git remote add origin <gitUri>
       process.stdout.write('     Adding Azure as a remote in the local repo...');
-      repo.remote_add('origin', gitUri, function(err) {
+      repo.remote_add('origin', gitUri, function (err) {
         if (!err) {
           console.log(' OK'.green.bold);
         }
         done(err);
       });
     },
-    function(done) {
+    function (done) {
       // git push origin master --force
       process.stdout.write('     Pushing to Azure...');
-      repo.remote_push('origin', 'master --force', function(err) {
+      repo.remote_push('origin', 'master --force', function (err) {
         if (!err) {
           console.log(' OK'.green.bold);
         }
         done(err);
       });
     },
-    function(done) {
+    function (done) {
       process.stdout.write('     Deleting temp folder...');
-      fse.remove(tmpPath, function(err) {
+      fse.remove(tmpPath, function (err) {
         if (!err) {
           console.log(' OK'.green.bold);
         }
@@ -701,12 +709,12 @@ function push_repo(gitUri, srcFilesPath, callback) {
 
 function upload_site_extension(scmEndpoint, kuduUsername, kuduPassword, siteExtensionPath, callback) {
   var siteExtensionContents = {};
-  
+
   console.log('   Uploading private site extension:');
   async.series([
-    function(done) {
+    function (done) {
       process.stdout.write('     Reading private site extension file...');
-      fse.readFile(siteExtensionPath, function(err, results) {
+      fse.readFile(siteExtensionPath, function (err, results) {
         if (err) {
           return done(err);
         }
@@ -715,20 +723,22 @@ function upload_site_extension(scmEndpoint, kuduUsername, kuduPassword, siteExte
         done();
       });
     },
-    function(done) {
+    function (done) {
       process.stdout.write('     Removing old private site extensions...');
       call_kudu('delete', scmEndpoint + 'api/vfs/SiteExtensions/?recursive=true', null, kuduUsername, kuduPassword, 60,
-        function(err, resp, body) {
+        function (err, resp, body) {
           if (!err) {
             console.log(' OK'.green.bold + ': ' + resp.statusCode);
           }
           return done(err);
         });
     },
-    function(done) {
+    function (done) {
       process.stdout.write('     Uploading private site extension (' + (siteExtensionContents.length / 1024).toFixed(1) + ' KB)...');
-      call_kudu('put', scmEndpoint + 'api/zip', {body:siteExtensionContents}, kuduUsername, kuduPassword, 150,
-        function(err, resp, body) {
+      call_kudu('put', scmEndpoint + 'api/zip', {
+          body: siteExtensionContents
+        }, kuduUsername, kuduPassword, 150,
+        function (err, resp, body) {
           if (!err) {
             if (resp.statusCode == 200) {
               console.log(' OK'.green.bold);
@@ -744,16 +754,17 @@ function upload_site_extension(scmEndpoint, kuduUsername, kuduPassword, siteExte
 }
 
 function call_kudu(method, uri, content, username, password, timeout, callback) {
-  var opt = { method: method,
-             uri: uri,
-             timeout: timeout * 1000,
-             auth: {
-               user: username,
-               pass: password,
-               sendImmediately: true
-             }
-           };
-  
+  var opt = {
+    method: method,
+    uri: uri,
+    timeout: timeout * 1000,
+    auth: {
+      user: username,
+      pass: password,
+      sendImmediately: true
+    }
+  };
+
   if (content) {
     if (content.json) {
       opt.json = content.json;
@@ -762,7 +773,7 @@ function call_kudu(method, uri, content, username, password, timeout, callback) 
       opt.body = content.body;
     }
   }
-  
+
   request(opt, callback);
 }
 
@@ -776,7 +787,7 @@ function invoke_scripty(currentIndent, scriptToInvoke, callback) {
   });
 }
 
-run(function(err) {
+run(function (err) {
   process.stdout.write('\n');
   if (err) {
     console.log('Err: '.red.bold + err + '\n');
