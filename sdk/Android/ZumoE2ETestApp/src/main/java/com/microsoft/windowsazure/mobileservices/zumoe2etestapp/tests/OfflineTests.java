@@ -44,6 +44,7 @@ import com.microsoft.windowsazure.mobileservices.table.sync.localstore.MobileSer
 import com.microsoft.windowsazure.mobileservices.table.sync.localstore.SQLiteLocalStore;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.RemoteTableOperationProcessor;
 import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperation;
+import com.microsoft.windowsazure.mobileservices.table.sync.operations.TableOperationError;
 import com.microsoft.windowsazure.mobileservices.table.sync.push.MobileServicePushCompletionResult;
 import com.microsoft.windowsazure.mobileservices.table.sync.push.MobileServicePushFailedException;
 import com.microsoft.windowsazure.mobileservices.table.sync.synchandler.MobileServiceSyncHandler;
@@ -78,8 +79,6 @@ public class OfflineTests extends TestGroup {
 
         this.addTest(createClearStoreTest());
 
-        //this.addTest(issue536());
-        //this.addTest(issue417());
 
         this.addTest(createBasicTest("Basic Test"));
         this.addTest(createNoCollapseInsertOnPreviousPushError("No collapse insert on previous push error"));
@@ -88,13 +87,13 @@ public class OfflineTests extends TestGroup {
 
         this.addTest(createInsertDuplicatedElementTest());
 
-        //this.addTest(createDeleteSyncConflict());
+        this.addTest(createDeleteSyncConflict());
 
-        //this.addTest(createSyncConflictTest(false));
-        //this.addTest(createSyncConflictTest(true));
+        this.addTest(createSyncConflictTest(false));
+        this.addTest(createSyncConflictTest(true));
 
-        //this.addTest(createSyncConflictAndResolveWithMethodTest(false));
-        //this.addTest(createSyncConflictAndResolveWithMethodTest(true));
+        this.addTest(createSyncConflictAndResolveWithMethodTest(false));
+        this.addTest(createSyncConflictAndResolveWithMethodTest(true));
 
         this.addTest(LoginTests.createLogoutTest());
         this.addTest(createSyncTestForAuthenticatedTable(false));
@@ -944,7 +943,7 @@ public class OfflineTests extends TestGroup {
         return test;
     }
 
-    /*
+
         private TestCase createDeleteSyncConflict() {
 
             final String tableName = "offlineReady";
@@ -1413,10 +1412,10 @@ public class OfflineTests extends TestGroup {
 
             return test;
         }
-    */
+
     private TestCase createSyncTestForAuthenticatedTable(final boolean isLoggedIn) {
 
-        final String tableName = "offlineReadyNoVersionAuthenticated";
+        final String tableName = "offlineReadyAuthenticated";
 
         final TestCase test = new TestCase() {
 
@@ -1446,6 +1445,7 @@ public class OfflineTests extends TestGroup {
                     tableDefinition.put("float", ColumnDataType.Real);
                     tableDefinition.put("date", ColumnDataType.Date);
                     tableDefinition.put("bool", ColumnDataType.Boolean);
+                    tableDefinition.put("__version", ColumnDataType.String);
 
                     log("Initialized the store and sync context");
 
@@ -1453,10 +1453,10 @@ public class OfflineTests extends TestGroup {
 
                     offlineReadyClient.getSyncContext().initialize(localStore, new SimpleSyncHandler()).get();
 
-                    MobileServiceSyncTable<OfflineReadyItemNoVersion> localTable = offlineReadyClient.getSyncTable(tableName, OfflineReadyItemNoVersion.class);
-                    MobileServiceTable<OfflineReadyItemNoVersion> remoteTable = offlineReadyClient.getTable(tableName, OfflineReadyItemNoVersion.class);
+                    MobileServiceSyncTable<OfflineReadyItem> localTable = offlineReadyClient.getSyncTable(tableName, OfflineReadyItem.class);
+                    MobileServiceTable<OfflineReadyItem> remoteTable = offlineReadyClient.getTable(tableName, OfflineReadyItem.class);
 
-                    OfflineReadyItemNoVersion item = new OfflineReadyItemNoVersion(rndGen);
+                    OfflineReadyItem item = new OfflineReadyItem(rndGen);
                     item = localTable.insert(item).get();
                     test.log("Inserted the item to the local store: " + item);
 
@@ -1504,7 +1504,7 @@ public class OfflineTests extends TestGroup {
                     Query query = QueryOperations.field("id").eq(item.getId());
                     localTable.pull(query).get();
                     test.log("Pulled the data into the local table");
-                    List<OfflineReadyItemNoVersion> serverItems = localTable.read(null).get();
+                    List<OfflineReadyItem> serverItems = localTable.read(null).get();
                     test.log("Retrieved items from the local table");
 
                     test.log("Removing item from the remote table");
@@ -1515,7 +1515,7 @@ public class OfflineTests extends TestGroup {
                         test.log("Logged out again");
                     }
 
-                    OfflineReadyItemNoVersion firstServerItem = serverItems.get(0);
+                    OfflineReadyItem firstServerItem = serverItems.get(0);
 
                     if (item.equals(firstServerItem)) {
                         test.log("Data round-tripped successfully");
@@ -1545,9 +1545,10 @@ public class OfflineTests extends TestGroup {
         return test;
     }
 
+
     private TestCase createNoOptimisticConcurrencyTest() {
 
-        final String tableName = "offlineReadyNoVersionAuthenticated";
+        final String tableName = "offlineReadyAuthenticated";
 
         // If a table does not have a __version column, then offline will still
         // work, but there will be no conflicts
@@ -1676,7 +1677,7 @@ public class OfflineTests extends TestGroup {
 
                     offlineReadyClient.getSyncContext().initialize(localStore, new SimpleSyncHandler()).get();
 
-                    MobileServiceSyncTable<OfflineReadyItemNoVersion> localTable = offlineReadyClient.getSyncTable(tableName, OfflineReadyItemNoVersion.class);
+                    MobileServiceSyncTable<OfflineReadyItem> localTable = offlineReadyClient.getSyncTable(tableName, OfflineReadyItem.class);
 
                     MobileServiceJsonTable remoteTable = offlineReadyClient.getTable(tableName);
 
@@ -1690,7 +1691,7 @@ public class OfflineTests extends TestGroup {
 
                     log("Removed all items from the local table");
 
-                    List<OfflineReadyItemNoVersion> mOfflineReadyItemsNoVersion = new ArrayList<OfflineReadyItemNoVersion>();
+                    List<OfflineReadyItem> mOfflineReadyItemsNoVersion = new ArrayList<OfflineReadyItem>();
 
                     Random rand = new Random();
 
@@ -1702,7 +1703,7 @@ public class OfflineTests extends TestGroup {
 
                     for (int i = 0; i < elementsCount; i++) {
 
-                        OfflineReadyItemNoVersion item = new OfflineReadyItemNoVersion(new Random(), UUID.randomUUID().toString());
+                        OfflineReadyItem item = new OfflineReadyItem(new Random());
                         item.setName(testFilter);
 
                         remoteTable.insert(gsonBuilder.toJsonTree(item).getAsJsonObject()).get();
@@ -1719,7 +1720,7 @@ public class OfflineTests extends TestGroup {
 
                     log("Pull new Elements");
 
-                    MobileServiceList<OfflineReadyItemNoVersion> localElements = localTable
+                    MobileServiceList<OfflineReadyItem> localElements = localTable
                             .read(null).get();
 
                     if (localElements.size() != elementsCount) {
@@ -2312,16 +2313,10 @@ class OfflineReadyItemNoVersion {
     public OfflineReadyItemNoVersion(Random rndGen) {
         this.id = java.util.UUID.randomUUID().toString();
         this.mName = "";// rndGen.nextLong();
-        this.mAge = rndGen.nextInt();
+        this.mAge = 20;//rndGen.nextInt();
         this.mFloatingNumber = rndGen.nextInt() * rndGen.nextDouble();
         this.mDate = new Date();
         this.mFlag = rndGen.nextInt(2) == 0;
-    }
-
-    public OfflineReadyItemNoVersion(Random rndGen, String id) {
-        this(rndGen);
-
-        this.id = id;
     }
 
     public String getId() {
@@ -2388,7 +2383,7 @@ class OfflineReadyItemNoVersion {
         if (!Util.compare(mFloatingNumber, m.getFloatingNumber()))
             return false;
         if (mDate != null) {
-            if (m.getDate() == null)
+            if (m.mDate == null)
                 return false;
             if (!Util.compare(mDate, m.getDate()))
                 return false;
@@ -2400,38 +2395,7 @@ class OfflineReadyItemNoVersion {
 
     @Override
     public String toString() {
-        return String.format(Locale.getDefault(), "OfflineReadyItemNoVersion[Id={0},Name={1},Age={2},FloatingNumber={3},Date={4},Flag={5}]", id, mName, mAge,
-                mFloatingNumber, Util.dateToString(mDate), mFlag);
-    }
-}
-
-class AllOfflineReadyItemsNoVersion {
-    private int id;
-
-    @SerializedName("offlinereadyitems")
-    private OfflineReadyItemNoVersion[] mOfflineReadyItemsNoVersion;
-
-    public AllOfflineReadyItemsNoVersion() {
-        mOfflineReadyItemsNoVersion = new OfflineReadyItemNoVersion[0];
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public OfflineReadyItemNoVersion[] getOfflineReadyItems() {
-        return mOfflineReadyItemsNoVersion;
-    }
-
-    public void setOfflineReadyItems(List<OfflineReadyItemNoVersion> offlineReadyItemsNoVersion) {
-        mOfflineReadyItemsNoVersion = offlineReadyItemsNoVersion.toArray(mOfflineReadyItemsNoVersion);
-    }
-
-    public void setOfflineReadyItems(OfflineReadyItemNoVersion[] offlineReadyItemsNoVersion) {
-        mOfflineReadyItemsNoVersion = offlineReadyItemsNoVersion;
+        return String.format(Locale.getDefault(), "OfflineReadyItem[Id={0},Name={1},Age={2},FloatingNumber={3},Date={4},Flag={5}]", id, mName,
+                mAge, mFloatingNumber, Util.dateToString(mDate), mFlag);
     }
 }

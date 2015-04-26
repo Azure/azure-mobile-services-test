@@ -140,7 +140,7 @@ public class SystemPropertiesTestData {
 
     public static String[] ValidSystemPropertyQueryStringsForNet = new String[]{
             // General
-            "__systemProperties=*", "__systemProperties=__createdAt",
+            "__systemProperties=*",
             "__systemProperties=__createdAt,__updatedAt,__version",
             "__systemProperties=__createdAt,__version,__updatedAt",
             "__systemProperties=__updatedAt,__createdAt,__version",
@@ -153,7 +153,8 @@ public class SystemPropertiesTestData {
             "__systemProperties=__createdAt, ,__updatedAt,__version",
 
             // Trailing, leading whitespace
-            "__systemProperties= *", "__systemProperties=\t*\t",
+            "__systemProperties= *",
+            "__systemProperties=\t*\t",
             "__systemProperties=\r__createdAt,\r__updatedAt,\t__version\r",
             "__systemProperties=__createdAt, __updatedAt, __version",
 

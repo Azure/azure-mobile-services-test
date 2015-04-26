@@ -165,9 +165,7 @@ public class SystemPropertiesTests extends TestGroup {
 
                             List<StringIdRoundTripTableElement> filteredVersionElements = null;
 
-                            boolean netBacked = true;
-
-                            if (netBacked) {
+                            if (isNetBackend) {
                                 byte[] versionFilterBytes = Base64.decode(versionFilter.getBytes(), Base64.DEFAULT);
                                 filteredVersionElements = read(table, field("__version").eq(versionFilterBytes));
                             } else {
