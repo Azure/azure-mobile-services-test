@@ -37,7 +37,7 @@
 	
 	{
       "name":    "stringIdRoundTripTableSoftDelete",
-      "columns": "name=string,date1=date,bool=boolean,integer=number,number=number"
+      "columns": "name=string,date1=date,bool=boolean,number=number"
     },
 	
     {
