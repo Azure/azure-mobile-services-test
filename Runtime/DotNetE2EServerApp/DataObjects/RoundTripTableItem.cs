@@ -49,4 +49,8 @@ namespace ZumoE2EServerApp.DataObjects
 
         public double? Number { get; set; }
     }
+
+    public class StringIdRoundTripTableSoftDeleteItem : RoundTripTableItem 
+    {
+    }
 }
