@@ -19,6 +19,7 @@ See the Apache Version 2.0 License for specific language governing permissions a
  */
 package com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -52,8 +53,12 @@ public class LoginTests extends TestGroup {
 
     private static JsonObject lastUserIdentityObject;
 
-    public LoginTests() {
+    boolean isNetBackend;
+
+    public LoginTests(boolean isNetBackend) {
         super("Login tests");
+
+        this.isNetBackend = isNetBackend;
 
         this.addTest(createLogoutTest());
         this.addTest(createCRUDTest(APPLICATION_PERMISSION_TABLE_NAME, null, TablePermission.Application, false));
@@ -75,10 +80,12 @@ public class LoginTests extends TestGroup {
             this.addTest(createCRUDTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, true));
             this.addTest(createCRUDTest(ADMIN_PERMISSION_TABLE_NAME, provider, TablePermission.Admin, true));
 
-            if (providersWithRecycledTokenSupport.contains(provider)) {
-                this.addTest(createLogoutTest());
-                this.addTest(createClientSideLoginTest(provider));
-                this.addTest(createCRUDTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, true));
+            if (!isNetBackend) {
+                if (providersWithRecycledTokenSupport.contains(provider)) {
+                    this.addTest(createLogoutTest());
+                    this.addTest(createClientSideLoginTest(provider));
+                    this.addTest(createCRUDTest(USER_PERMISSION_TABLE_NAME, provider, TablePermission.User, true));
+                }
             }
         }
 
@@ -101,7 +108,10 @@ public class LoginTests extends TestGroup {
         this.addTest(createLoginWithCallbackTest(MobileServiceAuthenticationProvider.Facebook));
         this.addTest(createCRUDWithCallbackTest(USER_PERMISSION_TABLE_NAME, MobileServiceAuthenticationProvider.Facebook, TablePermission.User, true));
         this.addTest(createLogoutWithCallbackTest());
-        this.addTest(createClientSideLoginWithCallbackTest(providersWithRecycledTokenSupport.get(0)));
+        if (!isNetBackend) {
+            this.addTest(createClientSideLoginWithCallbackTest(providersWithRecycledTokenSupport.get(0)));
+        }
+
         this.addTest(createLogoutWithCallbackTest());
         // this.addTest(createLoginWithGoogleAccountWithCallbackTest(false,
         // null));
@@ -604,8 +614,21 @@ public class LoginTests extends TestGroup {
                                             return;
                                         }
 
-                                        if (userIsAuthenticated && tableType == TablePermission.User) {
-                                            lastUserIdentityObject = new JsonParser().parse(jsonEntity.get("Identities").getAsString()).getAsJsonObject();
+                                        if (isNetBackend) {
+                                            if (userIsAuthenticated && tableType == TablePermission.User) {
+
+                                                JsonArray jsonIdentities = jsonEntity.get("identities").getAsJsonArray();
+
+                                                if (jsonIdentities.size() == 0) {
+                                                    lastUserIdentityObject = null;
+                                                } else {
+                                                    lastUserIdentityObject = jsonIdentities.get(jsonIdentities.size() - 1).getAsJsonObject();
+                                                }
+                                            }
+                                        } else {
+                                            if (userIsAuthenticated && tableType == TablePermission.User) {
+                                                lastUserIdentityObject = new JsonParser().parse(jsonEntity.get("Identities").getAsString()).getAsJsonObject();
+                                            }
                                         }
 
                                         log("delete item");

@@ -201,7 +201,7 @@ public class MainActivity extends Activity {
                         adapter.add(new QueryTests());
                         adapter.add(new UpdateDeleteTests());
                         //adapter.add(new ClientSDKLoginTests());
-                        adapter.add(new LoginTests());
+                        adapter.add(new LoginTests(isNetBackend));
                         adapter.add(new MiscTests());
                         // adapter.add(new PushTests());
                         adapter.add(new CustomApiTests());

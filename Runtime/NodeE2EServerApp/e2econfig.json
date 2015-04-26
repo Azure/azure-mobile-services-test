@@ -18,6 +18,7 @@
       "name":    "movies",
       "columns": "title=string,duration=number,mpaaRating=string,releaseDate=date,bestPictureWinner=boolean"
     },
+	
     {
       "name":    "intIdMovies",
       "columns": "title=string,duration=number,mpaaRating=string,releaseDate=date,bestPictureWinner=boolean",
@@ -50,7 +51,7 @@
     },
 	
 	{
-      "name":    "droidPushTest",
+      "name":    "droidPushTest"
     },
 	
 	{
