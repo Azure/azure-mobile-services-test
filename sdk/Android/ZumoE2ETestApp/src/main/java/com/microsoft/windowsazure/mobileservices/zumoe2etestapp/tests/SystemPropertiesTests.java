@@ -55,6 +55,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 import static com.microsoft.windowsazure.mobileservices.table.query.QueryOperations.field;
 import static com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.Util.compare;
@@ -533,6 +534,7 @@ public class SystemPropertiesTests extends TestGroup {
         };
 
         roundtripTest.setName(name);
+
         return roundtripTest;
     }
 
@@ -965,62 +967,33 @@ public class SystemPropertiesTests extends TestGroup {
     private void verifySystemProperties(String message, boolean shouldHaveCreatedAt, boolean shouldHaveUpdatedAt, boolean shouldHaveVersion, boolean shouldHaveDeleted,
                                         StringIdRoundTripTableElement element, boolean netBackend) throws Exception {
 
-        if (netBackend) {
-            if ((shouldHaveCreatedAt && element.CreatedAt == null) || (!shouldHaveCreatedAt && element.CreatedAt != null)
-                    || (shouldHaveUpdatedAt && element.UpdatedAt == null) || (!shouldHaveUpdatedAt && (element.UpdatedAt != null && !element.UpdatedAt.equals(element.CreatedAt)))
-                    || (shouldHaveVersion && element.Version == null) || (!shouldHaveVersion && element.Version != null)) {
-                StringBuilder builder = new StringBuilder();
-                builder.append(message);
-                builder.append(" - System Properties");
 
-                if (shouldHaveCreatedAt && element.CreatedAt == null) {
-                    builder.append(" - CreatedAt is null");
-                } else if (!shouldHaveCreatedAt && element.CreatedAt != null) {
-                    builder.append(" - CreatedAt is not null");
-                }
+        if ((shouldHaveCreatedAt && element.CreatedAt == null) || (!shouldHaveCreatedAt && element.CreatedAt != null)
+                || (shouldHaveUpdatedAt && element.UpdatedAt == null) || (!shouldHaveUpdatedAt && element.UpdatedAt != null)
+                || (shouldHaveVersion && element.Version == null) || (!shouldHaveVersion && element.Version != null)) {
+            StringBuilder builder = new StringBuilder();
+            builder.append(message);
+            builder.append(" - System Properties");
 
-                if (shouldHaveUpdatedAt && element.UpdatedAt == null) {
-                    builder.append(" - UpdatedAt is null");
-                } else if (!shouldHaveUpdatedAt && element.UpdatedAt != null) {
-                    builder.append(" - UpdatedAt is not null");
-                }
-
-                if (shouldHaveVersion && element.Version == null) {
-                    builder.append(" - Version is null");
-                } else if (!shouldHaveVersion && element.Version != null) {
-                    builder.append(" - Version is not null");
-                }
-
-                throw new Exception(builder.toString());
+            if (shouldHaveCreatedAt && element.CreatedAt == null) {
+                builder.append(" - CreatedAt is null");
+            } else if (!shouldHaveCreatedAt && element.CreatedAt != null) {
+                builder.append(" - CreatedAt is not null");
             }
-        } else {
-            if ((shouldHaveCreatedAt && element.CreatedAt == null) || (!shouldHaveCreatedAt && element.CreatedAt != null)
-                    || (shouldHaveUpdatedAt && element.UpdatedAt == null) || (!shouldHaveUpdatedAt && element.UpdatedAt != null)
-                    || (shouldHaveVersion && element.Version == null) || (!shouldHaveVersion && element.Version != null)) {
-                StringBuilder builder = new StringBuilder();
-                builder.append(message);
-                builder.append(" - System Properties");
 
-                if (shouldHaveCreatedAt && element.CreatedAt == null) {
-                    builder.append(" - CreatedAt is null");
-                } else if (!shouldHaveCreatedAt && element.CreatedAt != null) {
-                    builder.append(" - CreatedAt is not null");
-                }
-
-                if (shouldHaveUpdatedAt && element.UpdatedAt == null) {
-                    builder.append(" - UpdatedAt is null");
-                } else if (!shouldHaveUpdatedAt && element.UpdatedAt != null) {
-                    builder.append(" - UpdatedAt is not null");
-                }
-
-                if (shouldHaveVersion && element.Version == null) {
-                    builder.append(" - Version is null");
-                } else if (!shouldHaveVersion && element.Version != null) {
-                    builder.append(" - Version is not null");
-                }
-
-                throw new Exception(builder.toString());
+            if (shouldHaveUpdatedAt && element.UpdatedAt == null) {
+                builder.append(" - UpdatedAt is null");
+            } else if (!shouldHaveUpdatedAt && element.UpdatedAt != null) {
+                builder.append(" - UpdatedAt is not null");
             }
+
+            if (shouldHaveVersion && element.Version == null) {
+                builder.append(" - Version is null");
+            } else if (!shouldHaveVersion && element.Version != null) {
+                builder.append(" - Version is not null");
+            }
+
+            throw new Exception(builder.toString());
         }
     }
 

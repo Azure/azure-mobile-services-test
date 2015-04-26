@@ -150,12 +150,10 @@ public class SystemPropertiesTestData {
 
             // Trailing commas, extra commas
             "__systemProperties=__createdAt,__updatedAt,__version,",
-            "__systemProperties=__createdAt, ,__updatedAt,__version",
 
             // Trailing, leading whitespace
             "__systemProperties= *",
             "__systemProperties=\t*\t",
-            "__systemProperties=\r__createdAt,\r__updatedAt,\t__version\r",
             "__systemProperties=__createdAt, __updatedAt, __version",
 
             // Different casing
