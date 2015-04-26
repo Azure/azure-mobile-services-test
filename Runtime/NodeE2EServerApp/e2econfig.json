@@ -34,6 +34,12 @@
       "name":    "roundTripTable",
       "columns": "name=string,date1=date,bool=boolean,integer=number,number=number"
     },
+	
+	{
+      "name":    "stringIdRoundTripTableSoftDelete",
+      "columns": "name=string,date1=date,bool=boolean,integer=number,number=number"
+    },
+	
     {
       "name":    "intIdRoundTripTable",
       "columns": "name=string,date1=date,bool=boolean,integer=number,number=number",
