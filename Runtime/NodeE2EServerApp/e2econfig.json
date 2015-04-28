@@ -18,6 +18,7 @@
       "name":    "movies",
       "columns": "title=string,duration=number,mpaaRating=string,releaseDate=date,bestPictureWinner=boolean"
     },
+	
     {
       "name":    "intIdMovies",
       "columns": "title=string,duration=number,mpaaRating=string,releaseDate=date,bestPictureWinner=boolean",
@@ -33,6 +34,12 @@
       "name":    "roundTripTable",
       "columns": "name=string,date1=date,bool=boolean,integer=number,number=number"
     },
+	
+	{
+      "name":    "stringIdRoundTripTableSoftDelete",
+      "columns": "name=string,date1=date,bool=boolean,number=number"
+    },
+	
     {
       "name":    "intIdRoundTripTable",
       "columns": "name=string,date1=date,bool=boolean,integer=number,number=number",
@@ -42,6 +49,20 @@
     { "name":"public" },
     { "name":"application" },
     { "name":"user" },
-    { "name":"admin" }
+    { "name":"admin" },
+	
+	{
+      "name":    "offlineReady",
+      "columns": "name=string,date=date,bool=boolean,age=number,float=number"
+    },
+	
+	{
+      "name":    "droidPushTest"
+    },
+	
+	{
+      "name":    "offlineReadyAuthenticated",
+	  "columns": "name=string,date=date,bool=boolean,age=number,float=number"
+    }	
   ]
 }
