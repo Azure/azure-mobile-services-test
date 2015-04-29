@@ -2,21 +2,21 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using AutoMapper;
-using Microsoft.WindowsAzure.Mobile.Service;
-using Microsoft.WindowsAzure.Mobile.Service.Config;
-using Microsoft.WindowsAzure.Mobile.Service.Security;
-using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Data.Entity;
-using System.Diagnostics;
 using System.Linq;
 using System.Web.Http;
 using ZumoE2EServerApp.DataObjects;
 using ZumoE2EServerApp.Models;
-using Newtonsoft.Json.Linq;
 using ZumoE2EServerApp.Utils;
+using System.Web.Http.Cors;
+using AutoMapper;
+using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Server.AppService.Config;
+using Microsoft.Azure.Mobile.Server.Config;
+using Newtonsoft.Json;
+using System.Web.Http.Cors;
 
 namespace ZumoE2EServerApp
 {
@@ -24,12 +24,10 @@ namespace ZumoE2EServerApp
     {
         public static void Register()
         {
-            ConfigOptions options = new ConfigOptions
-            {
-                PushAuthorization = AuthorizationLevel.Application,
-                DiagnosticsAuthorization = AuthorizationLevel.Anonymous,
-            };
+            AppServiceExtensionConfig.Initialize();
 
+            ConfigOptions options = new ConfigOptions();
+            
             HttpConfiguration config = ServiceConfig.Initialize(new ConfigBuilder(options));
 
             // Now add any missing connection strings and app settings from the environment.

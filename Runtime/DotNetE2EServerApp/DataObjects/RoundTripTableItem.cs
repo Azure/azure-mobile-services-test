@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.WindowsAzure.Mobile.Service;
+using Microsoft.Azure.Mobile.Server;
 using System;
 using System.Collections.Generic;
 using ZumoE2EServerApp.Utils;

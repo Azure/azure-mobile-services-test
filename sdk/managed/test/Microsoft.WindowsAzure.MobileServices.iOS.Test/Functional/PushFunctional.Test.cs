@@ -5,6 +5,14 @@
 using System.Linq;
 
 using Microsoft.WindowsAzure.MobileServices.TestFramework;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
+using System;
+using Foundation;
+using System.Globalization;
+using Newtonsoft.Json;
 
 namespace Microsoft.WindowsAzure.MobileServices.Test
 {
@@ -18,83 +26,195 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             this.pushTestUtility = TestPlatform.Instance.PushTestUtility;
         }
 
-        [TestMethod]
-        public void InitialUnregisterAllAsync()
+        [AsyncTestMethod]
+        public async Task InitialDeleteRegistrationsAsync()
+        {
+            NSData channelUri = NSDataFromDescription(this.pushTestUtility.GetPushHandle());
+            Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
+            {
+                {"channelUri", TrimDeviceToken(channelUri.Description)}
+            };
+            await this.GetClient().InvokeApiAsync("deleteRegistrationsForChannel", HttpMethod.Delete, channelUriParam);
+        }
+
+        [AsyncTestMethod]
+        public async Task RegisterAsync()
+        {
+            NSData channelUri = NSDataFromDescription(this.pushTestUtility.GetPushHandle());
+            var push = this.GetClient().GetPush();
+            await push.RegisterAsync(channelUri);
+            Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
+            {
+                {"channelUri", TrimDeviceToken(channelUri.Description)}
+            };
+            try
+            {
+                await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, channelUriParam);
+            }
+            catch (MobileServiceInvalidOperationException)
+            {
+                throw;
+            }
+            finally
+            {
+                push.UnregisterAsync().Wait();
+            }
+        }
+
+        [AsyncTestMethod]
+        public async Task LoginRegisterAsync()
+        {
+            MobileServiceUser user = await GetDummyUser();
+            this.GetClient().CurrentUser = user;
+            var channelUri = this.pushTestUtility.GetPushHandle();
+            Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
+            {
+                {"channelUri", channelUri}
+            };
+            var push = this.GetClient().GetPush();
+            await push.RegisterAsync(channelUri);
+            try
+            {
+                await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, channelUriParam);
+            }
+            catch (MobileServiceInvalidOperationException)
+            {
+                throw;
+            }
+            finally
+            {
+                push.UnregisterAsync().Wait();
+                this.GetClient().CurrentUser = null;
+            }
+        }
+
+        [AsyncTestMethod]
+        public async Task UnregisterAsync()
         {
             var channelUri = this.pushTestUtility.GetPushHandle();
             var push = this.GetClient().GetPush();
-            var registrations = push.ListRegistrationsAsync(channelUri).Result;
-            push.UnregisterAllAsync(channelUri).Wait();
-            registrations = push.ListRegistrationsAsync(channelUri).Result;
-            Assert.IsFalse(registrations.Any(), "Deleting all registrations for a channel should ensure no registrations are returned by List");
-
-            channelUri = this.pushTestUtility.GetUpdatedPushHandle();
-            push.UnregisterAllAsync(channelUri).Wait();
-            registrations = push.ListRegistrationsAsync(channelUri).Result;
-            Assert.IsFalse(registrations.Any(), "Deleting all registrations for a channel should ensure no registrations are returned by List");
+            await push.UnregisterAsync();
+            try
+            {
+                await this.GetClient().InvokeApiAsync("verifyUnregisterInstallationResult", HttpMethod.Get, null);
+            }
+            catch (MobileServiceInvalidOperationException)
+            {
+                throw;
+            }
         }
 
-        [TestMethod]
-        public void RegisterNativeAsyncUnregisterNativeAsync()
+        [AsyncTestMethod]
+        public async Task RegisterAsyncWithTemplates()
         {
-            var channelUri = this.pushTestUtility.GetPushHandle();
+            NSData channelUri = NSDataFromDescription(this.pushTestUtility.GetPushHandle());
             var push = this.GetClient().GetPush();
-            push.RegisterNativeAsync(channelUri).Wait();
-            var registrations = push.ListRegistrationsAsync(channelUri).Result;
-            Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
 
-            push.UnregisterNativeAsync().Wait();
-            registrations = push.ListRegistrationsAsync(channelUri).Result;
-            Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterNativeAsync");
+            JObject templates = GetTemplates("foo");
+            push.RegisterAsync(channelUri, templates).Wait();
+
+            JObject expectedTemplates = GetTemplates(null);
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                {"channelUri", TrimDeviceToken(channelUri.Description)},
+                {"templates", JsonConvert.SerializeObject(expectedTemplates)}
+            };
+            try
+            {
+                await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
+            }
+            catch (MobileServiceInvalidOperationException)
+            {
+                throw;
+            }
+            finally
+            {
+                push.UnregisterAsync().Wait();
+            }
         }
 
-        [TestMethod]
-        public void RegisterAsyncUnregisterTemplateAsync()
+        [AsyncTestMethod]
+        public async Task RegisterAsyncMultiple()
         {
-            var mobileClient = this.GetClient();
-            var push = mobileClient.GetPush();
-            var template = this.pushTestUtility.GetTemplateRegistrationForToast();
-            this.pushTestUtility.ValidateTemplateRegistrationBeforeRegister(template);
-            push.RegisterAsync(template).Wait();
-            var registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
-            var registrationAfter = registrations.First();
-            Assert.IsNotNull(registrationAfter, "List and Deserialization of a TemplateRegistration after successful registration should have a value.");
+            NSData channelUri = NSDataFromDescription(this.pushTestUtility.GetPushHandle());
+            JObject templates = GetTemplates("foo");
+            var push = this.GetClient().GetPush();
 
-            this.pushTestUtility.ValidateTemplateRegistrationAfterRegister(registrationAfter);
+            await push.RegisterAsync(channelUri);
+            await push.RegisterAsync(channelUri, templates);
+            await push.RegisterAsync(channelUri);
 
-            push.UnregisterTemplateAsync(template.Name).Wait();
-            registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterTemplateAsync");
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                {"channelUri", TrimDeviceToken(channelUri.Description)},
+            };
+            try
+            {
+                //Verifies templates are removed from the installation registration
+                await this.GetClient().InvokeApiAsync("verifyRegisterInstallationResult", HttpMethod.Get, parameters);
+            }
+            catch (MobileServiceInvalidOperationException)
+            {
+                throw;
+            }
+            finally
+            {
+                push.UnregisterAsync().Wait();
+            }
         }
 
-        [TestMethod]
-        public void RegisterRefreshRegisterWithUpdatedChannel()
+        private static JObject GetTemplates(string tag)
         {
-            var mobileClient = this.GetClient();
-            var push = mobileClient.GetPush();
-            var template = this.pushTestUtility.GetTemplateRegistrationForToast();
-            this.pushTestUtility.ValidateTemplateRegistrationBeforeRegister(template);
-            push.RegisterAsync((Registration)template).Wait();
-            var registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
-            var registrationAfter = registrations.First();
-            Assert.IsNotNull(registrationAfter, "List and Deserialization of a TemplateRegistration after successful registration should have a value.");
-            template = this.pushTestUtility.GetUpdatedTemplateRegistrationForToast();
+            var toastTemplate = "{\"aps\": {\"alert\":\"boo!\"}, \"extraprop\":\"($message)\"}";
+            JObject templateBody = new JObject();
+            templateBody["body"] = toastTemplate;
 
-            push.RegisterAsync(template).Wait();
-            registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
-            var registrationAfterUpdate = registrations.First();
-            Assert.IsNotNull(registrationAfterUpdate, "List and Deserialization of a TemplateRegistration after successful registration should have a value.");
-            Assert.AreEqual(registrationAfter.RegistrationId, registrationAfterUpdate.RegistrationId, "Expected the same RegistrationId to be used even after the refresh");
-            Assert.AreEqual(registrationAfterUpdate.PushHandle, template.PushHandle, "Expected updated channelUri after 2nd register");
+            if (tag != null)
+            {
+                JArray tags = new JArray();
+                tags.Add("foo");
+                templateBody["tags"] = tags;
+            }
 
-            Assert.AreEqual(push.ListRegistrationsAsync(registrationAfter.PushHandle).Result.Count(), 0, "Original channel should be gone from service");
+            JObject templates = new JObject();
+            templates["testApnsTemplate"] = templateBody;
+            return templates;
+        }
 
-            push.UnregisterTemplateAsync(template.Name).Wait();
-            registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
-            Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterTemplateAsync");
+        private async Task<MobileServiceUser> GetDummyUser()
+        {
+            var dummyUser = await this.GetClient().InvokeApiAsync("JwtTokenGenerator", HttpMethod.Get, null);
+
+            MobileServiceUser user = new MobileServiceUser((string)dummyUser["token"]["payload"]["uid"])
+            {
+                MobileServiceAuthenticationToken = (string)dummyUser["token"]["rawData"]
+            };
+            return user;
+        }
+
+        internal static string TrimDeviceToken(string deviceToken)
+        {
+            if (deviceToken == null)
+            {
+                throw new ArgumentNullException("deviceToken");
+            }
+
+            return deviceToken.Trim('<', '>').Replace(" ", string.Empty).ToUpperInvariant();
+        }
+
+        internal static NSData NSDataFromDescription(string hexString)
+        {
+            hexString = hexString.Trim('<', '>').Replace(" ", string.Empty);
+            NSMutableData data = new NSMutableData();
+            byte[] hexAsBytes = new byte[hexString.Length / 2];
+            for (int index = 0; index < hexAsBytes.Length; index++)
+            {
+                string byteValue = hexString.Substring(index * 2, 2);
+                hexAsBytes[index] = byte.Parse(byteValue, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            }
+
+            data.AppendBytes(hexAsBytes);
+            return data;
         }
     }
 }

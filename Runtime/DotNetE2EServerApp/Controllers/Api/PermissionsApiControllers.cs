@@ -2,7 +2,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.WindowsAzure.Mobile.Service.Security;
+using Microsoft.Azure.Mobile.Security;
+using Microsoft.Azure.Mobile.Server.Security;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;

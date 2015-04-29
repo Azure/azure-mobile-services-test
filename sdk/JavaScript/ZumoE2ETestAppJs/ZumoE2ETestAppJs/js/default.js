@@ -32,9 +32,13 @@
                             return app.local.readText('savedAppInfo.txt').then(function (data) {
                                 var state = JSON.parse(data);
                                 var lastAppUrl = state.lastAppUrl;
+                                var lastGatewayUrl = state.lastGatewayUrl;
                                 var lastAppKey = state.lastAppKey;
                                 if (lastAppUrl) {
                                     document.getElementById('txtAppUrl').value = lastAppUrl;
+                                }
+                                if (lastGatewayUrl) {
+                                    document.getElementById('txtGatewayUrl').value = lastGatewayUrl;
                                 }
                                 if (lastAppKey) {
                                     document.getElementById('txtAppKey').value = lastAppKey;
@@ -47,6 +51,7 @@
                 }));
             } else {
                 document.getElementById('txtAppUrl').value = dayLight.dayLightConfig.AppUrl;
+                document.getElementById('txtGatewayUrl').value = dayLight.dayLightConfig.GatewayUrl;
                 document.getElementById('txtAppKey').value = dayLight.dayLightConfig.AppKey;
                 handlerForAllTestsButtons(true)(null);
             }

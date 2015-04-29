@@ -44,14 +44,14 @@
     width: 70%;
 }
         
-#appUrlLabelCell, #appKeyLabelCell 
+#appUrlLabelCell, #gatewayUrlLabelCell, #appKeyLabelCell 
 {
     padding: 5px;
-    width: 100px;
+    width: 150px;
     font-size: 20px;
 }
         
-#txtAppUrl, #txtAppKey
+#txtAppUrl, #txtGatewayUrl, #txtAppKey
 {
     padding: 5px;
     width: 100%;

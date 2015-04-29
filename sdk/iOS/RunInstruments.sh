@@ -36,7 +36,7 @@ then
   cp -f $8 sdk.zip
 else
   # Copy in current version of the framework
-  curl --location --output sdk.zip --silent http://aka.ms/gc6fex
+  curl --location --output sdk.zip --silent https://go.microsoft.com/fwLink/?LinkID=266533
 fi
 
 unzip -o sdk.zip
