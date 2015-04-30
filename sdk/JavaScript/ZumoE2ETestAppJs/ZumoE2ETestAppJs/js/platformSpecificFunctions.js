@@ -16,22 +16,28 @@ function createPlatformSpecificFunctions() {
         }
     }
 
-    var saveAppInfo = function (lastAppUrl, lastAppKey) {
+    var saveAppInfo = function (lastAppUrl, lastGatewayUrl, lastAppKey) {
         /// <param name="lastAppUrl" type="String">The last value used in the application URL text box</param>
+        /// <param name="lastGatewayUrl" type="String">The last value used in the gateway URL text box</param>
         /// <param name="lastAppKey" type="String">The last value used in the application key text box</param>
-        /// <param name="lastUploadLogUrl" type="String">The last value used in the upload logs URL text box</param>
         var state = {
             lastAppUrl: lastAppUrl,
+            lastGatewayUrl: lastGatewayUrl,
             lastAppKey: lastAppKey,            
         };
 
         WinJS.Application.local.writeText('savedAppInfo.txt', JSON.stringify(state));
     }
 
+    function getPushChannel() {
+        return Windows.Networking.PushNotifications.PushNotificationChannelManager.createPushNotificationChannelForApplicationAsync();
+    }
+
     return {
         alert: alertFunction,
         saveAppInfo: saveAppInfo,
         IsHTMLApplication: false,
+        getPushChannel: getPushChannel
     };
 }
 

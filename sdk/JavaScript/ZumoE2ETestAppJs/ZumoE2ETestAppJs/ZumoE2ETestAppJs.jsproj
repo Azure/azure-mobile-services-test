@@ -127,7 +127,7 @@
     <Content Include="images\splashscreen.png" />
     <Content Include="images\storelogo.png" />
     <Content Include="js\default.js" />
-    <Content Include="js\MobileServices.intellisense.js" />
+    <Content Include="js\MobileServices.DevIntellisense.js" />
     <Content Include="js\MobileServices.js" />
     <Content Include="js\MobileServices.min.js" />
     <Content Include="js\MobileServices.pri" />
@@ -135,7 +135,6 @@
     <Content Include="js\wl.js" />
     <Content Include="packages.config" />
     <None Include="ZumoE2ETestAppJs_StoreKey.pfx" />
-    <None Include="Package.StoreAssociation.xml" />
     <None Include="ZumoE2ETestAppJs_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>

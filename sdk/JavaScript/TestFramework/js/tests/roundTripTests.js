@@ -164,7 +164,7 @@ function defineRoundTripTestsNamespace() {
             var hasId = !!objectToInsert.id;
             if (hasId) {
                 // force id to be unique
-                originalItem.id = originalItem.id + '-' + (new Date().toISOString());
+                originalItem.id = originalItem.id + '-' + (new Date().valueOf());
             }
             var originalId = originalItem.id;
             table.insert(originalItem).done(function (itemInserted) {
