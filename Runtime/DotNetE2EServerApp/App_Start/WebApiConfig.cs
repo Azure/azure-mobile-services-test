@@ -6,6 +6,7 @@ using AutoMapper;
 using Microsoft.WindowsAzure.Mobile.Service;
 using Microsoft.WindowsAzure.Mobile.Service.Config;
 using Microsoft.WindowsAzure.Mobile.Service.Security;
+using Microsoft.WindowsAzure.Mobile.Service.Security.Providers;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
