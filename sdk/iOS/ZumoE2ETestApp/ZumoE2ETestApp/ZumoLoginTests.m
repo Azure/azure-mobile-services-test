@@ -52,7 +52,7 @@ static NSString *lastUserIdentityObjectKey = @"lastUserIdentityObject";
     
     NSInteger indexOfLastUnattendedTest = [result count];
     
-    NSArray *providers = @[@"facebook", @"google", @"twitter", @"microsoftaccount"];
+    NSArray *providers = @[@"facebook", @"google", @"twitter", @"microsoftaccount", @"aad"];
     NSArray *providersWithRecycledTokenSupport = @[@"facebook"]; //, @"google"]; Known bug - Drop login via Google token until Google client flow is reintroduced
     NSString *provider;
     
