@@ -30,6 +30,9 @@ namespace ZumoE2EServerApp
                 DiagnosticsAuthorization = AuthorizationLevel.Anonymous,
             };
 
+            options.LoginProviders.Remove(typeof(AzureActiveDirectoryLoginProvider));
+            options.LoginProviders.Add(typeof(AzureActiveDirectoryExtendedLoginProvider));
+
             HttpConfiguration config = ServiceConfig.Initialize(new ConfigBuilder(options));
 
             // Now add any missing connection strings and app settings from the environment.
