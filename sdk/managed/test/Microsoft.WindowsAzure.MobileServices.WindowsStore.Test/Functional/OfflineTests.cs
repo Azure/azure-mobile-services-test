@@ -8,40 +8,382 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.WindowsAzure.MobileServices;
 using Microsoft.WindowsAzure.MobileServices.SQLiteStore;
 using Microsoft.WindowsAzure.MobileServices.Sync;
+using Microsoft.WindowsAzure.MobileServices.TestFramework;
 using Newtonsoft.Json.Linq;
 using Windows.Storage;
-using System.Linq;
-using Microsoft.WindowsAzure.MobileServices.TestFramework;
-using Microsoft.WindowsAzure.MobileServices.Test;
 
 namespace Microsoft.WindowsAzure.MobileServices.Test
 {
     [Tag("offline")]
-    public class  OfflineTests :  FunctionalTestBase
+    public class OfflineTests : FunctionalTestBase
     {
-        public const string OfflineReadyTableName = "offlineReady";
-        public const string OfflineReadyNoVersionAuthenticatedTableName = "offlineReadyNoVersionAuthenticated";
-
         private const string StoreFileName = "store.bin";
 
         [AsyncTestMethod]
-        private async Task CreateClearStoreTest()
+        private async Task BasicOfflineTest()
         {
-                var files = await ApplicationData.Current.LocalFolder.GetFilesAsync();
-                foreach (var file in files)
+            await ClearStore();
+            DateTime now = DateTime.UtcNow;
+            int seed = now.Year * 10000 + now.Month * 100 + now.Day;
+            Log("Using random seed: {0}", seed);
+            Random rndGen = new Random(seed);
+
+            CountingHandler handler = new CountingHandler();
+            var requestsSentToServer = 0;
+            var offlineReadyClient = CreateClient(handler);
+
+            var localStore = new MobileServiceSQLiteStore(StoreFileName);
+            Log("Defined the table on the local store");
+            localStore.DefineTable<OfflineReadyItem>();
+
+            await offlineReadyClient.SyncContext.InitializeAsync(localStore);
+            Log("Initialized the store and sync context");
+
+            var localTable = offlineReadyClient.GetSyncTable<OfflineReadyItem>();
+            var remoteTable = offlineReadyClient.GetTable<OfflineReadyItem>();
+
+            var item = new OfflineReadyItem(rndGen);
+            try
+            {
+                await localTable.InsertAsync(item);
+                Log("Inserted the item to the local store:", item);
+
+                Log("Validating that the item is not in the server table");
+                try
                 {
-                    if (file.Name == StoreFileName)
-                    {
-                        Log("Deleting store file");
-                        await file.DeleteAsync();
-                        break;
-                    }
+                    requestsSentToServer++;
+                    await remoteTable.LookupAsync(item.Id);
+                    Assert.Fail("Error, item is present in the server");
                 }
+                catch (MobileServiceInvalidOperationException ex)
+                {
+                    Log("Ok, item is not in the server: {0}", ex.Message);
+                }
+
+                Func<int, bool> validateRequestCount = expectedCount =>
+                {
+                    Log("So far {0} requests sent to the server", handler.RequestCount);
+                    if (handler.RequestCount != expectedCount)
+                    {
+                        Log("Error, expected {0} requests to have been sent to the server", expectedCount);
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                };
+
+                if (!validateRequestCount(requestsSentToServer))
+                {
+                    Assert.Fail(string.Format("Error, expected {0} requests to have been sent to the server", requestsSentToServer));
+                }
+                Log("Pushing changes to the server");
+                await offlineReadyClient.SyncContext.PushAsync();
+                requestsSentToServer++;
+
+                if (!validateRequestCount(requestsSentToServer))
+                {
+                    Assert.Fail(string.Format("Error, expected {0} requests to have been sent to the server", requestsSentToServer));
+                }
+
+                Log("Push done; now verifying that item is in the server");
+
+                var serverItem = await remoteTable.LookupAsync(item.Id);
+                requestsSentToServer++;
+                Log("Retrieved item from server: {0}", serverItem);
+                if (serverItem.Equals(item))
+                {
+                    Log("Items are the same");
+                }
+                else
+                {
+                    Assert.Fail(string.Format("Items are different. Local: {0}; remote: {1}", item, serverItem));
+                }
+
+                Log("Now updating the item locally");
+                item.Flag = !item.Flag;
+                item.Age++;
+                item.Date = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, now.Millisecond, DateTimeKind.Utc);
+                await localTable.UpdateAsync(item);
+                Log("Item has been updated");
+
+                var newItem = new OfflineReadyItem(rndGen);
+                Log("Adding a new item to the local table: {0}", newItem);
+                await localTable.InsertAsync(newItem);
+
+                if (!validateRequestCount(requestsSentToServer))
+                {
+                    Assert.Fail(string.Format("Error, expected {0} requests to have been sent to the server", requestsSentToServer));
+                }
+
+                Log("Pushing the new changes to the server");
+                await offlineReadyClient.SyncContext.PushAsync();
+                requestsSentToServer += 2;
+
+                if (!validateRequestCount(requestsSentToServer))
+                {
+                    Assert.Fail(string.Format("Error, expected {0} requests to have been sent to the server", requestsSentToServer));
+                }
+
+                Log("Push done. Verifying changes on the server");
+                serverItem = await remoteTable.LookupAsync(item.Id);
+                requestsSentToServer++;
+                if (serverItem.Equals(item))
+                {
+                    Log("Updated items are the same");
+                }
+                else
+                {
+                    Assert.Fail(string.Format("Items are different. Local: {0}; remote: {1}", item, serverItem));
+                }
+
+                serverItem = await remoteTable.LookupAsync(newItem.Id);
+                requestsSentToServer++;
+                if (serverItem.Equals(newItem))
+                {
+                    Log("New inserted item is the same");
+                }
+                else
+                {
+                    Assert.Fail(string.Format("Items are different. Local: {0}; remote: {1}", item, serverItem));
+                }
+
+                Log("Cleaning up");
+                await localTable.DeleteAsync(item);
+                await localTable.DeleteAsync(newItem);
+                Log("Local table cleaned up. Now sync'ing once more");
+                await offlineReadyClient.SyncContext.PushAsync();
+                requestsSentToServer += 2;
+                if (!validateRequestCount(requestsSentToServer))
+                {
+                    Assert.Fail(string.Format("Error, expected {0} requests to have been sent to the server", requestsSentToServer));
+                }
+                Log("Done");
+            }
+            catch (MobileServicePushFailedException ex)
+            {
+                Log("Push Result status from MobileServicePushFailedException: " + ex.PushResult.Status);
+                throw;
+            }
+            finally
+            {
+                localStore.Dispose();
+                ClearStore().Wait();
+            }
         }
 
+        [AsyncTestMethod]
+        private async Task ClientResolvesConflictsTest()
+        {
+            await CreateSyncConflict(true);
+        }
+
+        [AsyncTestMethod]
+        private async Task PushFailsAfterConflictsTest()
+        {
+            await CreateSyncConflict(false);
+        }
+
+        [AsyncTestMethod]
+        private async Task AbortPushAtStartSyncTest()
+        {
+            await AbortPushDuringSync(SyncAbortLocation.Start);
+        }
+
+        [AsyncTestMethod]
+        private async Task AbortPushAtMiddleSyncTest()
+        {
+            await AbortPushDuringSync(SyncAbortLocation.Middle);
+        }
+
+        [AsyncTestMethod]
+        private async Task AbortPushAtEndSyncTest()
+        {
+            await AbortPushDuringSync(SyncAbortLocation.End);
+        }
+
+        [AsyncTestMethod]
+        private async Task AuthenticatedTableSyncTest()
+        {
+            bool isUserLoggedIn = false;
+            DateTime now = DateTime.UtcNow;
+            int seed = now.Year * 10000 + now.Month * 100 + now.Day;
+            Log("Using random seed: {0}", seed);
+            Random rndGen = new Random(seed);
+
+            var offlineReadyClient = CreateClient();
+
+            var localStore = new MobileServiceSQLiteStore(StoreFileName);
+            Log("Defined the table on the local store");
+            localStore.DefineTable<OfflineReadyItemNoVersion>();
+
+            await offlineReadyClient.SyncContext.InitializeAsync(localStore);
+            Log("Initialized the store and sync context");
+
+            try
+            {
+                var localTable = offlineReadyClient.GetSyncTable<OfflineReadyItemNoVersion>();
+                var remoteTable = offlineReadyClient.GetTable<OfflineReadyItemNoVersion>();
+
+                var item = new OfflineReadyItemNoVersion(rndGen);
+                await localTable.InsertAsync(item);
+                Log("Inserted the item to the local store:", item);
+
+                try
+                {
+                    await offlineReadyClient.SyncContext.PushAsync();
+                    Log("Pushed the changes to the server");
+                    if (isUserLoggedIn)
+                    {
+                        Log("As expected, push succeeded");
+                    }
+                    else
+                    {
+                        Assert.Fail("Error, table should only work with authenticated access, but user is not logged in");
+                    }
+                }
+                catch (MobileServicePushFailedException ex)
+                {
+                    if (isUserLoggedIn)
+                    {
+                        Assert.Fail(string.Format("Error, user is logged in but push operation failed: {0}", ex));
+                    }
+
+                    Log("Got expected exception: {0}: {1}", ex.GetType().FullName, ex.Message);
+                    Exception inner = ex.InnerException;
+                    while (inner != null)
+                    {
+                        Log("  {0}: {1}", inner.GetType().FullName, inner.Message);
+                        inner = inner.InnerException;
+                    }
+                }
+
+                if (!isUserLoggedIn)
+                {
+                    Log("Push should have failed, so now will try to log in to complete the push operation");
+                    MobileServiceUser user = await Utilities.GetDummyUser(offlineReadyClient);
+                    offlineReadyClient.CurrentUser = user;
+                    Log("Logged in as {0}", offlineReadyClient.CurrentUser.UserId);
+                    await offlineReadyClient.SyncContext.PushAsync();
+                    Log("Push succeeded");
+                }
+
+                await localTable.PurgeAsync();
+                Log("Purged the local table");
+                await localTable.PullAsync(null, localTable.Where(i => i.Id == item.Id));
+                Log("Pulled the data into the local table");
+                List<OfflineReadyItemNoVersion> serverItems = await localTable.ToListAsync();
+                Log("Retrieved items from the local table");
+
+                Log("Removing item from the remote table");
+                await remoteTable.DeleteAsync(item);
+
+                if (!isUserLoggedIn)
+                {
+                    offlineReadyClient.Logout();
+                    Log("Logged out again");
+                }
+
+                var firstServerItem = serverItems.FirstOrDefault();
+                if (item.Equals(firstServerItem))
+                {
+                    Log("Data round-tripped successfully");
+                }
+                else
+                {
+                    Assert.Fail(string.Format("Error, data did not round-trip successfully. Expected: {0}, actual: {1}", item, firstServerItem));
+                }
+
+                Log("Cleaning up");
+                await localTable.PurgeAsync();
+                offlineReadyClient.Logout();
+                Log("Done");
+            }
+            finally
+            {
+                localStore.Dispose();
+                ClearStore().Wait();
+                offlineReadyClient.Logout();
+            }
+        }
+
+        [AsyncTestMethod]
+        private async Task NoOptimisticConcurrencyTest()
+        {
+            // If a table does not have a __version column, then offline will still
+            // work, but there will be no conflicts
+            DateTime now = DateTime.UtcNow;
+            int seed = now.Year * 10000 + now.Month * 100 + now.Day;
+            Log("Using random seed: {0}", seed);
+            Random rndGen = new Random(seed);
+
+            var offlineReadyClient = CreateClient();
+
+            var localStore = new MobileServiceSQLiteStore(StoreFileName);
+            Log("Defined the table on the local store");
+            localStore.DefineTable<OfflineReadyItemNoVersion>();
+
+            await offlineReadyClient.SyncContext.InitializeAsync(localStore);
+            Log("Initialized the store and sync context");
+
+            var localTable = offlineReadyClient.GetSyncTable<OfflineReadyItemNoVersion>();
+            var remoteTable = offlineReadyClient.GetTable<OfflineReadyItemNoVersion>();
+
+            var item = new OfflineReadyItemNoVersion(rndGen);
+            try
+            {
+                offlineReadyClient.CurrentUser = await Utilities.GetDummyUser(offlineReadyClient);
+                await localTable.InsertAsync(item);
+                Log("Inserted the item to the local store:", item);
+                await offlineReadyClient.SyncContext.PushAsync();
+
+                Log("Pushed the changes to the server");
+
+                var serverItem = await remoteTable.LookupAsync(item.Id);
+                serverItem.Name = "changed name";
+                serverItem.Age = 0;
+                await remoteTable.UpdateAsync(serverItem);
+                Log("Server item updated (changes will be overwritten later");
+
+                item.Age = item.Age + 1;
+                item.Name = item.Name + " - modified";
+                await localTable.UpdateAsync(item);
+                Log("Updated item locally, will now push changes to the server: {0}", item);
+                await offlineReadyClient.SyncContext.PushAsync();
+
+                serverItem = await remoteTable.LookupAsync(item.Id);
+                Log("Retrieved the item from the server: {0}", serverItem);
+
+                if (serverItem.Equals(item))
+                {
+                    Log("Items are the same");
+                }
+                else
+                {
+                    Assert.Fail(string.Format("Items are different. Local: {0}; remote: {1}", item, serverItem));
+                }
+
+                Log("Cleaning up");
+                localTable.DeleteAsync(item).Wait();
+                Log("Local table cleaned up. Now sync'ing once more");
+                offlineReadyClient.SyncContext.PushAsync().Wait();
+            }
+
+            catch (MobileServicePushFailedException ex)
+            {
+                Log("PushResult status: " + ex.PushResult.Status);
+                throw;
+            }
+            finally
+            {
+                offlineReadyClient.Logout();
+                localStore.Dispose();
+                ClearStore().Wait();
+            }
+        }
 
         private MobileServiceClient CreateClient(params HttpMessageHandler[] handlers)
         {
@@ -63,110 +405,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
 
             return offlineReadyClient;
         }
-        
-        [AsyncTestMethod]
-        private async Task SyncTestForAuthenticatedTableTest()
-        {
-            //TODO Login and Logout
-            bool isLoggedIn = true;
-            var testName = "Sync test for authenticated table, with user " + (isLoggedIn ? "logged in" : "not logged in");
-            
-                DateTime now = DateTime.UtcNow;
-                int seed = now.Year * 10000 + now.Month * 100 + now.Day;
-                Log("Using random seed: {0}", seed);
-                Random rndGen = new Random(seed);
-
-                var offlineReadyClient = CreateClient();
-
-                var localStore = new MobileServiceSQLiteStore(StoreFileName);
-                Log("Defined the table on the local store");
-                localStore.DefineTable<OfflineReadyItemNoVersion>();
-
-                await offlineReadyClient.SyncContext.InitializeAsync(localStore);
-                Log("Initialized the store and sync context");
-
-                var localTable = offlineReadyClient.GetSyncTable<OfflineReadyItemNoVersion>();
-                var remoteTable = offlineReadyClient.GetTable<OfflineReadyItemNoVersion>();
-
-                var item = new OfflineReadyItemNoVersion(rndGen);
-                await localTable.InsertAsync(item);
-                Log("Inserted the item to the local store:", item);
-
-                try
-                {
-                    await offlineReadyClient.SyncContext.PushAsync();
-                    Log("Pushed the changes to the server");
-                    if (isLoggedIn)
-                    {
-                        Log("As expected, push succeeded");
-                    }
-                    else
-                    {
-                        Assert.Fail("Error, table should only work with authenticated access, but user is not logged in");
-                    }
-                }
-                catch (MobileServicePushFailedException ex)
-                {
-                    if (isLoggedIn)
-                    {
-                        Assert.Fail(string.Format("Error, user is logged in but push operation failed: {0}", ex));
-                    }
-
-                    Log("Got expected exception: {0}: {1}", ex.GetType().FullName, ex.Message);
-                    Exception inner = ex.InnerException;
-                    while (inner != null)
-                    {
-                        Log("  {0}: {1}", inner.GetType().FullName, inner.Message);
-                        inner = inner.InnerException;
-                    }
-                }
-
-                if (!isLoggedIn)
-                {
-                    Log("Push should have failed, so now will try to log in to complete the push operation");
-                    await offlineReadyClient.LoginAsync(MobileServiceAuthenticationProvider.Facebook);
-                    Log("Logged in as {0}", offlineReadyClient.CurrentUser.UserId);
-                    try
-                    {
-                        await offlineReadyClient.SyncContext.PushAsync();
-                    }
-                    catch(Exception ex)
-                    {
-
-                    }
-                    Log("Push succeeded");
-                }
-
-                await localTable.PurgeAsync();
-                Log("Purged the local table");
-                await localTable.PullAsync(null, localTable.Where(i => i.Id == item.Id));
-                Log("Pulled the data into the local table");
-                List<OfflineReadyItemNoVersion> serverItems = await localTable.ToListAsync();
-                Log("Retrieved items from the local table");
-
-                Log("Removing item from the remote table");
-                await remoteTable.DeleteAsync(item);
-
-                if (!isLoggedIn)
-                {
-                    offlineReadyClient.Logout();
-                    Log("Logged out again");
-                }
-
-                var firstServerItem = serverItems.FirstOrDefault();
-                if (item.Equals(firstServerItem))
-                {
-                    Log("Data round-tripped successfully");
-                }
-                else
-                {
-                    Assert.Fail(string.Format("Error, data did not round-trip successfully. Expected: {0}, actual: {1}", item, firstServerItem));
-                }
-
-                Log("Cleaning up");
-                await localTable.PurgeAsync();
-                Log("Done");
-        }
 
         enum SyncAbortLocation { Start, Middle, End };
 
@@ -174,7 +412,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         {
             OfflineTests test;
 
-            public AbortingSyncHandler(OfflineTests offlineTest,Func<string, bool> shouldAbortForId)
+            public AbortingSyncHandler(OfflineTests offlineTest, Func<string, bool> shouldAbortForId)
             {
                 this.test = offlineTest;
                 this.AbortCondition = shouldAbortForId;
@@ -204,57 +442,40 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             }
         }
 
-
-        [AsyncTestMethod]
-        private async Task AbortPushAtStartSyncTest()
+        private async Task AbortPushDuringSync(SyncAbortLocation whereToAbort)
         {
-            await CreateAbortPushDuringSyncTest(SyncAbortLocation.Start);
-        }
-        [AsyncTestMethod]
-        private async Task AbortPushAtMiddleSyncTest()
-        {
-            await CreateAbortPushDuringSyncTest(SyncAbortLocation.Middle);
-        }
-
-        [AsyncTestMethod]
-        private async Task AbortPushAtEndSyncTest()
-        {
-            await CreateAbortPushDuringSyncTest(SyncAbortLocation.End);
-        }
-        private async Task CreateAbortPushDuringSyncTest(SyncAbortLocation whereToAbort)
-        {
+            await ClearStore();
             SyncAbortLocation abortLocation = whereToAbort;
-            var testName = "Aborting push during sync - aborting at " + whereToAbort.ToString().ToLowerInvariant() + " of queue";
-           
-                DateTime now = DateTime.UtcNow;
-                int seed = now.Year * 10000 + now.Month * 100 + now.Day;
-                Log("Using random seed: {0}", seed);
-                Random rndGen = new Random(seed);
+            DateTime now = DateTime.UtcNow;
+            int seed = now.Year * 10000 + now.Month * 100 + now.Day;
+            Log("Using random seed: {0}", seed);
+            Random rndGen = new Random(seed);
 
-                var offlineReadyClient = CreateClient();
+            var offlineReadyClient = CreateClient();
 
-                var items = Enumerable.Range(0, 10).Select(_ => new OfflineReadyItem(rndGen)).ToArray();
-                foreach (var item in items)
-                {
-                    item.Id = Guid.NewGuid().ToString("D");
-                }
+            var items = Enumerable.Range(0, 10).Select(_ => new OfflineReadyItem(rndGen)).ToArray();
+            foreach (var item in items)
+            {
+                item.Id = Guid.NewGuid().ToString("D");
+            }
 
-                int abortIndex = abortLocation == SyncAbortLocation.Start ? 0 :
-                    (abortLocation == SyncAbortLocation.End ? items.Length - 1 : rndGen.Next(1, items.Length - 1));
-                var idToAbort = items[abortIndex].Id;
-                Log("Will send {0} items, aborting when id = {1}", items.Length, idToAbort);
+            int abortIndex = abortLocation == SyncAbortLocation.Start ? 0 :
+                (abortLocation == SyncAbortLocation.End ? items.Length - 1 : rndGen.Next(1, items.Length - 1));
+            var idToAbort = items[abortIndex].Id;
+            Log("Will send {0} items, aborting when id = {1}", items.Length, idToAbort);
 
-                var localStore = new MobileServiceSQLiteStore(StoreFileName);
-                Log("Defined the table on the local store");
-                localStore.DefineTable<OfflineReadyItem>();
+            var localStore = new MobileServiceSQLiteStore(StoreFileName);
+            Log("Defined the table on the local store");
+            localStore.DefineTable<OfflineReadyItem>();
 
-                var syncHandler = new AbortingSyncHandler(this,id => id == idToAbort);
-                await offlineReadyClient.SyncContext.InitializeAsync(localStore, syncHandler);
-                Log("Initialized the store and sync context");
+            var syncHandler = new AbortingSyncHandler(this, id => id == idToAbort);
+            await offlineReadyClient.SyncContext.InitializeAsync(localStore, syncHandler);
+            Log("Initialized the store and sync context");
 
-                var localTable = offlineReadyClient.GetSyncTable<OfflineReadyItem>();
-                var remoteTable = offlineReadyClient.GetTable<OfflineReadyItem>();
-
+            var localTable = offlineReadyClient.GetSyncTable<OfflineReadyItem>();
+            var remoteTable = offlineReadyClient.GetTable<OfflineReadyItem>();
+            try
+            {
                 foreach (var item in items)
                 {
                     await localTable.InsertAsync(item);
@@ -329,11 +550,13 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
 
                 await offlineReadyClient.SyncContext.PushAsync();
                 Log("Done");
-
-               
+            }
+            finally
+            {
+                localStore.Dispose();
+                ClearStore().Wait();
+            }
         }
-
-    
 
         class CountingHandler : DelegatingHandler
         {
@@ -344,215 +567,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                 this.RequestCount++;
                 return base.SendAsync(request, cancellationToken);
             }
-        }
-
-        [AsyncTestMethod]
-        private async Task CreateBasicTest()
-        {
-                DateTime now = DateTime.UtcNow;
-                int seed = now.Year * 10000 + now.Month * 100 + now.Day;
-                Log("Using random seed: {0}", seed);
-                Random rndGen = new Random(seed);
-
-                CountingHandler handler = new CountingHandler();
-                var requestsSentToServer = 0;
-                var offlineReadyClient = CreateClient(handler);
-
-                var localStore = new MobileServiceSQLiteStore(StoreFileName);
-                Log("Defined the table on the local store");
-                localStore.DefineTable<OfflineReadyItem>();
-
-                await offlineReadyClient.SyncContext.InitializeAsync(localStore);
-                Log("Initialized the store and sync context");
-
-                var localTable = offlineReadyClient.GetSyncTable<OfflineReadyItem>();
-                var remoteTable = offlineReadyClient.GetTable<OfflineReadyItem>();
-
-                var item = new OfflineReadyItem(rndGen);
-                await localTable.InsertAsync(item);
-                Log("Inserted the item to the local store:", item);
-
-                Log("Validating that the item is not in the server table");
-                try
-                {
-                    requestsSentToServer++;
-                    await remoteTable.LookupAsync(item.Id);
-                    Assert.Fail("Error, item is present in the server");
-                }
-                catch (MobileServiceInvalidOperationException ex)
-                {
-                    Log("Ok, item is not in the server: {0}", ex.Message);
-                }
-
-                Func<int, bool> validateRequestCount = expectedCount =>
-                {
-                    Log("So far {0} requests sent to the server", handler.RequestCount);
-                    if (handler.RequestCount != expectedCount)
-                    {
-                        Log("Error, expected {0} requests to have been sent to the server", expectedCount);
-                        return false;
-                    }
-                    else
-                    {
-                        return true;
-                    }
-                };
-
-                if (!validateRequestCount(requestsSentToServer))
-                {
-                    Assert.Fail(string.Format("Error, expected {0} requests to have been sent to the server", requestsSentToServer));
-                }
-                Log("Pushing changes to the server");
-                try
-                {
-                    await offlineReadyClient.SyncContext.PushAsync();
-                }
-                catch(Exception ex)
-                {
-
-                }
-                requestsSentToServer++;
-
-                if (!validateRequestCount(requestsSentToServer))
-                {
-                    Assert.Fail(string.Format("Error, expected {0} requests to have been sent to the server", requestsSentToServer));
-                }
-
-                Log("Push done; now verifying that item is in the server");
-
-                var serverItem = await remoteTable.LookupAsync(item.Id);
-                requestsSentToServer++;
-                Log("Retrieved item from server: {0}", serverItem);
-                if (serverItem.Equals(item))
-                {
-                    Log("Items are the same");
-                }
-                else
-                {
-                    Assert.Fail(string.Format("Items are different. Local: {0}; remote: {1}", item, serverItem));
-                }
-
-                Log("Now updating the item locally");
-                item.Flag = !item.Flag;
-                item.Age++;
-                item.Date = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, now.Millisecond, DateTimeKind.Utc);
-                await localTable.UpdateAsync(item);
-                Log("Item has been updated");
-
-                var newItem = new OfflineReadyItem(rndGen);
-                Log("Adding a new item to the local table: {0}", newItem);
-                await localTable.InsertAsync(newItem);
-
-                if (!validateRequestCount(requestsSentToServer))
-                {
-                    Assert.Fail(string.Format("Error, expected {0} requests to have been sent to the server", requestsSentToServer));
-                }
-
-                Log("Pushing the new changes to the server");
-                await offlineReadyClient.SyncContext.PushAsync();
-                requestsSentToServer += 2;
-
-                if (!validateRequestCount(requestsSentToServer))
-                {
-                    Assert.Fail(string.Format("Error, expected {0} requests to have been sent to the server", requestsSentToServer));
-                }
-
-                Log("Push done. Verifying changes on the server");
-                serverItem = await remoteTable.LookupAsync(item.Id);
-                requestsSentToServer++;
-                if (serverItem.Equals(item))
-                {
-                    Log("Updated items are the same");
-                }
-                else
-                {
-                    Assert.Fail(string.Format("Items are different. Local: {0}; remote: {1}", item, serverItem));
-                }
-
-                serverItem = await remoteTable.LookupAsync(newItem.Id);
-                requestsSentToServer++;
-                if (serverItem.Equals(newItem))
-                {
-                    Log("New inserted item is the same");
-                }
-                else
-                {
-                    Assert.Fail(string.Format("Items are different. Local: {0}; remote: {1}", item, serverItem));
-                   
-                }
-
-                Log("Cleaning up");
-                await localTable.DeleteAsync(item);
-                await localTable.DeleteAsync(newItem);
-                Log("Local table cleaned up. Now sync'ing once more");
-                await offlineReadyClient.SyncContext.PushAsync();
-                requestsSentToServer += 2;
-                if (!validateRequestCount(requestsSentToServer))
-                {
-                    Assert.Fail(string.Format("Error, expected {0} requests to have been sent to the server", requestsSentToServer));
-                }
-                Log("Done");
-        }
-
-        [AsyncTestMethod]
-        private  async Task NoOptimisticConcurrencyTest()
-        {
-            //TODO NetRuntime only
-            // If a table does not have a __version column, then offline will still
-            // work, but there will be no conflicts
-                DateTime now = DateTime.UtcNow;
-                int seed = now.Year * 10000 + now.Month * 100 + now.Day;
-                Log("Using random seed: {0}", seed);
-                Random rndGen = new Random(seed);
-
-                var offlineReadyClient = CreateClient();
-
-                var localStore = new MobileServiceSQLiteStore(StoreFileName);
-                Log("Defined the table on the local store");
-                localStore.DefineTable<OfflineReadyItemNoVersion>();
-
-                await offlineReadyClient.SyncContext.InitializeAsync(localStore);
-                Log("Initialized the store and sync context");
-
-                var localTable = offlineReadyClient.GetSyncTable<OfflineReadyItemNoVersion>();
-                var remoteTable = offlineReadyClient.GetTable<OfflineReadyItemNoVersion>();
-
-                var item = new OfflineReadyItemNoVersion(rndGen);
-                await localTable.InsertAsync(item);
-                Log("Inserted the item to the local store:", item);
-
-                await offlineReadyClient.SyncContext.PushAsync();
-                Log("Pushed the changes to the server");
-
-                var serverItem = await remoteTable.LookupAsync(item.Id);
-                serverItem.Name = "changed name";
-                serverItem.Age = 0;
-                await remoteTable.UpdateAsync(serverItem);
-                Log("Server item updated (changes will be overwritten later");
-
-                item.Age = item.Age + 1;
-                item.Name = item.Name + " - modified";
-                await localTable.UpdateAsync(item);
-                Log("Updated item locally, will now push changes to the server: {0}", item);
-                await offlineReadyClient.SyncContext.PushAsync();
-
-                serverItem = await remoteTable.LookupAsync(item.Id);
-                Log("Retrieved the item from the server: {0}", serverItem);
-
-                if (serverItem.Equals(item))
-                {
-                    Log("Items are the same");
-                }
-                else
-                {
-                    Assert.Fail(string.Format("Items are different. Local: {0}; remote: {1}", item, serverItem));
-                }
-
-                Log("Cleaning up");
-                await localTable.DeleteAsync(item);
-                Log("Local table cleaned up. Now sync'ing once more");
-                await offlineReadyClient.SyncContext.PushAsync();
-                Log("Done");
         }
 
         class ConflictResolvingSyncHandler<T> : IMobileServiceSyncHandler
@@ -615,120 +629,127 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             }
         }
 
-        [AsyncTestMethod]
-        private async Task ClientResolvesConflictsTest()
+        private async Task CreateSyncConflict(bool autoResolve)
         {
-            await CreateSyncConflictTest(true);
-        }
-
-        [AsyncTestMethod]
-        private async Task PushFailsAfterConflictsTest()
-        {
-            await CreateSyncConflictTest(true);
-        }
-        private async Task CreateSyncConflictTest(bool autoResolve)
-        {
-            var testName = "Offline - dealing with conflicts - " +
-                (autoResolve ? "client resolves conflicts" : "push fails after conflicts");
+            await ClearStore();
             bool resolveConflictsOnClient = autoResolve;
-                DateTime now = DateTime.UtcNow;
-                int seed = now.Year * 10000 + now.Month * 100 + now.Day;
-                Log("Using random seed: {0}", seed);
-                Random rndGen = new Random(seed);
+            DateTime now = DateTime.UtcNow;
+            int seed = now.Year * 10000 + now.Month * 100 + now.Day;
+            Log("Using random seed: {0}", seed);
+            Random rndGen = new Random(seed);
 
-                var offlineReadyClient = CreateClient();
+            var offlineReadyClient = CreateClient();
 
-                var localStore = new MobileServiceSQLiteStore(StoreFileName);
-                Log("Defined the table on the local store");
-                localStore.DefineTable<OfflineReadyItem>();
+            var localStore = new MobileServiceSQLiteStore(StoreFileName);
+            Log("Defined the table on the local store");
+            localStore.DefineTable<OfflineReadyItem>();
 
-                ConflictResolvingSyncHandler<OfflineReadyItem>.ConflictResolution conflictHandlingPolicy;
-                conflictHandlingPolicy = (client, server) =>
-                        new OfflineReadyItem
-                        {
-                            Id = client.Id,
-                            Age = Math.Max(client.Age, server.Age),
-                            Date = client.Date > server.Date ? client.Date : server.Date,
-                            Flag = client.Flag || server.Flag,
-                            FloatingNumber = Math.Max(client.FloatingNumber, server.FloatingNumber),
-                            Name = client.Name
-                        };
-                if (resolveConflictsOnClient)
+            ConflictResolvingSyncHandler<OfflineReadyItem>.ConflictResolution conflictHandlingPolicy;
+            conflictHandlingPolicy = (client, server) =>
+                    new OfflineReadyItem
+                    {
+                        Id = client.Id,
+                        Age = Math.Max(client.Age, server.Age),
+                        Date = client.Date > server.Date ? client.Date : server.Date,
+                        Flag = client.Flag || server.Flag,
+                        FloatingNumber = Math.Max(client.FloatingNumber, server.FloatingNumber),
+                        Name = client.Name
+                    };
+            if (resolveConflictsOnClient)
+            {
+                var handler = new ConflictResolvingSyncHandler<OfflineReadyItem>(this, offlineReadyClient, conflictHandlingPolicy);
+                await offlineReadyClient.SyncContext.InitializeAsync(localStore, handler);
+            }
+            else
+            {
+                await offlineReadyClient.SyncContext.InitializeAsync(localStore);
+            }
+
+            Log("Initialized the store and sync context");
+
+            var localTable = offlineReadyClient.GetSyncTable<OfflineReadyItem>();
+            var remoteTable = offlineReadyClient.GetTable<OfflineReadyItem>();
+
+            await localTable.PurgeAsync();
+            Log("Removed all items from the local table");
+
+            var item = new OfflineReadyItem(rndGen);
+            await remoteTable.InsertAsync(item);
+            Log("Inserted the item to the remote store:", item);
+
+            var pullQuery = "$filter=id eq '" + item.Id + "'";
+            await localTable.PullAsync(null, pullQuery);
+
+            Log("Changing the item on the server");
+            item.Age++;
+            await remoteTable.UpdateAsync(item);
+            Log("Updated the item: {0}", item);
+
+            var localItem = await localTable.LookupAsync(item.Id);
+            Log("Retrieved the item from the local table, now updating it");
+            localItem.Date = localItem.Date.AddDays(1);
+            await localTable.UpdateAsync(localItem);
+            Log("Updated the item on the local table");
+
+            Log("Now trying to pull changes from the server (will trigger a push)");
+            try
+            {
+                await localTable.PullAsync(null, pullQuery);
+                if (!autoResolve)
                 {
-                    var handler = new ConflictResolvingSyncHandler<OfflineReadyItem>(this, offlineReadyClient, conflictHandlingPolicy);
-                    await offlineReadyClient.SyncContext.InitializeAsync(localStore, handler);
+                    Assert.Fail("Error, pull (push) should have caused a conflict, but none happened.");
                 }
                 else
                 {
-                    await offlineReadyClient.SyncContext.InitializeAsync(localStore);
-                }
-
-                Log("Initialized the store and sync context");
-
-                var localTable = offlineReadyClient.GetSyncTable<OfflineReadyItem>();
-                var remoteTable = offlineReadyClient.GetTable<OfflineReadyItem>();
-
-                await localTable.PurgeAsync();
-                Log("Removed all items from the local table");
-
-                var item = new OfflineReadyItem(rndGen);
-                await remoteTable.InsertAsync(item);
-                Log("Inserted the item to the remote store:", item);
-
-                var pullQuery = "$filter=id eq '" + item.Id + "'";
-                await localTable.PullAsync(null, pullQuery);
-
-                Log("Changing the item on the server");
-                item.Age++;
-                await remoteTable.UpdateAsync(item);
-                Log("Updated the item: {0}", item);
-
-                var localItem = await localTable.LookupAsync(item.Id);
-                Log("Retrieved the item from the local table, now updating it");
-                localItem.Date = localItem.Date.AddDays(1);
-                await localTable.UpdateAsync(localItem);
-                Log("Updated the item on the local table");
-
-                Log("Now trying to pull changes from the server (will trigger a push)");
-                try
-                {
-                    await localTable.PullAsync(null, pullQuery);
-                    if (!autoResolve)
+                    var expectedMergedItem = conflictHandlingPolicy(localItem, item);
+                    var localMergedItem = await localTable.LookupAsync(item.Id);
+                    if (localMergedItem.Equals(expectedMergedItem))
                     {
-                        Assert.Fail("Error, pull (push) should have caused a conflict, but none happened.");
+                        Log("Item was merged correctly.");
                     }
                     else
                     {
-                        var expectedMergedItem = conflictHandlingPolicy(localItem, item);
-                        var localMergedItem = await localTable.LookupAsync(item.Id);
-                        if (localMergedItem.Equals(expectedMergedItem))
-                        {
-                            Log("Item was merged correctly.");
-                        }
-                        else
-                        {
-                            Assert.Fail(string.Format("Error, item not merged correctly. Expected: {0}, Actual: {1}", expectedMergedItem, localMergedItem));
-                        }
+                        Assert.Fail(string.Format("Error, item not merged correctly. Expected: {0}, Actual: {1}", expectedMergedItem, localMergedItem));
                     }
                 }
-                catch (MobileServicePushFailedException ex)
+            }
+            catch (MobileServicePushFailedException ex)
+            {
+                Log("Push exception: {0}", ex);
+                if (autoResolve)
                 {
-                    Log("Push exception: {0}", ex);
-                    if (autoResolve)
-                    {
-                        Assert.Fail("Error, push should have succeeded.");
-                    }
-                    else
-                    {
-                        Log("Expected exception was thrown.");
-                    }
+                    Assert.Fail("Error, push should have succeeded.");
                 }
-
+                else
+                {
+                    Log("Expected exception was thrown.");
+                }
+            }
+            finally
+            {
                 Log("Cleaning up");
-                await localTable.DeleteAsync(item);
+                localTable.DeleteAsync(item).Wait();
                 Log("Local table cleaned up. Now sync'ing once more");
-                await offlineReadyClient.SyncContext.PushAsync();
-                Log("Done");
+                //TODO following never completes. Note: await on pushAsync works
+                //offlineReadyClient.SyncContext.PushAsync().Wait();
+                //Log("Done");
+                localStore.Dispose();
+                ClearStore().Wait();
+            }
+        }
+
+        private async Task ClearStore()
+        {
+            var files = await ApplicationData.Current.LocalFolder.GetFilesAsync();
+            foreach (var file in files)
+            {
+                if (file.Name == StoreFileName)
+                {
+                    Log("Deleting store file");
+                    await file.DeleteAsync();
+                    break;
+                }
+            }
         }
     }
 }
