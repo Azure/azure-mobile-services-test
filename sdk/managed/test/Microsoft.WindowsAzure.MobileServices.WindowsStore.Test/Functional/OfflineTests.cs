@@ -369,7 +369,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                 Log("Cleaning up");
                 localTable.DeleteAsync(item).Wait();
                 Log("Local table cleaned up. Now sync'ing once more");
-                offlineReadyClient.SyncContext.PushAsync().Wait();
+                await offlineReadyClient.SyncContext.PushAsync();
             }
 
             catch (MobileServicePushFailedException ex)
@@ -692,12 +692,13 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             Log("Updated the item on the local table");
 
             Log("Now trying to pull changes from the server (will trigger a push)");
+            string errorMessage = string.Empty;
             try
             {
                 await localTable.PullAsync(null, pullQuery);
                 if (!autoResolve)
                 {
-                    Assert.Fail("Error, pull (push) should have caused a conflict, but none happened.");
+                    errorMessage = "Error, pull (push) should have caused a conflict, but none happened.";
                 }
                 else
                 {
@@ -709,7 +710,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                     }
                     else
                     {
-                        Assert.Fail(string.Format("Error, item not merged correctly. Expected: {0}, Actual: {1}", expectedMergedItem, localMergedItem));
+                        errorMessage = string.Format("Error, item not merged correctly. Expected: {0}, Actual: {1}", expectedMergedItem, localMergedItem);
                     }
                 }
             }
@@ -718,23 +719,24 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                 Log("Push exception: {0}", ex);
                 if (autoResolve)
                 {
-                    Assert.Fail("Error, push should have succeeded.");
+                    errorMessage = "Error, push should have succeeded.";
                 }
                 else
                 {
                     Log("Expected exception was thrown.");
                 }
             }
-            finally
+
+            Log("Cleaning up");
+            await localTable.DeleteAsync(item);
+            Log("Local table cleaned up. Now sync'ing once more");
+            await offlineReadyClient.SyncContext.PushAsync();
+            Log("Done");
+            localStore.Dispose();
+            await ClearStore();
+            if(!String.IsNullOrEmpty(errorMessage))
             {
-                Log("Cleaning up");
-                localTable.DeleteAsync(item).Wait();
-                Log("Local table cleaned up. Now sync'ing once more");
-                //TODO following never completes. Note: await on pushAsync works
-                //offlineReadyClient.SyncContext.PushAsync().Wait();
-                //Log("Done");
-                localStore.Dispose();
-                ClearStore().Wait();
+                Assert.Fail(errorMessage);
             }
         }
 
