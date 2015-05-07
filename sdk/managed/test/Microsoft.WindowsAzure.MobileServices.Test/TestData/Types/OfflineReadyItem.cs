@@ -4,7 +4,6 @@
 
 using System;
 using System.Globalization;
-using Microsoft.WindowsAzure.MobileServices;
 using Newtonsoft.Json;
 
 namespace Microsoft.WindowsAzure.MobileServices.Test
