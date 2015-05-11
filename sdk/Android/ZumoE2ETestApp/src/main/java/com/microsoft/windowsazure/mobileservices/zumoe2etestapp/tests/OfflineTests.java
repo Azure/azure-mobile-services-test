@@ -95,19 +95,26 @@ public class OfflineTests extends TestGroup {
         this.addTest(createSyncConflictAndResolveWithMethodTest(false));
         this.addTest(createSyncConflictAndResolveWithMethodTest(true));
 
-        this.addTest(LoginTests.createLogoutTest());
+        TestCase logoutTest = LoginTests.createLogoutTest();
+        logoutTest.setCanRunUnattended(false);
+
+        this.addTest(logoutTest);
         this.addTest(createSyncTestForAuthenticatedTable(false));
-        this.addTest(LoginTests.createLoginTest(MobileServiceAuthenticationProvider.Facebook));
+
+        TestCase loginTest = LoginTests.createLoginTest(MobileServiceAuthenticationProvider.Facebook);
+        loginTest.setCanRunUnattended(false);
+
+        this.addTest(loginTest);
 
         TestCase noOptimisticConcurrencyTest = createNoOptimisticConcurrencyTest();
         noOptimisticConcurrencyTest.setCanRunUnattended(false);
         this.addTest(noOptimisticConcurrencyTest);
 
         this.addTest(createSyncTestForAuthenticatedTable(true));
-        this.addTest(LoginTests.createLogoutTest());
+
+        this.addTest(logoutTest);
 
         this.addTest(createOfflineIncrementalSyncTest(null, false, false));
-
         this.addTest(createOfflineIncrementalSyncTest("incrementalQuery", false, false));
         this.addTest(createOfflineIncrementalSyncTest("incrementalQuery", false, true));
         this.addTest(createOfflineIncrementalSyncTest("incrementalQuery", true, false));
@@ -1541,6 +1548,8 @@ public class OfflineTests extends TestGroup {
         };
 
         test.setName("Sync test for authenticated table, with user " + (isLoggedIn ? "logged in" : "not logged in"));
+
+        test.setCanRunUnattended(false);
 
         return test;
     }

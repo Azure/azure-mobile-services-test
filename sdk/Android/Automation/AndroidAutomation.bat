@@ -1,69 +1,180 @@
-@echo OFF
+@echo off
 
-if "%4"=="" goto :Usage
-set _APP_URL=%1
-set _APP_KEY=%2
-set _UPLOAD_LOG_URL=%3
-set _GCM_SENDER_ID=%4
+rem initialize variables from jenkins job
+set runId=%1
+set daylightClientId=%2
+set daylightClientSecret=%3
+set dayLightUrl=%4
+set mobileAppUrl=%5
+set mobileAppKey=%6
+set googleUserId=%7
+set googleWebAppClientId=%8
+set runTimeVersion=%9
+FOR /L %%G IN (1,1,9) DO shift
+set dayLightProject=%1
 
-where adb > NUL 2>&1
-IF ERRORLEVEL 1 goto :MissingAdb
+echo:
+echo ===============================================
+echo === Input command line parameters:
+echo ===    runId:           		"%runId%"
+echo ===    daylightClientId:		"%daylightClientId%"
+echo ===    daylightClientSecret:	"%daylightClientSecret%"
+echo ===    dayLightUrl:    		"%dayLightUrl%"
+echo ===    mobileAppUrl:    		"%mobileAppUrl%"
+echo ===    mobileAppKey:    		"%mobileAppKey%"
+echo ===    googleUserId:    		"%googleUserId%"
+echo ===    googleWebAppClientId:	"%googleWebAppClientId%"
+echo ===    runTimeVersion:  		"%runTimeVersion%"
+echo ===    dayLightProject: 		"%dayLightProject%"
+echo ===============================================
+echo:
 
-REM Creates the preferences file to be sent to the app
-echo { > tempAutoPrefs.txt
-echo "pref_mobile_service_url":"%_APP_URL%", >> tempAutoPrefs.txt
-echo "pref_mobile_service_key":"%_APP_KEY%", >> tempAutoPrefs.txt
-echo "pref_log_post_url":"%_UPLOAD_LOG_URL%", >> tempAutoPrefs.txt
-echo "pref_GCM_sender_id":"%_GCM_SENDER_ID%", >> tempAutoPrefs.txt
-echo "pref_run_unattended":true >> tempAutoPrefs.txt
-echo } >> tempAutoPrefs.txt
+IF %dayLightProject% EQU "" (
+  echo Insufficient arguments supplied.
+  exit /b 1
+  goto :eof
+)
 
-echo Created the automation preferences file
+rem @echo on
 
-REM Remove signalling file, ignore error if it doesn't exist
-adb shell rm /sdcard/zumo/done.txt > NUL
+set setUpPath=%cd%\..\
+echo setUpPath: %setUpPath%
 
-REM Stops any running instances of the app on the device
-adb shell am force-stop com.microsoft.windowsazure.mobileservices.zumoe2etestapp
+set getLibsScript=%setUpPath%ZumoE2ETestApp\libs\getLibs.ps1
+echo getLibsScript: %getLibsScript%
 
-REM Copies the preferences file to the app
-adb push tempAutoPrefs.txt /sdcard/zumo/automationPreferences.txt
+set outputApk=%setUpPath%ZumoE2ETestApp\build\outputs\apk\ZumoE2ETestApp-debug.apk
+echo outputApk: %outputApk%
 
-REM Starts the app on the device
-echo Starting the test app...
-adb shell am start com.microsoft.windowsazure.mobileservices.zumoe2etestapp/.MainActivity
+echo JAVA_HOME - I: %JAVA_HOME%
+echo ANDROID_HOME - I: %ANDROID_HOME%
 
+rem verify env variables
+if "%JAVA_HOME%" == "" (
+    set JAVA_HOME=C:\Progra~1\Java\jdk1.8.0_20
+)
 
-:WaitForFinish
-echo Waiting for the app to finish...
-timeout /T 10 /NOBREAK > NUL
-adb pull /sdcard/zumo/done.txt IAmDone.txt 2> NUL
-IF ERRORLEVEL 1 goto :WaitForFinish
+if "%ANDROID_HOME%" == "" (
+    set ANDROID_HOME=C:\Users\zumolab\AppData\Local\Android\android-sdk
+)
 
-:Done
-REM Stops the running instance of the app
-adb shell am force-stop com.microsoft.windowsazure.mobileservices.zumoe2etestapp
+set ANDROID_TOOLS=%ANDROID_HOME%\tools
+set ANDROID_PTOOLS=%ANDROID_HOME%\platform-tools
 
-REM Read the test status
-SET /P _TEST_STATUS=<IAmDone.txt
+echo JAVA_HOME: %JAVA_HOME%
+echo ANDROID_HOME: %ANDROID_HOME%
+echo ANDROID_TOOLS: %ANDROID_TOOLS%
+echo ANDROID_PTOOLS: %ANDROID_PTOOLS%
 
-IF "%_TEST_STATUS%"=="PASSED" goto :TestPassed
-:TestFailed
-echo The test run failed
-EXIT /B 1
-goto :TheEnd
+set AppPackageName=com.microsoft.windowsazure.mobileservices.zumoe2etestapp
+set CompletionFileName=/sdcard/done_android_e2e.txt
 
-:TestPassed
-echo The test run passed!
-EXIT /B 0
+rem Download required libs
+powershell -File %getLibsScript%
+if %ERRORLEVEL% NEQ 0 (
+	echo Error building the Project
+	GOTO ERROR_HANDLER
+)
 
-:Usage
-echo Usage: %0 ^<app url^> ^<app key^> ^<log server url^> ^<GCM sender id^>
-goto :TheEnd
+rem Build Appx package
+echo Clean Build
+ECHO %setUpPath%gradlew.bat clean -p %setUpPath%
+call %setUpPath%gradlew.bat clean -p %setUpPath%
+if %ERRORLEVEL% NEQ 0 (
+   echo Error cleaning the Project
+   GOTO ERROR_HANDLER
+)
 
-:MissingAdb
-echo Error: Cannot find adb.exe
-echo Make sure that the adb.exe (from ADT's sdk\platform-tools folder) is in the path
-goto :TheEnd
+echo Building the Android APK...
+ECHO %setUpPath%gradlew.bat assembledebug -p %setUpPath%
+call %setUpPath%gradlew.bat assembledebug -p %setUpPath%
 
-:TheEnd
+if %ERRORLEVEL% NEQ 0 (
+  echo Error building the Project
+  GOTO ERROR_HANDLER
+)
+
+echo Build complete
+
+echo Getting device state...
+FOR /f "delims=" %%i in ('%ANDROID_PTOOLS%\adb -d get-state') DO SET emuState=%%i
+IF "%emuState%" EQU "device" (
+  echo Android device detected, looks good.
+) ELSE (
+  echo Android device not found or in a bad state.
+  GOTO ERROR_HANDLER
+)
+
+echo Deploying app to device....
+%ANDROID_PTOOLS%\adb -d install -r %outputApk%
+if %ERRORLEVEL% NEQ 0 (
+  GOTO ERROR_HANDLER
+)
+
+%ANDROID_PTOOLS%\adb -d shell rm %CompletionFileName%
+
+echo Deployment complete. Launching app...
+%ANDROID_PTOOLS%\adb -d shell am start ^
+  -e "pref_run_unattended"				"true" ^
+  -e "pref_mobile_service_url"			"%mobileAppUrl%" ^
+  -e "pref_mobile_service_key"			"%mobileAppKey%" ^
+  -e "pref_google_userid"				"%googleUserId%" ^
+  -e "pref_google_webapp_clientid"		"%googleWebAppClientId%" ^
+  -e "pref_master_run_id"				"%runId%" ^
+  -e "pref_runtime_version"				"%runTimeVersion%" ^
+  -e "pref_daylight_client_id"			"%daylightClientId%" ^
+  -e "pref_daylight_client_secret"		"%daylightClientSecret%" ^
+  -e "pref_daylight_url"				"%dayLightUrl%" ^
+  -e "pref_daylight_project"			"%dayLightProject%" ^
+  %AppPackageName%/.MainActivity
+if %ERRORLEVEL% NEQ 0 (
+  GOTO ERROR_HANDLER
+)
+echo Launched
+
+SET counter=0
+SET pollInterval=1
+SET returnCode=0
+
+echo Waiting for tests to complete...
+timeout /t %pollInterval%
+:WaitForTests_loop1
+  REM Timeout after 20 minutes
+  IF %counter% LEQ 1200 (
+    GOTO :WaitForTests_poll
+  ) ELSE (
+    GOTO :WaitForTests_timeout
+  )
+  :WaitForTests_poll
+    SET /A "counter+=pollInterval"
+    %ANDROID_PTOOLS%\adb -d shell cat %CompletionFileName% | find "Completed successfully."
+    IF %ERRORLEVEL% NEQ 0 (
+      echo App is still running ^(%counter% seconds^)...
+      timeout /t %pollInterval%
+      GOTO :WaitForTests_loop1
+    ) ELSE (
+      echo Tests completed
+      GOTO :WaitForTests_done
+    )
+  :WaitForTests_timeout
+  REM Time-out, let's kill the app and return failure
+  SET returnCode=1
+  echo Timeout expired.
+:WaitForTests_done
+  echo Killing the app...
+  %ANDROID_PTOOLS%\adb shell am force-stop %AppPackageName%
+  IF %ERRORLEVEL% EQU 0 (
+    echo App killed successfully
+  ) ELSE (
+    echo App could not be killed
+  )
+
+echo Done
+
+exit /b %returnCode%
+goto :eof
+
+rem error handler in case any of the above execution method fails
+:ERROR_HANDLER
+echo Error Occured
+exit /b 1
