@@ -192,7 +192,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controllers\Api\JwtTokenGeneratorController.cs" />
     <Compile Include="Controllers\Api\PushApiController.cs" />
+    <Compile Include="Controllers\Table\OfflineReadyController.cs" />
+    <Compile Include="Controllers\Table\OfflineReadyNoVersionAuthenticatedController.cs" />
     <Compile Include="Controllers\Table\PermissionsTableControllers.cs" />
     <Compile Include="Controllers\Api\PermissionsApiControllers.cs" />
     <Compile Include="Controllers\Table\blog_commentsController.cs" />
@@ -204,6 +207,7 @@
     <Compile Include="DataObjects\BlogComments.cs" />
     <Compile Include="DataObjects\Dates.cs" />
     <Compile Include="DataObjects\BlogPost.cs" />
+    <Compile Include="DataObjects\OfflineReady.cs" />
     <Compile Include="DataObjects\TestMovies.cs" />
     <Compile Include="DataObjects\ParamsTestTableEntity.cs" />
     <Compile Include="DataObjects\W8PushTestEntity.cs" />

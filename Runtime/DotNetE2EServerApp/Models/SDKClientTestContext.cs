@@ -35,6 +35,8 @@ namespace ZumoE2EServerApp.Models
 
         public DbSet<BlogComments> BlogComments { get; set; }
 
+        public DbSet<OfflineReady> OfflineReadyItems { get; set; }
+
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             string schema = ServiceSettingsDictionary.GetSchemaName();

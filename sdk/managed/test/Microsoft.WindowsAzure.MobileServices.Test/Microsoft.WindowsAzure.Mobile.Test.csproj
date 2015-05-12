@@ -51,6 +51,8 @@
     <Compile Include="TestData\Types\ExceptionTypeWhichWillNeverBeThrown.cs" />
     <Compile Include="TestData\Types\ICloneableItem.cs" />
     <Compile Include="TestData\Types\Movie.cs" />
+    <Compile Include="TestData\Types\OfflineReadyItem.cs" />
+    <Compile Include="TestData\Types\OfflineReadyItemNoVersion.cs" />
     <Compile Include="TestData\Types\PocoType.cs" />
     <Compile Include="TestData\Types\IntIdRoundTripTableItem.cs" />
     <Compile Include="TestData\Types\SerializationTypeUtility.cs" />

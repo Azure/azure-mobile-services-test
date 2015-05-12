@@ -1,13 +1,19 @@
-﻿using System;
+﻿// ----------------------------------------------------------------------------
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// ----------------------------------------------------------------------------
+
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WindowsAzure.MobileServices.Test
 {
-    class Utilities
+    public class Utilities
     {
         public static void CamelCaseProps(JObject itemToUpdate)
         {
@@ -246,6 +252,17 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             }
 
             return result;
+        }
+
+        public static async Task<MobileServiceUser> GetDummyUser(MobileServiceClient mobileServiceClient)
+        {
+            var dummyUser = await mobileServiceClient.InvokeApiAsync("JwtTokenGenerator", HttpMethod.Get, null);
+
+            MobileServiceUser user = new MobileServiceUser((string)dummyUser["token"]["payload"]["uid"])
+            {
+                MobileServiceAuthenticationToken = (string)dummyUser["token"]["rawData"]
+            };
+            return user;
         }
     }
 }
