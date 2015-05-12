@@ -94,47 +94,49 @@ namespace ZumoE2EServerApp.Controllers
             IEnumerable<string> installationIds;
             if (this.Request.Headers.TryGetValues("X-ZUMO-INSTALLATION-ID", out installationIds))
             {
-                var installationId = installationIds.FirstOrDefault();
-                //Waiting for a second before querying for installation to make sure NH completes registration
-                System.Threading.Thread.Sleep(1000);
-                Installation nhInstallation = await nhClient.GetInstallationAsync(installationId);
-                string nhTemplates = null;
-                string nhSecondaryTiles = null;
+                return await Retry(async () =>
+                {
+                    var installationId = installationIds.FirstOrDefault();
 
-                if (nhInstallation.Templates != null)
-                {
-                    nhTemplates = JsonConvert.SerializeObject(nhInstallation.Templates);
-                    nhTemplates = Regex.Replace(nhTemplates, @"\s+", String.Empty);
-                    templates = Regex.Replace(templates, @"\s+", String.Empty);
-                }
-                if (nhInstallation.SecondaryTiles != null)
-                {
-                    nhSecondaryTiles = JsonConvert.SerializeObject(nhInstallation.SecondaryTiles);
-                    nhSecondaryTiles = Regex.Replace(nhSecondaryTiles, @"\s+", String.Empty);
-                    secondaryTiles = Regex.Replace(secondaryTiles, @"\s+", String.Empty);
-                }
-                if (nhInstallation.PushChannel.ToLower() != channelUri.ToLower())
-                {
-                    msg.Content = new StringContent(string.Format("ChannelUri did not match. Expected {0} Found {1}", channelUri, nhInstallation.PushChannel));
-                    throw new HttpResponseException(msg);
-                }
-                if (templates != nhTemplates)
-                {
-                    msg.Content = new StringContent(string.Format("Templates did not match. Expected {0} Found {1}", templates, nhTemplates));
-                    throw new HttpResponseException(msg);
-                }
-                if (secondaryTiles != nhSecondaryTiles)
-                {
-                    msg.Content = new StringContent(string.Format("SecondaryTiles did not match. Expected {0} Found {1}", secondaryTiles, nhSecondaryTiles));
-                    throw new HttpResponseException(msg);
-                }
-                bool tagsVerified = await VerifyTags(channelUri, installationId, nhClient);
-                if (!tagsVerified)
-                {
-                    msg.Content = new StringContent("Did not find installationId tag");
-                    throw new HttpResponseException(msg);
-                }
-                return true;
+                    Installation nhInstallation = await nhClient.GetInstallationAsync(installationId);
+                    string nhTemplates = null;
+                    string nhSecondaryTiles = null;
+
+                    if (nhInstallation.Templates != null)
+                    {
+                        nhTemplates = JsonConvert.SerializeObject(nhInstallation.Templates);
+                        nhTemplates = Regex.Replace(nhTemplates, @"\s+", String.Empty);
+                        templates = Regex.Replace(templates, @"\s+", String.Empty);
+                    }
+                    if (nhInstallation.SecondaryTiles != null)
+                    {
+                        nhSecondaryTiles = JsonConvert.SerializeObject(nhInstallation.SecondaryTiles);
+                        nhSecondaryTiles = Regex.Replace(nhSecondaryTiles, @"\s+", String.Empty);
+                        secondaryTiles = Regex.Replace(secondaryTiles, @"\s+", String.Empty);
+                    }
+                    if (nhInstallation.PushChannel.ToLower() != channelUri.ToLower())
+                    {
+                        msg.Content = new StringContent(string.Format("ChannelUri did not match. Expected {0} Found {1}", channelUri, nhInstallation.PushChannel));
+                        throw new HttpResponseException(msg);
+                    }
+                    if (templates != nhTemplates)
+                    {
+                        msg.Content = new StringContent(string.Format("Templates did not match. Expected {0} Found {1}", templates, nhTemplates));
+                        throw new HttpResponseException(msg);
+                    }
+                    if (secondaryTiles != nhSecondaryTiles)
+                    {
+                        msg.Content = new StringContent(string.Format("SecondaryTiles did not match. Expected {0} Found {1}", secondaryTiles, nhSecondaryTiles));
+                        throw new HttpResponseException(msg);
+                    }
+                    bool tagsVerified = await VerifyTags(channelUri, installationId, nhClient);
+                    if (!tagsVerified)
+                    {
+                        msg.Content = new StringContent("Did not find installationId tag");
+                        throw new HttpResponseException(msg);
+                    }
+                    return true;
+                });
             }
             msg.Content = new StringContent("Did not find X-ZUMO-INSTALLATION-ID header in the incoming request");
             throw new HttpResponseException(msg);
@@ -147,18 +149,19 @@ namespace ZumoE2EServerApp.Controllers
             string responseErrorMessage = null;
             if (this.Request.Headers.TryGetValues("X-ZUMO-INSTALLATION-ID", out installationIds))
             {
-                var installationId = installationIds.FirstOrDefault();
-                try
-                {
-                    //Waiting for a second before querying for installation to make sure NH completes deleting registration
-                    System.Threading.Thread.Sleep(1000);
-                    Installation nhInstallation = await this.GetNhClient().GetInstallationAsync(installationId);
-                }
-                catch (MessagingEntityNotFoundException)
-                {
-                    return true;
-                }
-                responseErrorMessage = string.Format("Found deleted Installation with id {0}", installationId);
+                return await Retry(async () => {
+                    var installationId = installationIds.FirstOrDefault();
+                    try
+                    {
+                        Installation nhInstallation = await this.GetNhClient().GetInstallationAsync(installationId);
+                    }
+                    catch (MessagingEntityNotFoundException)
+                    {
+                        return true;
+                    }
+                    responseErrorMessage = string.Format("Found deleted Installation with id {0}", installationId);
+                    return false;
+                });
             }
 
             HttpResponseMessage msg = new HttpResponseMessage()
@@ -172,9 +175,11 @@ namespace ZumoE2EServerApp.Controllers
         [Route("api/deleteRegistrationsForChannel")]
         public async Task DeleteRegistrationsForChannel(string channelUri)
         {
-            //Waiting for a second to make sure NH completes deleting registrations
-            System.Threading.Thread.Sleep(1000);
-            await this.GetNhClient().DeleteRegistrationsByChannelAsync(channelUri);
+            await Retry(async () =>
+            {
+                await this.GetNhClient().DeleteRegistrationsByChannelAsync(channelUri);
+                return true;
+            });
         }
 
         [Route("api/register")]
@@ -222,6 +227,28 @@ namespace ZumoE2EServerApp.Controllers
                 }
             } while (continuationToken != null);
             return true;
+        }
+
+        private async Task<bool> Retry(Func<Task<bool>> target)
+        {
+            var sleepTimes = new int[3] { 1000, 3000, 5000 };
+
+            for(var i = 0; i < sleepTimes.Length; i++) {
+                System.Threading.Thread.Sleep(sleepTimes[i]);
+
+                try
+                {
+                    // if the call succeeds, return the result
+                    return await target();
+                }
+                catch(Exception)
+                {
+                    // if an exception was thrown and we've already retried three times, rethrow
+                    if (i == 2)
+                        throw;
+                }
+            }
+            return false;
         }
     }
 }
