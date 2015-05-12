@@ -2,12 +2,14 @@ var MICROSOFT = 'microsoft';
 var FACEBOOK = 'facebook';
 var TWITTER = 'twitter';
 var GOOGLE = 'google';
+var AAD = 'aad';
 
 var userNames = {};
 userNames[MICROSOFT] = 'zumotestuser@hotmail.com';
 userNames[FACEBOOK] = 'zumotestuser@hotmail.com';
 userNames[TWITTER] = 'zumotestuser';
 userNames[GOOGLE] = 'zumotestuser@hotmail.com';
+userNames[AAD] = 'zumotestuser@zumoe2e.onmicrosoft.com';
 
 var password = '--AUTH_PASSWORD--';
 
@@ -113,6 +115,10 @@ function isLoginPage() {
 
 	if (alltags.withPredicate('name contains "Facebook"').length > 0) {
 		return FACEBOOK;
+	}
+	
+	if (alltags.withPredicate('name contains "work"').length > 0) {
+		return AAD;
 	}
 
 	if (alltags.withPredicate('name contains "Microsoft"').length > 0) {
