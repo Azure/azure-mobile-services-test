@@ -59,7 +59,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         public async Task LoginRegisterAsync()
         {
             string channelUri = await this.GetChannelUri();
-            MobileServiceUser user = await Utilities.GetDummyUser();
+            MobileServiceUser user = await Utilities.GetDummyUser(this.GetClient());
             this.GetClient().CurrentUser = user;
             Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
             {
