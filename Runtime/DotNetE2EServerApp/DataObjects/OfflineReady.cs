@@ -1,4 +1,8 @@
-﻿using System;
+﻿// ----------------------------------------------------------------------------
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// ----------------------------------------------------------------------------
+
+using System;
 using Microsoft.WindowsAzure.Mobile.Service;
 
 namespace ZumoE2EServerApp.DataObjects
