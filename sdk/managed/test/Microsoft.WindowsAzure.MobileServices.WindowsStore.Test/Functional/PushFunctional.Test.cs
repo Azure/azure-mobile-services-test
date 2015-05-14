@@ -59,7 +59,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         public async Task LoginRegisterAsync()
         {
             string channelUri = await this.GetChannelUri();
-            MobileServiceUser user = await GetDummyUser();
+            MobileServiceUser user = await Utilities.GetDummyUser(this.GetClient());
             this.GetClient().CurrentUser = user;
             Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
             {
@@ -273,16 +273,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             JObject secondaryTiles = new JObject();
             secondaryTiles["testSecondaryTiles"] = secondaryTileBody;
             return secondaryTiles;
-        }
-        private async Task<MobileServiceUser> GetDummyUser()
-        {
-            var dummyUser = await this.GetClient().InvokeApiAsync("JwtTokenGenerator", HttpMethod.Get, null);
-
-            MobileServiceUser user = new MobileServiceUser((string)dummyUser["token"]["payload"]["uid"])
-            {
-                MobileServiceAuthenticationToken = (string)dummyUser["token"]["rawData"]
-            };
-            return user;
         }
 
         private async Task<string> GetChannelUri()
