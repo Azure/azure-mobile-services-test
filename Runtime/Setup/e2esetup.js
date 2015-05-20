@@ -406,7 +406,7 @@ function create_node_tables(tables, callback) {
           scripty.invoke('mobile table create ' + (table.options || '') + ' ' + nconf.get('name') + ' ' + table.name, function (err, results) {
             if (!err) {
               console.log(' OK'.green.bold);
-            } else if (resourceAlreadyExists(err)) {
+            } else if (resource_already_exists(err)) {
               console.log(' table already exists, OK'.yellow.bold);
               err = null;
             }
@@ -426,7 +426,7 @@ function create_node_tables(tables, callback) {
             scripty.invoke('mobile table update --addColumn ' + column + ' ' + nconf.get('name') + ' ' + table.name, function (err, results) {
               if (!err) {
                 console.log(' OK'.green.bold);
-              } else if (resourceAlreadyExists(err)) {
+              } else if (resource_already_exists(err)) {
                 console.log(' column already exists, OK'.yellow.bold);
                 err = null;
               }
@@ -439,7 +439,7 @@ function create_node_tables(tables, callback) {
   }, callback);
 }
 
-function resourceAlreadyExists(err) {
+function resource_already_exists(err) {
   var stringErr = err.toString();
   return stringErr.indexOf('conflictError') > -1 && stringErr.indexOf('already exists') > -1;
 }
