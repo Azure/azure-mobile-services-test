@@ -5,25 +5,26 @@
 /// <reference path="../testFramework.js" />
 
 function definePushTestsNamespace() {
-    var tests = [];
-    var i;
-    var tableName = 'w8PushTest';
-    var toastTemplateName = 'newsToastTemplate';
-    var tileTemplateName = 'newsTileTemplate';
-    var badgeTemplateName = 'newsBadgeTemplate';
-    var rawTemplateName = 'newsRawTemplate';
-    var templateNotification = {
-        "News_English": "World News in English!",
-        "News_French": "Nouvelles du monde en français!",
-        "News_Mandarin": "在普通话的世界新闻 ！",
-        "News_Badge": "10"
-    }
+    var tests = [],
+        channelUri,
+        registrationWaitInterval = 10000;
 
-    var pushChannel;
+    var testTemplate = {
+            body: '<toast><visual><binding template="ToastText01"><text id="1">$(message)</text></binding></visual></toast>',
+            name: 'templateForToastWinJS',
+            headers: {
+                'X-WNS-Type': 'wns/toast',
+                'X-WNS-TTL': '1000'
+            },
+            lowerHeaders: {
+                'x-wns-type': 'wns/toast',
+                'x-wns-ttl': '1000'
+            },
+            tags: [ 'World' ]
+    };
+
     var pushNotifications = Windows.Networking.PushNotifications;
     var pushNotificationQueue = [];
-    var imageUrl = 'http://zumotestserver.azurewebsites.net/content/zumo2.png';
-    var wideImageUrl = 'http://zumotestserver.azurewebsites.net/content/zumo1.png';
 
     var onPushNotificationReceived = function (e) {
         var notificationPayload;
@@ -45,7 +46,7 @@ function definePushTestsNamespace() {
                 break;
         }
         pushNotificationQueue.push({ type: e.notificationType, content: notificationPayload });
-    }
+    };
 
     function waitForNotification(timeout, timeAfterPush, continuation) {
         /// <param name="timeout" type="Number">Time to wait for push notification in milliseconds</param>
@@ -76,298 +77,187 @@ function definePushTestsNamespace() {
         }
 
         waitForPush();
-    }
+    };
 
-    function RegisterTemplateForPush(templateBody, templateName, wnsHeaders, tags, test) {
-        return new WinJS.Promise(function (complete) {
-            var pushManager = Windows.Networking.PushNotifications.PushNotificationChannelManager;
-            pushManager.createPushNotificationChannelForApplicationAsync().done(function (channel) {
-                test.addLog('Created push channel: ', { uri: channel.uri, expirationTime: channel.expirationTime });
+    tests.push(new zumo.Test('InitialDeleteRegistrations', function (test, done) {
+        testPlatform.getPushChannel()
+            .then(function (channel) {
+                channelUri = channel.uri;
+                return zumo.getClient().push.unregisterAll(channel.uri);
+            })
+            .then(getRegistrations(channelUri, 'wns'))
+            .then(function (registrations) {
+                zumo.assert.isTrue(Array.isArray(registrations));
+                zumo.assert.areEqual(0, registrations.length);
+                zumo.assert.areEqual('{}', JSON.stringify(zumo.getClient().push._registrationManager._storageManager._registrations));
+                return true;
+            })
+            .done(done, fail(test, done));
+    }));
+
+    tests.push(new zumo.Test('RegisterNative', function (test, done) {
+        testPlatform.getPushChannel()
+            .then(function (channel) {
+                channelUri = channel.uri;
+                zumo.getClient().push.registerNative(channelUri, [ 'tag1' ]);
                 channel.onpushnotificationreceived = onPushNotificationReceived;
-                zumo.getClient().push.registerTemplate(channel.uri, templateBody, templateName, wnsHeaders, tags).done(function () {
-                    test.addLog('success: Registered template', templateName);
-                    pushChannel = channel;
-                    complete(true);
-                }, function (error) {
-                    test.addLog('Error regsitering template push channel: ', error);
-                    complete(false);
+            })
+            .then(wait(registrationWaitInterval))
+            .then(getRegistrations(channelUri, 'wns'))
+            .then(function (registrations) {
+                zumo.assert.isTrue(Array.isArray(registrations));
+                zumo.assert.areEqual(1, registrations.length);
+                zumo.assert.areEqual('{"$Default":"' + registrations[0].registrationId + '"}', JSON.stringify(zumo.getClient().push._registrationManager._storageManager._registrations));
+                return true;
+            })
+            .done(done, fail(test, done));
+    }));
+
+    tests.push(createPushTest('wns',
+        'toast',
+        'tag1',
+        '<?xml version="1.0"?><toast><visual><binding template="ToastText01"><text id="1">hello world</text></binding></visual></toast>'));
+
+    tests.push(new zumo.Test('UnregisterNative', function (test, done) {
+        testPlatform.getPushChannel()
+            .then(function (channel) {
+                channelUri = channel.uri;
+                return zumo.getClient().push.unregisterNative();
+            })
+            .then(getRegistrations(channelUri, 'wns'))
+            .then(function (registrations) {
+                zumo.assert.isTrue(Array.isArray(registrations));
+                zumo.assert.areEqual(0, registrations.length);
+                zumo.assert.areEqual('{}', JSON.stringify(zumo.getClient().push._registrationManager._storageManager._registrations));
+                return true;
+            })
+            .done(done, fail(test, done));
+    }));
+
+    tests.push(new zumo.Test('RegisterWithTemplate', function (test, done) {
+        testPlatform.getPushChannel()
+            .then(function (channel) {
+                channelUri = channel.uri;
+                zumo.getClient().push.registerTemplate(channelUri, testTemplate.body, testTemplate.name, testTemplate.headers, testTemplate.tags);
+                channel.onpushnotificationreceived = onPushNotificationReceived;
+            })
+            .then(wait(registrationWaitInterval))
+            .then(getRegistrations(channelUri, 'wns'))
+            .then(function (registrations) {
+                zumo.assert.isTrue(Array.isArray(registrations));
+                zumo.assert.areEqual(1, registrations.length);
+                zumo.assert.areEqual('{"templateForToastWinJS":"' + registrations[0].registrationId + '"}', JSON.stringify(zumo.getClient().push._registrationManager._storageManager._registrations));
+                zumo.assert.areEqual(zumo.getClient().push._registrationManager._storageManager.pushHandle, registrations[0].deviceId, 'Local storage should have channelUri from returned registrations');
+                zumo.assert.areEqual(registrations[0].deviceId, channelUri, 'Returned registrations should use channelUri sent from registered template');
+                Object.getOwnPropertyNames(registrations[0].headers).forEach(function (header) {
+                    zumo.assert.areEqual(registrations[0].headers[header], testTemplate.lowerHeaders[header.toLowerCase()], 'Each header returned by registration should match what was registered');
                 });
-            }, function (error) {
-                test.addLog('Error creating push channel: ', error);
-                complete(false);
-            });
-        });
-    }
+                zumo.assert.areEqual(Object.getOwnPropertyNames(registrations[0].headers).length, Object.getOwnPropertyNames(testTemplate.headers).length, 'Returned registration should contain same number of headers sent from registered template');
 
-    function UnRegisterTemplateForPush(templateName, test) {
-        return new WinJS.Promise(function (complete) {
-            if (pushChannel) {
-                zumo.getClient().push.unregisterTemplate(templateName).done(function () {
-                    test.addLog('Template Unregistered with NH: ', templateName);
-                    complete(true);
-                }, function (error) {
-                    test.addLog('Failed to unregister template with NH: ', error);
-                    complete(false);
-                });
-            } else {
-                test.addLog('Error, push channel needs to be registered.');
-                complete(false);
-            }
-            pushChannel = null;
-        });
-    }
-
-    var indexOfTemplatePushTests = 0;
-
-    tests.push(new zumo.Test('Register Template toast push channel', function (test, done) {
-        var templateBody = '<toast><visual><binding template="ToastText01"><text id="1">$(News_French)</text></binding></visual></toast>';
-        var wnsHeaders = { 'X-WNS-Type': 'wns/toast' };
-        var tags = ["World", "French"];
-        RegisterTemplateForPush(templateBody, toastTemplateName, wnsHeaders, tags, test).done(function (result) {
-            done(result);
-        });
-    }));
-    tests.push(createPushTest('sendToastText01',
-        { text1: 'This is not used in template tests' },
-        '<toast><visual><binding template="ToastText01"><text id="1">Nouvelles du monde en français!</text></binding></visual></toast>', true));
-    tests.push(new zumo.Test('Unregister Toast Template push channel', function (test, done) {
-        UnRegisterTemplateForPush(toastTemplateName, test).done(function (result) {
-            done(result);
-        });
+                var features = zumo.util.globalTestParams[zumo.constants.RUNTIME_FEATURES_KEY];
+                if (features === undefined) {
+                    throw 'Runtime features undefined, run "tests setup" test group first';
+                }
+                else if (features[zumo.runtimeFeatureNames.DotNetRuntime_Only]) {
+                    zumo.assert.areEqual(registrations[0].tags.length, testTemplate.tags.length, 'Returned registration should contain tags sent from registered template');
+                } else {
+                    zumo.assert.areEqual(registrations[0].tags.length, testTemplate.tags.length + 1, 'Returned registration should contain tags sent from registered template and 1 extra for installationId');
+                    zumo.assert.isTrue(registrations[0].tags.indexOf(WindowsAzure.MobileServiceClient._applicationInstallationId) > -1, 'Expected the installationID in the tags');
+                }
+                zumo.assert.areEqual(registrations[0].templateName, testTemplate.name, 'Expected returned registration to use templateName it was fed');
+                zumo.assert.areEqual(registrations[0].templateBody, testTemplate.body, 'Expected returned registration to use templateBody it was fed');
+                zumo.assert.areEqual(zumo.getClient().push._registrationManager._storageManager.getRegistrationIdWithName(testTemplate.name), registrations[0].registrationId, 'Expected the stored registrationId to equal the one returned from service');
+                return true;
+            })
+            .done(done, fail(test, done));
     }));
 
-    tests.push(new zumo.Test('Register Template tile push channel', function (test, done) {
-        var templateBody = '<tile><visual><binding template="TileWideImageAndText02"><image id="1" src="' + wideImageUrl + '" alt="zumowide"/><text id="1">$(News_Mandarin)</text><text id="2">tl-wiat2-2</text></binding></visual></tile>';
-        var wnsHeaders = { 'X-WNS-Type': 'wns/tile' };
-        var tags = ["World", "Mandarin"];
-        RegisterTemplateForPush(templateBody, "newsTileTemplate", wnsHeaders, tags, test).done(function (result) {
-            done(result);
-        });
-    }));
-    tests.push(createPushTest('sendTileWideImageAndText02',
-        { text1: 'This is not used in template tests' },
-        '<tile><visual><binding template="TileWideImageAndText02"><image id="1" src="' + wideImageUrl + '" alt="zumowide"/><text id="1">在普通话的世界新闻 ！</text><text id="2">tl-wiat2-2</text></binding></visual></tile>', true));
-    tests.push(new zumo.Test('Unregister Tile Template push channel', function (test, done) {
-        UnRegisterTemplateForPush(tileTemplateName, test).done(function (result) {
-            done(result);
-        });
-    }));
+    tests.push(createPushTest('template',
+        'toast',
+        'World',
+        '{ message: "hello world template" }',
+        '<toast><visual><binding template="ToastText01"><text id="1">hello world template</text></binding></visual></toast>'));
 
-    tests.push(new zumo.Test('Register Template Raw push channel', function (test, done) {
-        var templateBody = '<raw>$(News_English)</raw>';
-        var wnsHeaders = { 'X-WNS-Type': 'wns/raw' };
-        var tags = ["World", "English"];
-        RegisterTemplateForPush(templateBody, "newsRawTemplate", wnsHeaders, tags, test).done(function (result) {
-            done(result);
-        });
+    tests.push(new zumo.Test('UnregisterTemplate', function (test, done) {
+        testPlatform.getPushChannel()
+            .then(function (channel) {
+                channelUri = channel.uri;
+                return zumo.getClient().push.unregisterTemplate(testTemplate.name);
+            })
+            .then(getRegistrations(channelUri, 'wns'))
+            .then(function (registrations) {
+                zumo.assert.isTrue(Array.isArray(registrations));
+                zumo.assert.areEqual(0, registrations.length);
+                zumo.assert.areEqual('{}', JSON.stringify(zumo.getClient().push._registrationManager._storageManager._registrations));
+                return true;
+            })
+            .done(done, fail(test, done));
     }));
-    tests.push(createPushTest('sendRaw', 'This is not used in template tests', '<raw>World News in English!</raw>', true));
-    tests.push(new zumo.Test('Unregister Raw Template push channel', function (test, done) {
-        UnRegisterTemplateForPush(rawTemplateName, test).done(function (result) {
-            done(result);
-        });
-    }));
-
-    tests.push(new zumo.Test('Register Template Badge push channel', function (test, done) {
-        var templateBody = '<badge value="$(News_Badge)" version="1" />';
-        var wnsHeaders = { 'X-WNS-Type': 'wns/badge' };
-        var tags = ["World", "Badge"];
-        RegisterTemplateForPush(templateBody, "newsBadgeTemplate", wnsHeaders, tags, test).done(function (result) {
-            done(result);
-        });
-    }));
-    tests.push(createPushTest('sendBadge', 10, '<badge value="10" version="1"/>', true));
-    tests.push(new zumo.Test('Unregister Badge Template push channel', function (test, done) {
-        UnRegisterTemplateForPush(badgeTemplateName, test).done(function (result) {
-            done(result);
-        });
-    }));
-
-    for (var i = indexOfTemplatePushTests; i < tests.length; i++) {
-        tests[i].addRequiredFeature(zumo.runtimeFeatureNames.NH_PUSH_ENABLED);
-    }
-
-    tests.push(new zumo.Test('Register push channel', function (test, done) {
-        var pushManager = Windows.Networking.PushNotifications.PushNotificationChannelManager;
-        pushManager.createPushNotificationChannelForApplicationAsync().done(function (channel) {
-            test.addLog('Created push channel: ', { uri: channel.uri, expirationTime: channel.expirationTime });
-            channel.onpushnotificationreceived = onPushNotificationReceived;
-            var runtimeFeatures = zumo.util.globalTestParams[zumo.constants.RUNTIME_FEATURES_KEY];
-            if (runtimeFeatures[zumo.runtimeFeatureNames.NH_PUSH_ENABLED]) {
-                var tags = ["tag1", "tag2"];
-                zumo.getClient().push.registerNative(channel.uri, tags).done(function () {
-                    test.addLog('Registered with NH');
-                    pushChannel = channel;
-                    done(true);
-                }, function (error) {
-                    test.addLog('Error registering with NH: ', error);
-                    done(false);
-                });;
-            }
-            else {
-                pushChannel = channel;
-                done(true);
-            }
-        }, function (error) {
-            test.addLog('Error creating push channel: ', error);
-            done(false);
-        });
+    
+    tests.push(new zumo.Test('RegisterMultiple', function (test, done) {
+        testPlatform.getPushChannel()
+            .then(function (channel) {
+                channelUri = channel.uri;
+                return zumo.getClient().push.registerNative(channelUri);
+            })
+            .then(function () {
+                return zumo.getClient().push.registerTemplate(channelUri, testTemplate.body, testTemplate.name, testTemplate.headers, testTemplate.tags);
+            })
+            .then(function () {
+                return zumo.getClient().push.registerNative(channelUri);
+            })
+            .then(wait(registrationWaitInterval))
+            .then(getRegistrations(channelUri, 'wns'))
+            .then(function (registrations) {
+                zumo.assert.isTrue(Array.isArray(registrations));
+                zumo.assert.areEqual(2, registrations.length);
+                return true;
+            })
+            .then(function () {
+                return zumo.getClient().push.unregisterAll(channelUri);
+            })
+            .then(getRegistrations(channelUri, 'wns'))
+            .then(function (registrations) {
+                zumo.assert.isTrue(Array.isArray(registrations));
+                zumo.assert.areEqual(0, registrations.length);
+                zumo.assert.areEqual('{}', JSON.stringify(zumo.getClient().push._registrationManager._storageManager._registrations));
+                return true;
+            })
+            .done(done, fail(test, done));
     }));
 
-    tests.push(createPushTest('sendRaw', 'hello world', 'hello world'));
-    tests.push(createPushTest('sendRaw', 'non-ASCII áéíóú', 'non-ASCII áéíóú'));
-    tests.push(createPushTest('sendToastText01',
-        { text1: 'hello world' },
-        '<toast><visual><binding template="ToastText01"><text id="1">hello world</text></binding></visual></toast>'));
-    tests.push(createPushTest('sendToastImageAndText03',
-        { text1: 'ts-iat3-1', text2: 'ts-iat3-2', image1src: imageUrl, image1alt: 'zumo' },
-        '<toast><visual><binding template="ToastImageAndText03"><image id="1" src="' + imageUrl + '" alt="zumo"/><text id="1">ts-iat3-1</text><text id="2">ts-iat3-2</text></binding></visual></toast>'));
-    tests.push(createPushTest('sendToastImageAndText04',
-        { text1: 'ts-iat4-1', text2: 'ts-iat4-2', text3: 'ts-iat4-3', image1src: imageUrl, image1alt: 'zumo' },
-        '<toast><visual><binding template="ToastImageAndText04"><image id="1" src="' + imageUrl + '" alt="zumo"/><text id="1">ts-iat4-1</text><text id="2">ts-iat4-2</text><text id="3">ts-iat4-3</text></binding></visual></toast>'));
+    function createPushTest(provider, method, tag, payload, expectedPayload) {
 
-    tests.push(createPushTest('sendBadge', 4, '<badge value="4" version="1"/>'));
-    tests.push(createPushTest('sendBadge', 'playing', '<badge value="playing" version="1"/>'));
+        var testName = 'Test for ' + provider + '/' + method;
 
-    tests.push(createPushTest('sendTileWideImageAndText02',
-        { text1: 'tl-wiat2-1', text2: 'tl-wiat2-2', image1src: wideImageUrl, image1alt: 'zumowide' },
-        '<tile><visual><binding template="TileWideImageAndText02"><image id="1" src="' + wideImageUrl + '" alt="zumowide"/><text id="1">tl-wiat2-1</text><text id="2">tl-wiat2-2</text></binding></visual></tile>'));
-    tests.push(createPushTest('sendTileWideImageCollection',
-        {
-            image1src: wideImageUrl, image2src: imageUrl, image3src: imageUrl, image4src: imageUrl, image5src: imageUrl,
-            image1alt: 'widezumo', image2alt: 'zumo', image3alt: 'zumo', image4alt: 'zumo', image5alt: 'zumo'
-        },
-        '<tile><visual><binding template="TileWideImageCollection">' +
-            '<image id="1" src="' + wideImageUrl + '" alt="widezumo"/>' +
-            '<image id="2" src="' + imageUrl + '" alt="zumo"/>' +
-            '<image id="3" src="' + imageUrl + '" alt="zumo"/>' +
-            '<image id="4" src="' + imageUrl + '" alt="zumo"/>' +
-            '<image id="5" src="' + imageUrl + '" alt="zumo"/>' +
-            '</binding></visual></tile>'));
-    tests.push(createPushTest('sendTileWideText02',
-        {
-            text1: 'tl-wt02-caption',
-            text2: 'tl-wt02-1', text3: 'tl-wt02-2', text4: 'tl-wt02-3', text5: 'tl-wt02-4',
-            text6: 'tl-wt02-5', text7: 'tl-wt02-6', text8: 'tl-wt02-7', text9: 'tl-wt02-8'
-        },
-        '<tile><visual><binding template="TileWideText02">' +
-            '<text id="1">tl-wt02-caption</text>' +
-            '<text id="2">tl-wt02-1</text>' +
-            '<text id="3">tl-wt02-2</text>' +
-            '<text id="4">tl-wt02-3</text>' +
-            '<text id="5">tl-wt02-4</text>' +
-            '<text id="6">tl-wt02-5</text>' +
-            '<text id="7">tl-wt02-6</text>' +
-            '<text id="8">tl-wt02-7</text>' +
-            '<text id="9">tl-wt02-8</text>' +
-            '</binding></visual></tile>'));
-    tests.push(createPushTest('sendTileSquarePeekImageAndText01',
-        {
-            text1: 'tl-spiat1-1',
-            text2: 'tl-spiat1-2',
-            text3: 'tl-spiat1-3',
-            text4: 'tl-spiat1-4',
-            image1src: imageUrl,
-            image1alt: 'zumo'
-        },
-        '<tile><visual><binding template="TileSquarePeekImageAndText01">' +
-            '<image id="1" src="' + imageUrl + '" alt="zumo"/>' +
-            '<text id="1">tl-spiat1-1</text>' +
-            '<text id="2">tl-spiat1-2</text>' +
-            '<text id="3">tl-spiat1-3</text>' +
-            '<text id="4">tl-spiat1-4</text>' +
-            '</binding></visual></tile>'));
-    tests.push(createPushTest('sendTileSquareBlock',
-    { text1: '24', text2: 'aliquam' },
-    '<tile><visual><binding template="TileSquareBlock"><text id="1">24</text><text id="2">aliquam</text></binding></visual></tile>'));
-
-    tests.push(new zumo.Test('Unregister push channel', function (test, done) {
-        if (pushChannel) {
-            var runtimeFeatures = zumo.util.globalTestParams[zumo.constants.RUNTIME_FEATURES_KEY];
-            if (runtimeFeatures[zumo.runtimeFeatureNames.NH_PUSH_ENABLED]) {
-                zumo.getClient().push.unregisterNative().done(function () {
-                    test.addLog('Unregistered with NH: ');
-                    done(true);
-                }, function (error) {
-                    test.addLog('Failed to unregister with NH: ', error);
-                    done(false);
-                });
-            }
-            else {
-                pushChannel.close();
-                done(true);
-            }
-        } else {
-            test.addLog('Error, push channel needs to be registered.');
-            done(false);
-        }
-        pushChannel = null;
-    }));
-
-    function createPushTest(wnsMethod, payload, expectedPushPayload, templatePush) {
-        /// <param name="wnsMethod" type="String">The method on the WNS module</param>
-        /// <param name="payload" type="object">The payload to be sent to WNS</param>
-        /// <param name="expectedPushPayload" type="String">The result which will be returned on the callback</param>
-        var testName = 'Test for ' + wnsMethod + ': ';
-        var payloadString = JSON.stringify(payload);
-        testName += payloadString.length < 15 ? payloadString : (payloadString.substring(0, 15) + "...");
-
-        var expectedNotificationType;
-        var notificatonType;
-        if (wnsMethod.indexOf('Badge') >= 0) {
-            expectedNotificationType = pushNotifications.PushNotificationType.badge;
-            notificatonType = 'badge';
-        } else if (wnsMethod.indexOf('Raw') >= 0) {
-            expectedNotificationType = pushNotifications.PushNotificationType.raw;
-            notificatonType = 'raw';
-        } else if (wnsMethod.indexOf('Tile') >= 0) {
-            expectedNotificationType = pushNotifications.PushNotificationType.tile;
-            notificatonType = 'tile';
-        } else if (wnsMethod.indexOf('Toast') >= 0) {
-            expectedNotificationType = pushNotifications.PushNotificationType.toast;
-            notificatonType = 'toast';
-        } else {
-            throw "Unknown wnsMethod";
-        }
-
-        if (templatePush) {
-            notificatonType = 'template';
-        }
-
-        if (typeof expectedPushPayload === 'object') {
-            expectedPushPayload = JSON.stringify(expectedPushPayload);
+        if (!expectedPayload) {
+            expectedPayload = payload;
         }
 
         return new zumo.Test(testName, function (test, done) {
-            test.addLog('Test for method ', wnsMethod, ' with payload ', payload);
+            test.addLog('Test for provider ', provider, ', method ', method, ', tag ', tag, ', payload ', payload);
             var client = zumo.getClient();
-            var runtimeFeatures = zumo.util.globalTestParams[zumo.constants.RUNTIME_FEATURES_KEY];
-            var table = client.getTable(tableName);
-            var item = {
-                method: wnsMethod,
-                channelUri: pushChannel.uri,
-                payload: payload,
-                xmlPayload: expectedPushPayload,
-                usingNH: runtimeFeatures[zumo.runtimeFeatureNames.NH_PUSH_ENABLED],
-                nhNotificationType: notificatonType,
-                templateNotification: templateNotification
-            };
-            table.insert(item).done(function (inserted) {
-                if (inserted.response) {
-                    delete inserted.response.channel;
+
+            client.invokeApi('push', {
+                method: 'POST',
+                body: {
+                    method: 'send',
+                    type: provider,
+                    payload: payload,
+                    token: 'dummy',
+                    pushType: method,
+                    tag: tag
                 }
-                test.addLog('Push request: ', inserted);
+            }).done(function (response) {
                 waitForNotification(15000, function (notification) {
                     if (notification) {
                         test.addLog('Notification received: ', notification);
-                        if (notification.type !== expectedNotificationType) {
-                            test.addLog('Error, notification type (', notification.type, ') is not the expected (', expectedNotificationType, ')');
+                        if (notification.type !== pushNotifications.PushNotificationType.toast) {
+                            test.addLog('Error, notification type (', notification.type, ') is not the expected (', pushNotifications.PushNotificationType.toast, ')');
                             done(false);
                         } else {
-                            var xmlTag = "<?xml version=\"1.0\"?>";
-                            notification.content = notification.content.replace(xmlTag, "");
-                            if (notification.content !== expectedPushPayload) {
-                                test.addLog('Error, notification payload (', notification.content, ') is not the expected (', expectedPushPayload, ')');
+                            if (notification.content !== expectedPayload) {
+                                test.addLog('Error, notification payload (', notification.content, ') is not the expected (', expectedPayload, ')');
                                 done(false);
                             } else {
                                 test.addLog('Push notification received successfully');
@@ -379,9 +269,8 @@ function definePushTestsNamespace() {
                         done(false);
                     }
                 });
-            }, function (err) {
-                test.addLog('Error requesting push notification: ', err);
-                done(false);
+            }, function (error) {
+                test.addLog('Error calling push api, ' + error.toString);
             });
         });
     }
@@ -390,6 +279,29 @@ function definePushTestsNamespace() {
         name: 'Push',
         tests: tests
     };
+}
+
+function getRegistrations(channelUri, platform) {
+    return function () {
+        return new WinJS.Promise(function (complete) {
+            zumo.getClient().push._registrationManager._pushHttpClient.listRegistrations(channelUri, platform, function (error, registrations) {
+                complete(registrations);
+            });
+        });
+    }
+}
+
+function wait(interval) {
+    return function () {
+        return WinJS.Promise.timeout(interval);
+    }
+}
+
+function fail(test, done) {
+    return function (error) {
+        test.addLog('Error occurred: ', error);
+        done(false);
+    }
 }
 
 zumo.tests.push = definePushTestsNamespace();

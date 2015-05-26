@@ -36,35 +36,46 @@ namespace ZumoE2EServerApp.Controllers
                 var serialize = new JsonSerializer();
 
                 var token = (string)data["token"];
-                var payload = (JObject) data["payload"];
-                var type = (string) data["type"];
+                var payloadString = (string)data["payload"];
+                var type = (string)data["type"];
+                var pushType = (string)data["pushType"];
+                var tag = (string)data["tag"];
 
-                if (payload == null || token == null)
+                if (payloadString == null || token == null)
                 {
                     return new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
                 }
 
+                Services.Log.Info(payloadString);
+
                 if (type == "template") {
                     TemplatePushMessage message = new TemplatePushMessage();
+                    var payload = JObject.Parse(payloadString);
                     var keys = payload.Properties();
                     foreach (JProperty key in keys) {
                         Services.Log.Info("Key: " + key.Name);
                         message.Add(key.Name, (string) key.Value);
                     }
-                    var result = await Services.Push.SendAsync(message, "World");
+                    var result = await Services.Push.SendAsync(message, tag);
                 }
                 else if (type == "gcm")
                 {
                     GooglePushMessage message = new GooglePushMessage();
-                    message.JsonPayload = payload.ToString();
+                    message.JsonPayload = payloadString;
                     var result = await Services.Push.SendAsync(message);
                 }
-                else
+                else if (type == "apns")
                 {
                     ApplePushMessage message = new ApplePushMessage();
-                    Services.Log.Info(payload.ToString());
-                    message.JsonPayload = payload.ToString();
+                    message.JsonPayload = payloadString;
                     var result = await Services.Push.SendAsync(message);
+                }
+                else if (type == "wns")
+                {
+                    WindowsPushMessage message = new WindowsPushMessage();
+                    message.XmlPayload = payloadString;
+                    message.Headers.Add("X-WNS-Type", type + '/' + pushType);
+                    var result = await Services.Push.SendAsync(message, tag);
                 }
             }
             else 
