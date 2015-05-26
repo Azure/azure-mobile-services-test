@@ -1,14 +1,14 @@
-var argv = require('optimist').argv,
-  archiver = require('archiver'),
-  async = require('async'),
-  colors = require('colors'),
-  fse = require('fs-extra'),
-  git = require('gift'),
-  nconf = require('nconf'),
-  request = require('request'),
-  scripty = require('azure-scripty'),
-  tmpDirs = require('tmp'),
-  validator = require('validator');
+var argv      = require('optimist').argv,
+    archiver  = require('archiver'),
+    async     = require('async'),
+    colors    = require('colors'),
+    fse       = require('fs-extra'),
+    git       = require('gift'),
+    nconf     = require('nconf'),
+    request   = require('request'),
+    scripty   = require('azure-scripty'),
+    tmpDirs   = require('tmp'),
+    validator = require('validator');
 
 var state = {};
 var NumRetries = 3;
@@ -397,7 +397,6 @@ function create_node_tables(tables, callback) {
   if (!tables) {
     return callback();
   }
-
   async.eachSeries(tables, function (table, done) {
     async.series([
       function (_done) {
@@ -407,6 +406,9 @@ function create_node_tables(tables, callback) {
           scripty.invoke('mobile table create ' + (table.options || '') + ' ' + nconf.get('name') + ' ' + table.name, function (err, results) {
             if (!err) {
               console.log(' OK'.green.bold);
+            } else if (resource_already_exists(err)) {
+              console.log(' table already exists, OK'.yellow.bold);
+              err = null;
             }
             __done(err);
           });
@@ -424,6 +426,9 @@ function create_node_tables(tables, callback) {
             scripty.invoke('mobile table update --addColumn ' + column + ' ' + nconf.get('name') + ' ' + table.name, function (err, results) {
               if (!err) {
                 console.log(' OK'.green.bold);
+              } else if (resource_already_exists(err)) {
+                console.log(' column already exists, OK'.yellow.bold);
+                err = null;
               }
               ___done(err);
             });
@@ -432,6 +437,11 @@ function create_node_tables(tables, callback) {
       }
     ], done);
   }, callback);
+}
+
+function resource_already_exists(err) {
+  var stringErr = err.toString();
+  return stringErr.indexOf('conflictError') > -1 && stringErr.indexOf('already exists') > -1;
 }
 
 function setup_dotnet_app(callback) {
