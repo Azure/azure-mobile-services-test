@@ -12,7 +12,7 @@
   </Prerequisites>
   <mp:PhoneIdentity PhoneProductId="1a2b697b-71bd-454e-8738-867412e35b2d" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Resources>
-    <Resource Language="x-generate" />
+    <Resource Language="en" />
   </Resources>
   <Applications>
     <Application Id="x90d8932dy7158y463dy9db4y2cbce122d372x" Executable="$targetnametoken$.exe" EntryPoint="Microsoft.WindowsAzure.MobileServices.WindowsStore.Test.App">
