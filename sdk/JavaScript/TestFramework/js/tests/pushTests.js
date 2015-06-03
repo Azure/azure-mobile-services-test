@@ -86,12 +86,7 @@ function definePushTestsNamespace() {
                 return zumo.getClient().push.unregisterAll(channel.uri);
             })
             .then(getRegistrations(channelUri, 'wns'))
-            .then(function (registrations) {
-                zumo.assert.isTrue(Array.isArray(registrations));
-                zumo.assert.areEqual(0, registrations.length);
-                zumo.assert.areEqual('{}', JSON.stringify(zumo.getClient().push._registrationManager._storageManager._registrations));
-                return true;
-            })
+            .then(testRegistrations(0))
             .done(done, fail(test, done));
     }));
 
@@ -104,12 +99,7 @@ function definePushTestsNamespace() {
             })
             .then(wait(registrationWaitInterval))
             .then(getRegistrations(channelUri, 'wns'))
-            .then(function (registrations) {
-                zumo.assert.isTrue(Array.isArray(registrations));
-                zumo.assert.areEqual(1, registrations.length);
-                zumo.assert.areEqual('{"$Default":"' + registrations[0].registrationId + '"}', JSON.stringify(zumo.getClient().push._registrationManager._storageManager._registrations));
-                return true;
-            })
+            .then(testRegistrations(1))
             .done(done, fail(test, done));
     }));
 
@@ -125,12 +115,7 @@ function definePushTestsNamespace() {
                 return zumo.getClient().push.unregisterNative();
             })
             .then(getRegistrations(channelUri, 'wns'))
-            .then(function (registrations) {
-                zumo.assert.isTrue(Array.isArray(registrations));
-                zumo.assert.areEqual(0, registrations.length);
-                zumo.assert.areEqual('{}', JSON.stringify(zumo.getClient().push._registrationManager._storageManager._registrations));
-                return true;
-            })
+            .then(testRegistrations(0))
             .done(done, fail(test, done));
     }));
 
@@ -143,11 +128,7 @@ function definePushTestsNamespace() {
             })
             .then(wait(registrationWaitInterval))
             .then(getRegistrations(channelUri, 'wns'))
-            .then(function (registrations) {
-                zumo.assert.isTrue(Array.isArray(registrations));
-                zumo.assert.areEqual(1, registrations.length);
-                zumo.assert.areEqual('{"templateForToastWinJS":"' + registrations[0].registrationId + '"}', JSON.stringify(zumo.getClient().push._registrationManager._storageManager._registrations));
-                zumo.assert.areEqual(zumo.getClient().push._registrationManager._storageManager.pushHandle, registrations[0].deviceId, 'Local storage should have channelUri from returned registrations');
+            .then(testRegistrations(1, function (registrations) {
                 zumo.assert.areEqual(registrations[0].deviceId, channelUri, 'Returned registrations should use channelUri sent from registered template');
                 Object.getOwnPropertyNames(registrations[0].headers).forEach(function (header) {
                     zumo.assert.areEqual(registrations[0].headers[header], testTemplate.lowerHeaders[header.toLowerCase()], 'Each header returned by registration should match what was registered');
@@ -166,9 +147,7 @@ function definePushTestsNamespace() {
                 }
                 zumo.assert.areEqual(registrations[0].templateName, testTemplate.name, 'Expected returned registration to use templateName it was fed');
                 zumo.assert.areEqual(registrations[0].templateBody, testTemplate.body, 'Expected returned registration to use templateBody it was fed');
-                zumo.assert.areEqual(zumo.getClient().push._registrationManager._storageManager.getRegistrationIdWithName(testTemplate.name), registrations[0].registrationId, 'Expected the stored registrationId to equal the one returned from service');
-                return true;
-            })
+            }))
             .done(done, fail(test, done));
     }));
 
@@ -185,12 +164,7 @@ function definePushTestsNamespace() {
                 return zumo.getClient().push.unregisterTemplate(testTemplate.name);
             })
             .then(getRegistrations(channelUri, 'wns'))
-            .then(function (registrations) {
-                zumo.assert.isTrue(Array.isArray(registrations));
-                zumo.assert.areEqual(0, registrations.length);
-                zumo.assert.areEqual('{}', JSON.stringify(zumo.getClient().push._registrationManager._storageManager._registrations));
-                return true;
-            })
+            .then(testRegistrations(0))
             .done(done, fail(test, done));
     }));
     
@@ -208,26 +182,16 @@ function definePushTestsNamespace() {
             })
             .then(wait(registrationWaitInterval))
             .then(getRegistrations(channelUri, 'wns'))
-            .then(function (registrations) {
-                zumo.assert.isTrue(Array.isArray(registrations));
-                zumo.assert.areEqual(2, registrations.length);
-                return true;
-            })
+            .then(testRegistrations(2))
             .then(function () {
                 return zumo.getClient().push.unregisterAll(channelUri);
             })
             .then(getRegistrations(channelUri, 'wns'))
-            .then(function (registrations) {
-                zumo.assert.isTrue(Array.isArray(registrations));
-                zumo.assert.areEqual(0, registrations.length);
-                zumo.assert.areEqual('{}', JSON.stringify(zumo.getClient().push._registrationManager._storageManager._registrations));
-                return true;
-            })
+            .then(testRegistrations(0))
             .done(done, fail(test, done));
     }));
 
     function createPushTest(provider, method, tag, payload, expectedPayload) {
-
         var testName = 'Test for ' + provider + '/' + method;
 
         if (!expectedPayload) {
@@ -288,6 +252,19 @@ function getRegistrations(channelUri, platform) {
                 complete(registrations);
             });
         });
+    }
+}
+
+function testRegistrations(count, verify) {
+    return function testRegistrations(registrations) {
+        zumo.assert.isTrue(Array.isArray(registrations));
+        zumo.assert.areEqual(count, registrations.length);
+
+        if (typeof verify !== 'undefined') {
+            verify(registrations);
+        }
+
+        return true;
     }
 }
 
