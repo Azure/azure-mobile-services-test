@@ -23,17 +23,17 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
             string runId = defaults.StringForKey(RunIdKey);
             string runtimeVersion = defaults.StringForKey(RuntimeVersionKey);
 
-            this.uriEntry = new EntryElement(null, "Mobile Service URI", mobileServiceUri);
-            this.keyEntry = new EntryElement(null, "Mobile Service Key", mobileServiceKey);
-            this.tagsEntry = new EntryElement(null, "Tags", tags);
+			this.uriEntry = new AccessibleEntryElement(null, "Mobile Service URI", mobileServiceUri, accessibilityId: MobileServiceUriKey);
+			this.keyEntry = new AccessibleEntryElement(null, "Mobile Service Key", mobileServiceKey, accessibilityId: MobileServiceKeyKey);
+			this.tagsEntry = new AccessibleEntryElement(null, "Tags", tags, accessibilityId: TagsKey);
 
-            this.daylightUriEntry = new EntryElement(null, "Daylight URI", daylightUri);
-            this.daylightProjectEntry = new EntryElement(null, "Daylight Project", daylightProject);
-            this.clientIdEntry = new EntryElement(null, "Client ID", clientId);
-            this.clientSecretEntry = new EntryElement(null, "Client Secret", clientSecret);
-            this.runIdEntry = new EntryElement(null, "Run Id", runId);
-            this.runtimeVersionEntry = new EntryElement(null, "Runtime version", runtimeVersion);
-
+			this.daylightUriEntry = new AccessibleEntryElement(null, "Daylight URI", daylightUri, accessibilityId: DaylightUriKey);
+			this.daylightProjectEntry = new AccessibleEntryElement(null, "Daylight Project", daylightProject, accessibilityId: DaylightProjectKey);
+			this.clientIdEntry = new AccessibleEntryElement(null, "Client ID", clientId, accessibilityId: ClientIdKey);
+			this.clientSecretEntry = new AccessibleEntryElement(null, "Client Secret", clientSecret, accessibilityId: ClientSecretKey);
+			this.runIdEntry = new AccessibleEntryElement(null, "Run Id", runId, accessibilityId: RunIdKey);
+			this.runtimeVersionEntry = new AccessibleEntryElement(null, "Runtime version", runtimeVersion, accessibilityId: RuntimeVersionKey);
+				          
             Root = new RootElement("C# Client Library Tests") {
                 new Section("Login") {
                     this.uriEntry,
@@ -51,7 +51,7 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
                 },
 
                 new Section {
-                    new StringElement ("Run Tests", RunTests)
+                     new AccessibleStringElement ("Run Tests", RunTests, accessibilityId: "RunTests")
                 },
 
                 new Section{
