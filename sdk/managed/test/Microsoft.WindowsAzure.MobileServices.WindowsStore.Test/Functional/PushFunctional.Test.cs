@@ -24,76 +24,76 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             this.pushTestUtility = TestPlatform.Instance.PushTestUtility;
         }
 
-        [TestMethod]
-        public void InitialUnregisterAllAsync()
+        [AsyncTestMethod]
+        public async Task InitialUnregisterAllAsync()
         {
             var channelUri = this.pushTestUtility.GetPushHandle();
             var push = this.GetClient().GetPush();
-            push.UnregisterAllAsync(channelUri).Wait();
-            var registrations = push.ListRegistrationsAsync(channelUri).Result;
+            await push.UnregisterAllAsync(channelUri);
+            var registrations = await push.ListRegistrationsAsync(channelUri);
             Assert.IsFalse(registrations.Any(), "Deleting all registrations for a channel should ensure no registrations are returned by List");
 
             channelUri = this.pushTestUtility.GetUpdatedPushHandle();
-            push.UnregisterAllAsync(channelUri).Wait();
-            registrations = push.ListRegistrationsAsync(channelUri).Result;
+            await push.UnregisterAllAsync(channelUri);
+            registrations = await push.ListRegistrationsAsync(channelUri);
             Assert.IsFalse(registrations.Any(), "Deleting all registrations for a channel should ensure no registrations are returned by List");
 
             channelUri = this.GetChannelUri().Result;
-            push.UnregisterAllAsync(channelUri).Wait();
-            registrations = push.ListRegistrationsAsync(channelUri).Result;
+            await push.UnregisterAllAsync(channelUri);
+            registrations = await push.ListRegistrationsAsync(channelUri);
             Assert.IsFalse(registrations.Any(), "Deleting all registrations for a channel should ensure no registrations are returned by List");
         }
 
-        [TestMethod]
-        public void RegisterNativeAsyncUnregisterNativeAsync()
+        [AsyncTestMethod]
+        public async Task RegisterNativeAsyncUnregisterNativeAsync()
         {
             var channelUri = this.pushTestUtility.GetPushHandle();
             var push = this.GetClient().GetPush();
-            push.RegisterNativeAsync(channelUri).Wait();
-            var registrations = push.ListRegistrationsAsync(channelUri).Result;
+            await push.RegisterNativeAsync(channelUri);
+            var registrations = await push.ListRegistrationsAsync(channelUri);
             Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
-            
-            push.UnregisterNativeAsync().Wait();
-            registrations = push.ListRegistrationsAsync(channelUri).Result;
+
+            await push.UnregisterNativeAsync();
+            registrations = await push.ListRegistrationsAsync(channelUri);
             Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterNativeAsync");
         }
 
-        [TestMethod]
-        public void RegisterAsyncUnregisterTemplateAsync()
+        [AsyncTestMethod]
+        public async Task RegisterAsyncUnregisterTemplateAsync()
         {
             var mobileClient = this.GetClient();
             var push = mobileClient.GetPush();
             var template = this.pushTestUtility.GetTemplateRegistrationForToast();
             this.pushTestUtility.ValidateTemplateRegistrationBeforeRegister(template);
-            push.RegisterAsync(template).Wait();
-            var registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
+            await push.RegisterAsync(template);
+            var registrations = await push.ListRegistrationsAsync(template.PushHandle);
             Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
             var registrationAfter = registrations.First();
             Assert.IsNotNull(registrationAfter, "List and Deserialization of a TemplateRegistration after successful registration should have a value.");
             
             this.pushTestUtility.ValidateTemplateRegistrationAfterRegister(registrationAfter);
 
-            push.UnregisterTemplateAsync(template.Name).Wait();
-            registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
+            await push.UnregisterTemplateAsync(template.Name);
+            registrations = await push.ListRegistrationsAsync(template.PushHandle);
             Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterTemplateAsync");
         }
 
-        [TestMethod]
-        public void RegisterRefreshRegisterWithUpdatedChannel()
+        [AsyncTestMethod]
+        public async Task RegisterRefreshRegisterWithUpdatedChannelAsync()
         {
             var mobileClient = this.GetClient();
             var push = mobileClient.GetPush();
             var template = this.pushTestUtility.GetTemplateRegistrationForToast();
             this.pushTestUtility.ValidateTemplateRegistrationBeforeRegister(template);
-            push.RegisterAsync((Registration)template).Wait();
-            var registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
+            await push.RegisterAsync((Registration)template);
+            var registrations = await push.ListRegistrationsAsync(template.PushHandle);
             Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
             var registrationAfter = registrations.First();
             Assert.IsNotNull(registrationAfter, "List and Deserialization of a TemplateRegistration after successful registration should have a value.");
             template = this.pushTestUtility.GetUpdatedTemplateRegistrationForToast();
 
-            push.RegisterAsync(template).Wait();
-            registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
+            await push.RegisterAsync(template);
+            registrations = await push.ListRegistrationsAsync(template.PushHandle);
             Assert.AreEqual(registrations.Count(), 1, "1 registration should exist after RegisterNativeAsync");
             var registrationAfterUpdate = registrations.First();
             Assert.IsNotNull(registrationAfterUpdate, "List and Deserialization of a TemplateRegistration after successful registration should have a value.");
@@ -101,13 +101,13 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             Assert.AreEqual(registrationAfterUpdate.PushHandle, template.PushHandle, "Expected updated channelUri after 2nd register");
             Assert.AreEqual(push.ListRegistrationsAsync(registrationAfter.PushHandle).Result.Count(), 0, "Original channel should be gone from service");
 
-            push.UnregisterTemplateAsync(template.Name).Wait();
-            registrations = push.ListRegistrationsAsync(template.PushHandle).Result;
+            await push.UnregisterTemplateAsync(template.Name);
+            registrations = await push.ListRegistrationsAsync(template.PushHandle);
             Assert.AreEqual(registrations.Count(), 0, "0 registrations should exist in service after UnregisterTemplateAsync");
         }
 
         [AsyncTestMethod]
-        public async Task WnsToastPushTest()
+        public async Task WnsToastPushTestAsync()
         {
             var client = this.GetClient();
             var push = client.GetPush();
