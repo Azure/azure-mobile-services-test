@@ -72,7 +72,7 @@ echo Building...
 /Applications/Xamarin\ Studio.app/Contents/MacOS/mdtool build -t:Build -c:"Debug|iPhoneSimulator" $SLN_FILE || exit 1
 
 
-DEVICE_ARG=iPhone\ 6\ \(8.1\ Simulator\)
+DEVICE_ARG=iPhone\ 6\ \(8.3\ Simulator\)
 APP_NAME=$DIR/bin/iPhoneSimulator/Debug/MicrosoftWindowsAzureMobileiOSE2ETest.app
 
 echo APP_NAME: $APP_NAME
