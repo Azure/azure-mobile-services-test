@@ -90,6 +90,8 @@
     <Compile Include="UI\TestViewController.cs" />
     <None Include="Info.plist" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UI\AccessibleEntryElement.cs" />
+    <Compile Include="UI\AccessibleStringElement.cs" />
   </ItemGroup>
   <ItemGroup>
     <BundleResource Include="Resources\Default.png" />
