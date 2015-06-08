@@ -16,6 +16,8 @@ function definePushTestsNamespace() {
                 'X-WNS-Type': 'wns/toast',
                 'X-WNS-TTL': '1000'
             },
+            // Lowercase headers are used for testing that headers settings are correctly set.  
+            // DotNet and Node backends store the headers with different casings and will not function properly if set with lowercase headings.
             lowerHeaders: {
                 'x-wns-type': 'wns/toast',
                 'x-wns-ttl': '1000'
