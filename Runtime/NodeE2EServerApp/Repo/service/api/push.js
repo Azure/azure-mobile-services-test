@@ -15,7 +15,7 @@ exports.post = function(request, response) {
         var token = request.body.token,
             payload = request.body.payload,
             delay = request.body.delay || 0,
-            pushType = request.body.pushType,
+
             tag = request.body.tag;
             
         if (!payload || !token) {
@@ -30,7 +30,8 @@ exports.post = function(request, response) {
                 } else if (request.body.type == 'apns') {
                     push.apns.send(token, payload, callbacks);
                 } else if (request.body.type == 'wns') {
-                    push.wns.send(tag, payload, 'wns/' + pushType, callbacks);
+                    wnsType = request.body.wnsType,
+                    push.wns.send(tag, payload, 'wns/' + wnsType, callbacks);
                 }
             };
             

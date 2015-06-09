@@ -38,7 +38,6 @@ namespace ZumoE2EServerApp.Controllers
                 var token = (string)data["token"];
                 var payloadString = (string)data["payload"];
                 var type = (string)data["type"];
-                var pushType = (string)data["pushType"];
                 var tag = (string)data["tag"];
 
                 if (payloadString == null || token == null)
@@ -56,7 +55,14 @@ namespace ZumoE2EServerApp.Controllers
                         Services.Log.Info("Key: " + key.Name);
                         message.Add(key.Name, (string) key.Value);
                     }
-                    var result = await Services.Push.SendAsync(message, tag);
+                    if (tag != null)
+                    {
+                        await Services.Push.SendAsync(message, tag);
+                    }
+                    else
+                    {
+                        await Services.Push.SendAsync(message);
+                    }
                 }
                 else if (type == "gcm")
                 {
@@ -72,10 +78,18 @@ namespace ZumoE2EServerApp.Controllers
                 }
                 else if (type == "wns")
                 {
+                    var wnsType = (string)data["wnsType"];
                     WindowsPushMessage message = new WindowsPushMessage();
                     message.XmlPayload = payloadString;
-                    message.Headers.Add("X-WNS-Type", type + '/' + pushType);
-                    var result = await Services.Push.SendAsync(message, tag);
+                    message.Headers.Add("X-WNS-Type", type + '/' + wnsType);
+                    if (tag != null)
+                    {
+                        await Services.Push.SendAsync(message, tag);
+                    }
+                    else
+                    {
+                        await Services.Push.SendAsync(message);
+                    }
                 }
             }
             else 

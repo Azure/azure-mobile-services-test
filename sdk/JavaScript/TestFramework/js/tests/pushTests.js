@@ -211,7 +211,7 @@ function definePushTestsNamespace() {
                     type: provider,
                     payload: payload,
                     token: 'dummy',
-                    pushType: method,
+                    wnsType: method,
                     tag: tag
                 }
             }).done(function (response) {
