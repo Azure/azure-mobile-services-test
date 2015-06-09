@@ -5,7 +5,6 @@
 using Microsoft.ServiceBus.Notifications;
 using Microsoft.WindowsAzure.Mobile.Service;
 using Microsoft.WindowsAzure.Mobile.Service.Notifications;
-using Microsoft.WindowsAzure.Mobile.Service.Security;
 using System.Threading.Tasks;
 using System.Web.Http;
 using ZumoE2EServerApp.DataObjects;

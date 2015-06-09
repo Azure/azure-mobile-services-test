@@ -4,10 +4,8 @@
 
 using Microsoft.WindowsAzure.Mobile.Service;
 using Microsoft.WindowsAzure.Mobile.Service.Security;
-using Microsoft.WindowsAzure.Mobile.Service.Config;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Diagnostics;
 using System.Web.Http;
 using System.Linq;
 using System.Reflection;

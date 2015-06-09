@@ -3,7 +3,6 @@
 // ----------------------------------------------------------------------------
 
 using Microsoft.WindowsAzure.Mobile.Service;
-using Newtonsoft.Json;
 using System;
 
 namespace ZumoE2EServerApp.DataObjects
