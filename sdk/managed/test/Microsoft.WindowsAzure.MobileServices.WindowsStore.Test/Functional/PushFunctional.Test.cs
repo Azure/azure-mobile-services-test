@@ -119,7 +119,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             body.Add("type", "wns");
             body.Add("payload", payload);
             body.Add("token", "dummy");
-            body.Add("pushType", "toast");
+            body.Add("wnsType", "toast");
             body.Add("tag", "tag1");
 
             try
