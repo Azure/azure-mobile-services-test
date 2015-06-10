@@ -4,6 +4,18 @@ Steps to run:
   2) Install dependencies (only necessary the first time):
      npm install
 
+     --- Note ---
+      If installation fails, you may be using an older version of Node.
+      Install the latest version of Node from http://nodejs.org.  
+      You may also need to install Python 2.7 https://www.python.org/downloads/
+
+  3) Using azure CLI, log in to the account and subscription that 
+     [is hosting/will host] the test app.
+
+     azure login
+     azure account list
+     azure account set [subscription name]
+ 
   3) Run the automated setup:
      > node e2esetup.js <optional parameters> <config_file>
 
@@ -15,5 +27,6 @@ Steps to run:
      
      
 Tested with:
-    node v0.8.28
-    npm 1.2.30
+    node v0.12.3
+    npm 2.9.1
+

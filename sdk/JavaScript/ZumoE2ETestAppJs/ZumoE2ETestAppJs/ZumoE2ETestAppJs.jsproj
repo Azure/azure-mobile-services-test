@@ -49,7 +49,7 @@
     <TargetPlatformIdentifier>Windows</TargetPlatformIdentifier>
     <TargetPlatformVersion>8.0</TargetPlatformVersion>
     <DefaultLanguage>en-US</DefaultLanguage>
-    <PackageCertificateThumbprint>2D1B85D382B50E308B7797F597E5A8A89A680A9C</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>D24F4996C3E7E2118BCA72D7046048113B2DD5C8</PackageCertificateThumbprint>
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
     <PackageCertificateKeyFile>ZumoE2ETestAppJs_TemporaryKey.pfx</PackageCertificateKeyFile>
