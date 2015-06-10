@@ -501,6 +501,39 @@ function createZumoNamespace() {
         return new Date(Date.UTC(year, month, day, hour, minute, second, milliseconds));
     }
 
+    function createError(expected, actual, reason, errors) {
+        return {
+            expected: expected,
+            actual: actual,
+            reason: reason,
+            errors: errors
+        }
+    }
+
+    function assertAreEqual(expected, actual, reason) {
+        var errors = [];
+        if (!zumo.util.compare(expected, actual, errors)) {
+            throw createError(expected, actual, reason, errors);
+        }
+        return true;
+    }
+
+    function assertAreNotEqual(expected, actual, reason) {
+        var errors = [];
+        if (zumo.util.compare(expected, actual, errors)) {
+            throw createError(expected, actual, reason, errors);
+        }
+        return true;
+    }
+
+    function assertIsTrue(expression, reason) {
+        return assertAreEqual(true, expression, reason);
+    }
+
+    function assertIsFalse(expression, reason) {
+        return assertAreEqual(false, expression, reason);
+    }
+
     return {
         testGroups: testGroups,
         currentGroup: currentGroup,
@@ -521,7 +554,7 @@ function createZumoNamespace() {
         },
         runtimeFeatureNames: {
             STRINGREPLACE: 'stringReplace',
-            DotNetRuntime_Only: 'dotnetRuntimeOnly',
+            DotNetRuntime_Only: 'dotNetRuntimeOnly',
             NodeRuntime_Only: 'nodeRuntimeOnly',
             INT_ID_TABLES: 'intIdTables',
             STRING_ID_TABLES: 'stringIdTables',
@@ -537,6 +570,12 @@ function createZumoNamespace() {
             dateToString: dateToString,
             randomDate: randomDate,
             globalTestParams: {}
+        },
+        assert: {
+            areEqual: assertAreEqual,
+            areNotEqual: assertAreNotEqual,
+            isTrue: assertIsTrue,
+            isFalse: assertIsFalse
         }
     };
 }

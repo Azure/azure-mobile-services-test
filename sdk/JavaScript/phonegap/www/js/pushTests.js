@@ -455,7 +455,8 @@ function definePushTestsNamespace() {
                 method: 'send',
                 payload: payload,
                 token: pushHandle,
-                type: type || 'apns'
+                type: type || 'apns',
+                tag: 'World'
             };
 
         app.pushNotificationQueue = [];
