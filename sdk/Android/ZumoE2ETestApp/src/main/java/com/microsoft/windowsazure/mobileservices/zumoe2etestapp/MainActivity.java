@@ -137,8 +137,8 @@ public class MainActivity extends Activity {
             mAutomationPreferences.put("pref_google_webapp_clientid", extras.getString("pref_google_webapp_clientid", ""));
             mAutomationPreferences.put("pref_master_run_id", extras.getString("pref_master_run_id", ""));
             mAutomationPreferences.put("pref_runtime_version", extras.getString("pref_runtime_version", ""));
-            mAutomationPreferences.put("pref_daylight_client_id", extras.getString("pref_client_id", ""));
-            mAutomationPreferences.put("pref_daylight_client_secret", extras.getString("pref_client_secret", ""));
+            mAutomationPreferences.put("pref_daylight_client_id", extras.getString("pref_daylight_client_id", ""));
+            mAutomationPreferences.put("pref_daylight_client_secret", extras.getString("pref_daylight_client_secret", ""));
             mAutomationPreferences.put("pref_daylight_url", extras.getString("pref_daylight_url", ""));
             mAutomationPreferences.put("pref_daylight_project", extras.getString("pref_daylight_project", ""));
         }
