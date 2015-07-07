@@ -13,6 +13,7 @@ var argv      = require('optimist').argv,
 var state = {};
 var NumRetries = 3;
 var defaultPingDelay = 8500;
+var defaultPushSetUpDelay = 180000;
 
 function run(callback) {
   async.series([
@@ -41,6 +42,7 @@ function usage() {
   console.log("      --tier:              The tier level for the app i.e Free, basic or standard");
   console.log("      --pingEndpoint:      Endpoint to ping (GET) after app is created (e.g. 'status' or 'tables/movies')");
   console.log("      --pingDelay:         Time (in milliseconds) to wait before pinging the pingEndpoint (default: " + defaultPingDelay + ")");
+  console.log("      --pushSetupDelay:    Time (in milliseconds) to wait before pinging the pingEndpoint (default: " + defaultPushSetUpDelay + ")");
   console.log("      --siteExtensionPath  ");
   console.log();
   console.log("   jsonOptions:");
@@ -182,6 +184,15 @@ function setup_app(callback) {
       }
     },
 
+	// Wait some time before configuring push settings
+    function (done) {
+      var pushSetUpDelay = nconf.get('pushSetUpDelay') || defaultPushSetUpDelay;
+      process.stdout.write('   Waiting ' + pushSetUpDelay + ' ms configuring push settings...');
+      setTimeout(function () {
+        console.log(' OK'.green.bold);
+        done();
+      }, pushSetUpDelay);
+    },	
     setup_push,
 
     // Wait some time before pinging the site
