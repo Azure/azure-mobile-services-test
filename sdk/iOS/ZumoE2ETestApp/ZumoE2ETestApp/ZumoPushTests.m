@@ -196,8 +196,7 @@ static NSString *pushClientKey = @"PushClientKey";
 
 + (void)sendNotification:(MSClient *)client test:(ZumoTest *)test seconds:(int)seconds deviceToken:(NSString *)deviceToken payload:(NSDictionary *)payload completion:(ZumoTestCompletion)completion isNegative:(BOOL)isNegative {
 
-    NSURL *appUrl = [client applicationURL];
-    [test addLog:[NSString stringWithFormat:@"Sending a request to %@ / table %@", [appUrl description], tableName]];
+    [test addLog:[NSString stringWithFormat:@"Sending push request to API 'push'"]];
     NSDictionary *item = @{@"method" : @"send", @"type" : @"apns", @"payload" : payload, @"token": deviceToken, @"delay": @(seconds)};
 
     [client invokeAPI:@"push" body:item HTTPMethod:@"POST" parameters:nil headers:nil completion:^(id result, NSHTTPURLResponse *response, NSError *error) {
