@@ -214,12 +214,14 @@ static NSString *pushClientKey = @"PushClientKey";
     return [self createPushTestWithName:name forPayload:payload withDelay:seconds isNegativeTest:NO];
 }
 
-+ (void)sendNotificationViaInsert:(MSClient *)client test:(ZumoTest *)test seconds:(int)seconds deviceToken:(NSString *)deviceToken payload:(NSDictionary *)payload completion:(ZumoTestCompletion)completion isNegative:(BOOL)isNegative {
-    MSTable *table = [client tableWithName:tableName];
++ (void)sendNotification:(MSClient *)client test:(ZumoTest *)test seconds:(int)seconds deviceToken:(NSString *)deviceToken payload:(NSDictionary *)payload completion:(ZumoTestCompletion)completion isNegative:(BOOL)isNegative {
+
     NSURL *appUrl = [client applicationURL];
     [test addLog:[NSString stringWithFormat:@"Sending a request to %@ / table %@", [appUrl description], tableName]];
     NSDictionary *item = @{@"method" : @"send", @"payload" : payload, @"token": deviceToken, @"delay": @(seconds)};
-    [table insert:item completion:^(NSDictionary *insertedItem, NSError *error) {
+
+    [client invokeAPI:@"push" body:item HTTPMethod:@"POST" parameters:nil headers:nil completion:^(id result, NSHTTPURLResponse *response, NSError *error) {
+        
         if (error) {
             [test addLog:[NSString stringWithFormat:@"Error requesting push: %@", error]];
             [test setTestStatus:TSFailed];
@@ -261,10 +263,10 @@ static NSString *pushClientKey = @"PushClientKey";
                         return;
                     }
                     
-                    [self sendNotificationViaInsert:client test:test seconds:seconds deviceToken:deviceTokenString payload:payload completion:completion isNegative:isNegative];
+                    [self sendNotification:client test:test seconds:seconds deviceToken:deviceTokenString payload:payload completion:completion isNegative:isNegative];
                 }];
             } else {
-                [self sendNotificationViaInsert:client test:test seconds:seconds deviceToken:deviceTokenString payload:payload completion:completion isNegative:isNegative];
+                [self sendNotification:client test:test seconds:seconds deviceToken:deviceTokenString payload:payload completion:completion isNegative:isNegative];
             }
         }
     }];
