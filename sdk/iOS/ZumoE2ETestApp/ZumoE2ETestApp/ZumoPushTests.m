@@ -105,31 +105,13 @@
     return allEqual;
 }
 
-- (NSDictionary *)zumoPayloadToApsPayload:(NSDictionary *)originalPayload {
-    NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
-    NSMutableDictionary *aps = [[NSMutableDictionary alloc] init];
-    [result setValue:aps forKey:@"aps"];
-    id alert = originalPayload[@"alert"];
-    if (alert) {
-        [aps setValue:alert forKey:@"alert"];
+- (NSDictionary *)zumoPayloadToApsPayload:(NSDictionary *)payload {
+    
+    if (!payload[@"aps"]) {
+        payload = @{ @"aps" : payload };
     }
     
-    id badge = originalPayload[@"badge"];
-    if (badge) {
-        [aps setValue:badge forKey:@"badge"];
-    }
-    
-    id sound = originalPayload[@"sound"];
-    if (sound) {
-        [aps setValue:sound forKey:@"sound"];
-    }
-    
-    NSDictionary *payload = originalPayload[@"payload"];
-    if (payload) {
-        [result addEntriesFromDictionary:payload];
-    }
-    
-    return result;
+    return payload;
 }
 
 @end
