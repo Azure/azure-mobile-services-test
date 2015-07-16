@@ -36,14 +36,17 @@ namespace ZumoE2EServerApp.Controllers
                 var serialize = new JsonSerializer();
 
                 var token = (string)data["token"];
-                var payloadString = (string)data["payload"];
-                var type = (string)data["type"];
-                var tag = (string)data["tag"];
 
-                if (payloadString == null || token == null)
+                if (data["payload"] == null || token == null)
                 {
                     return new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
                 }
+
+                // Payload could be a string or a dictionary
+                var payloadString = data["payload"].ToString();
+
+                var type = (string)data["type"];
+                var tag = (string)data["tag"];
 
                 Services.Log.Info(payloadString);
 
