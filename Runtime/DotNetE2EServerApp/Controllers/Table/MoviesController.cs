@@ -2,11 +2,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.Azure.Mobile.Server;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Controllers;
+using Microsoft.Azure.Mobile.Server;
 using ZumoE2EServerApp.DataObjects;
 using ZumoE2EServerApp.Models;
 
@@ -20,7 +19,7 @@ namespace ZumoE2EServerApp.Controllers
         {
             base.Initialize(controllerContext);
             context = new SDKClientTestContext();
-            this.DomainManager = new EntityDomainManager<Movie>(context, Request, Services);
+            this.DomainManager = new EntityDomainManager<Movie>(context, Request);
         }
 
         [Queryable(MaxTop = 1000)]

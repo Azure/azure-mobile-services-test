@@ -15,7 +15,7 @@ namespace ZumoE2EServerApp.Controllers
         {
             base.Initialize(controllerContext);
             SDKClientTestContext context = new SDKClientTestContext();
-            DomainManager = new EntityDomainManager<BlogComments>(context, Request, Services);
+            DomainManager = new EntityDomainManager<BlogComments>(context, Request);
         }
 
         // GET tables/blog_comments
@@ -48,6 +48,5 @@ namespace ZumoE2EServerApp.Controllers
         {
             return DeleteAsync(id);
         }
-
     }
 }

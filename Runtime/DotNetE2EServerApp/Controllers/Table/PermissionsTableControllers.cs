@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.OData;
-using Microsoft.Azure.Mobile.Security;
 using Microsoft.Azure.Mobile.Server;
 using ZumoE2EServerApp.DataObjects;
 using ZumoE2EServerApp.Utils;
@@ -51,15 +50,14 @@ namespace ZumoE2EServerApp.Controllers
         }
     }
 
-    [AuthorizeLevel(AuthorizationLevel.Anonymous)]
     public class PublicController : PermissionTableControllerBase { }
 
-    [AuthorizeLevel(AuthorizationLevel.Application)]
+    [Authorize]
     public class ApplicationController : PermissionTableControllerBase { }
 
-    [AuthorizeLevel(AuthorizationLevel.User)]
+    [Authorize]
     public class UserController : PermissionTableControllerBase { }
 
-    [AuthorizeLevel(AuthorizationLevel.Admin)]
+    [Authorize]
     public class AdminController : PermissionTableControllerBase { }
 }

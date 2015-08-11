@@ -9,8 +9,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Azure.Mobile.Security;
-using Microsoft.Azure.Mobile.Server.Security;
+using Microsoft.Azure.Mobile.Server.Authentication;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -20,7 +19,7 @@ namespace ZumoE2EServerApp.Utils
     {
         internal static async Task<HttpResponseMessage> handleRequest(
             HttpRequestMessage request,
-            ServiceUser user)
+            MobileAppUser user)
         {
             var query = request.GetQueryNameValuePairs();
 
@@ -108,10 +107,10 @@ namespace ZumoE2EServerApp.Utils
 
     class NodeUser
     {
-        public NodeUser(ServiceUser user)
+        public NodeUser(MobileAppUser user)
         {
             this.Id = user.Id;
-            if (user.Level == AuthorizationLevel.User)
+            if (user.Identity.IsAuthenticated)
             {
                 this.Level = "authenticated";
                 this.Id = user.Id;

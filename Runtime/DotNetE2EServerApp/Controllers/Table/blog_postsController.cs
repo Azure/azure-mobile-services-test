@@ -4,7 +4,6 @@ using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.OData;
 using Microsoft.Azure.Mobile.Server;
-using Microsoft.Azure.Mobile.Server.Security;
 using ZumoE2EServerApp.DataObjects;
 using ZumoE2EServerApp.Models;
 
@@ -16,7 +15,7 @@ namespace ZumoE2EServerApp.Controllers
         {
             base.Initialize(controllerContext);
             SDKClientTestContext context = new SDKClientTestContext();
-            DomainManager = new EntityDomainManager<BlogPost>(context, Request, Services);
+            DomainManager = new EntityDomainManager<BlogPost>(context, Request);
         }
 
         // GET tables/blog_posts
@@ -49,6 +48,5 @@ namespace ZumoE2EServerApp.Controllers
         {
             return DeleteAsync(id);
         }
-
     }
 }

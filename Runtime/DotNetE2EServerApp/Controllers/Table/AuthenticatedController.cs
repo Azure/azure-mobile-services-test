@@ -2,26 +2,25 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.Azure.Mobile.Security;
-using Microsoft.Azure.Mobile.Server.Security;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.OData;
+using Microsoft.Azure.Mobile.Server.Authentication;
+using Newtonsoft.Json.Linq;
 using ZumoE2EServerApp.DataObjects;
 
 namespace ZumoE2EServerApp.Controllers
 {
-    [AuthorizeLevel(AuthorizationLevel.User)]
+    [Authorize]
     public class AuthenticatedController : PermissionTableControllerBase
     {
         public override async Task<IQueryable<TestUser>> GetAll()
         {
-            ServiceUser user = (ServiceUser)this.User;
+            MobileAppUser user = (MobileAppUser)this.User;
+            var creds = await user.GetIdentityAsync<FacebookCredentials>();
             var all = (await base.GetAll()).Where(p => p.UserId == user.Id).ToArray();
 
             var identitiesOld = user.Identities.Select(q => q.Claims.First(p => p.Type == "urn:microsoft:credentials").Value).ToArray();
@@ -40,7 +39,7 @@ namespace ZumoE2EServerApp.Controllers
 
         public override async Task<HttpResponseMessage> Patch(string id, Delta<TestUser> patch)
         {
-            ServiceUser user = (ServiceUser)this.User;
+            MobileAppUser user = (MobileAppUser)this.User;
             var all = (await base.GetAll()).Where(p => p.UserId == user.Id).ToArray();
             if (all.Length == 0)
             {
@@ -58,14 +57,14 @@ namespace ZumoE2EServerApp.Controllers
 
         public override Task<HttpResponseMessage> Post(TestUser item)
         {
-            ServiceUser user = (ServiceUser)this.User;
+            MobileAppUser user = (MobileAppUser)this.User;
             item.UserId = user.Id;
             return base.Post(item);
         }
 
         public override async Task<HttpResponseMessage> Delete(string id)
         {
-            ServiceUser user = (ServiceUser)this.User;
+            MobileAppUser user = (MobileAppUser)this.User;
             var all = (await base.GetAll()).Where(p => p.UserId == user.Id).ToArray();
             if (all.Length == 0)
             {

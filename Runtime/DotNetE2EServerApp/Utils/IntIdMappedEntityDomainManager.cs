@@ -21,8 +21,8 @@ namespace ZumoE2EServerApp.Utils
         where TData : class, ITableData
         where TModel : class, IInt64IdTable
     {
-        public Int64IdMappedEntityDomainManager(DbContext context, HttpRequestMessage request, ApiServices services)
-            : base(context, request, services)
+        public Int64IdMappedEntityDomainManager(DbContext context, HttpRequestMessage request)
+            : base(context, request)
         {
         }
 
