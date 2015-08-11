@@ -52,7 +52,11 @@
     [timer invalidate];
     [_test addLog:[NSString stringWithFormat:@"Push notification received: %@", userInfo]];
     if (_payload) {
-        NSDictionary *expectedPushInfo = [self zumoPayloadToApsPayload:_payload];
+        NSDictionary *expectedPushInfo = _payload;
+        if (!_payload[@"aps"]) {
+            expectedPushInfo = @{ @"aps" : _payload };
+        }
+        
         if ([self compareExpectedPayload:expectedPushInfo withActual:userInfo]) {
             [_test setTestStatus:TSPassed];
             _completion(YES);
@@ -103,15 +107,6 @@
     }
     
     return allEqual;
-}
-
-- (NSDictionary *)zumoPayloadToApsPayload:(NSDictionary *)payload {
-    
-    if (!payload[@"aps"]) {
-        payload = @{ @"aps" : payload };
-    }
-    
-    return payload;
 }
 
 @end
