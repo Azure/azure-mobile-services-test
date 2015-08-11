@@ -7,14 +7,13 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.OData;
-using Microsoft.Azure.Mobile.Security;
 using Microsoft.Azure.Mobile.Server;
 using ZumoE2EServerApp.DataObjects;
 using ZumoE2EServerApp.Models;
 
 namespace ZumoE2EServerApp.Controllers
 {
-    [AuthorizeLevel(AuthorizationLevel.User)]
+    [Authorize]
     public class OfflineReadyNoVersionAuthenticatedController : TableController<OfflineReady>
     {
         private SDKClientTestContext context;
@@ -23,7 +22,7 @@ namespace ZumoE2EServerApp.Controllers
         {
             base.Initialize(controllerContext);
             context = new SDKClientTestContext();
-            this.DomainManager = new EntityDomainManager<OfflineReady>(context, Request, Services);
+            this.DomainManager = new EntityDomainManager<OfflineReady>(context, Request);
         }
 
         [Queryable(MaxTop = 1000)]

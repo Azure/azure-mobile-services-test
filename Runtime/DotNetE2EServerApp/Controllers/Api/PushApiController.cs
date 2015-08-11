@@ -10,27 +10,35 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web.Http;
-using Microsoft.Azure.Mobile.Security;
+using System.Web.Http.Controllers;
+using System.Web.Http.Tracing;
 using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Server.Authentication;
 using Microsoft.Azure.Mobile.Server.Config;
-using Microsoft.Azure.Mobile.Server.Security;
+using Microsoft.Azure.Mobile.Server.Notifications;
 using Microsoft.Azure.NotificationHubs;
 using Microsoft.Azure.NotificationHubs.Messaging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Microsoft.Azure.Mobile.Server.Notifications;
 
 namespace ZumoE2EServerApp.Controllers
 {
-    [AuthorizeLevel(AuthorizationLevel.Application)]
+    [MobileAppController]
     public class PushApiController : ApiController
     {
-        public ApiServices Services { get; set; }
+        private ITraceWriter traceWriter;
+        private PushClient pushClient;
+
+        protected override void Initialize(HttpControllerContext controllerContext)
+        {
+            base.Initialize(controllerContext);
+            this.traceWriter = this.Configuration.Services.GetTraceWriter();
+            this.pushClient = new PushClient(this.Configuration);
+        }
 
         [Route("api/push")]
         public async Task<HttpResponseMessage> Post()
         {
-
             var data = await this.Request.Content.ReadAsAsync<JObject>();
             var method = (string)data["method"];
 
@@ -54,38 +62,33 @@ namespace ZumoE2EServerApp.Controllers
                     return new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
                 }
 
-                Services.Log.Info(payloadString);
+                this.traceWriter.Info(payloadString);
 
-                if (type == "template") {
+                if (type == "template")
+                {
                     TemplatePushMessage message = new TemplatePushMessage();
                     var payload = JObject.Parse(payloadString);
                     var keys = payload.Properties();
                     foreach (JProperty key in keys)
                     {
-                        Services.Log.Info("Key: " + key.Name);
+                        this.traceWriter.Info("Key: " + key.Name);
 
-                        message.Add(key.Name, (string) key.Value);
+                        message.Add(key.Name, (string)key.Value);
                     }
-                    if (tag != null)
-                    {
-                        await Services.Push.SendAsync(message, tag);
-                    }
-                    else
-                    {
-                        await Services.Push.SendAsync(message);
-                    }
+                    var result = await this.pushClient.SendAsync(message, "World");
                 }
                 else if (type == "gcm")
                 {
                     GooglePushMessage message = new GooglePushMessage();
                     message.JsonPayload = payloadString;
-                    var result = await Services.Push.SendAsync(message);
+                    var result = await this.pushClient.SendAsync(message);
                 }
                 else if (type == "apns")
                 {
                     ApplePushMessage message = new ApplePushMessage();
-                    message.JsonPayload = payloadString;
-                    var result = await Services.Push.SendAsync(message);
+                    this.traceWriter.Info(payloadString.ToString());
+                    message.JsonPayload = payloadString.ToString();
+                    var result = await this.pushClient.SendAsync(message);
                 }
                 else if (type == "wns")
                 {
@@ -95,11 +98,11 @@ namespace ZumoE2EServerApp.Controllers
                     message.Headers.Add("X-WNS-Type", type + '/' + wnsType);
                     if (tag != null)
                     {
-                        await Services.Push.SendAsync(message, tag);
+                        await this.pushClient.SendAsync(message, tag);
                     }
                     else
                     {
-                        await Services.Push.SendAsync(message);
+                        await this.pushClient.SendAsync(message);
                     }
                 }
             }
@@ -175,7 +178,8 @@ namespace ZumoE2EServerApp.Controllers
             string responseErrorMessage = null;
             if (this.Request.Headers.TryGetValues("X-ZUMO-INSTALLATION-ID", out installationIds))
             {
-                return await Retry(async () => {
+                return await Retry(async () =>
+                {
                     var installationId = installationIds.FirstOrDefault();
                     try
                     {
@@ -212,19 +216,20 @@ namespace ZumoE2EServerApp.Controllers
         public void Register(string data)
         {
             var installation = JsonConvert.DeserializeObject<Installation>(data);
-            new PushClient(Services).HubClient.CreateOrUpdateInstallation(installation);
+            new PushClient(this.Configuration).HubClient.CreateOrUpdateInstallation(installation);
         }
 
         private NotificationHubClient GetNhClient()
         {
-            string notificationHubName = this.Services.Settings.NotificationHubName;
-            string notificationHubConnection = this.Services.Settings.Connections[ServiceSettingsKeys.NotificationHubConnectionString].ConnectionString;
+            var settings = this.Configuration.GetMobileAppSettingsProvider().GetMobileAppSettings();
+            string notificationHubName = settings.NotificationHubName;
+            string notificationHubConnection = settings.Connections[MobileAppSettingsKeys.NotificationHubConnectionString].ConnectionString;
             return NotificationHubClient.CreateClientFromConnectionString(notificationHubConnection, notificationHubName);
         }
 
         private async Task<bool> VerifyTags(string channelUri, string installationId, NotificationHubClient nhClient)
         {
-            ServiceUser user = (ServiceUser)this.User;
+            MobileAppUser user = (MobileAppUser)this.User;
             int expectedTagsCount = 1;
             if (user.Id != null)
             {
@@ -259,7 +264,8 @@ namespace ZumoE2EServerApp.Controllers
         {
             var sleepTimes = new int[3] { 1000, 3000, 5000 };
 
-            for(var i = 0; i < sleepTimes.Length; i++) {
+            for (var i = 0; i < sleepTimes.Length; i++)
+            {
                 System.Threading.Thread.Sleep(sleepTimes[i]);
 
                 try
@@ -267,7 +273,7 @@ namespace ZumoE2EServerApp.Controllers
                     // if the call succeeds, return the result
                     return await target();
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     // if an exception was thrown and we've already retried three times, rethrow
                     if (i == 2)

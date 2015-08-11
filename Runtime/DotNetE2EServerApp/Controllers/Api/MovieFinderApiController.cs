@@ -2,7 +2,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.Azure.Mobile.Server;
 using System;
 using System.Data.Entity;
 using System.Linq;
@@ -10,15 +9,16 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.Http.Tracing;
+using Microsoft.Azure.Mobile.Server.Config;
 using ZumoE2EServerApp.DataObjects;
 using ZumoE2EServerApp.Models;
 
 namespace ZumoE2EServerApp.Controllers
 {
+    [MobileAppController]
     public class MovieFinderApiController : ApiController
     {
-        public ApiServices Services { get; set; }
-
         [HttpGet, Route("api/movieFinder/title/{*title}")]
         public Task<MovieResult> getByTitle(string title)
         {
@@ -57,10 +57,10 @@ namespace ZumoE2EServerApp.Controllers
         {
             SDKClientTestContext context = new SDKClientTestContext();
             var Movies = context.Movies;
-
-            Services.Log.Debug("table: " + "Movies");
-            Services.Log.Debug("Field: " + field + ", value: " + value);
-            Services.Log.Debug("OrderBy: " + (orderBy == null ? "<null>" : orderBy));
+            ITraceWriter traceWriter = this.Configuration.Services.GetTraceWriter();
+            traceWriter.Debug("table: " + "Movies");
+            traceWriter.Debug("Field: " + field + ", value: " + value);
+            traceWriter.Debug("OrderBy: " + (orderBy == null ? "<null>" : orderBy));
             IQueryable<Movie> t2 = Movies.Where(p => true);
             t2 = Where(t2, field, value);
             if (orderBy != null)
@@ -85,15 +85,19 @@ namespace ZumoE2EServerApp.Controllers
                 case "title":
                     t2 = t2.Where(p => p.Title == (string)value);
                     break;
+
                 case "releasedate":
                     t2 = t2.Where(p => p.ReleaseDate == (DateTime)value);
                     break;
+
                 case "year":
                     t2 = t2.Where(p => p.Year == (int)value);
                     break;
+
                 case "duration":
                     t2 = t2.Where(p => p.Duration == (int)value);
                     break;
+
                 default:
                     throw new ArgumentOutOfRangeException("field");
             }
@@ -107,18 +111,23 @@ namespace ZumoE2EServerApp.Controllers
                 case "id":
                     t2 = t2.OrderBy(p => p.Id);
                     break;
+
                 case "title":
                     t2 = t2.OrderBy(p => p.Title);
                     break;
+
                 case "releasedate":
                     t2 = t2.OrderBy(p => p.ReleaseDate);
                     break;
+
                 case "year":
                     t2 = t2.OrderBy(p => p.Year);
                     break;
+
                 case "duration":
                     t2 = t2.OrderBy(p => p.Duration);
                     break;
+
                 default:
                     throw new ArgumentOutOfRangeException("field");
             }

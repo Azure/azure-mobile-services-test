@@ -2,12 +2,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.Azure.Mobile.Server.Tables;
 using System.Data.Entity;
 using System.Data.Entity.ModelConfiguration.Conventions;
 using System.Linq;
-using ZumoE2EServerApp.DataObjects;
 using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Server.Tables;
+using ZumoE2EServerApp.DataObjects;
 
 namespace ZumoE2EServerApp.Models
 {
@@ -39,7 +39,7 @@ namespace ZumoE2EServerApp.Models
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
-            string schema = ServiceSettingsDictionary.GetSchemaName();
+            string schema = MobileAppSettingsDictionary.GetSchemaName();
             if (!string.IsNullOrEmpty(schema))
             {
                 modelBuilder.HasDefaultSchema(schema);

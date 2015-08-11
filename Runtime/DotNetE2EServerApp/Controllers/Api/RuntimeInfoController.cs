@@ -3,30 +3,24 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using System.Diagnostics;
-using System.Web.Http;
 using System.Linq;
 using System.Reflection;
-using Microsoft.Azure.Mobile.Server;
-using Microsoft.Azure.Mobile.Security;
-using Microsoft.Azure.Mobile.Server.Security;
+using System.Web.Http;
 using Microsoft.Azure.Mobile.Server.Config;
 using Newtonsoft.Json.Linq;
 
 namespace ZumoE2EServerApp.Controllers
 {
-    [AuthorizeLevel(AuthorizationLevel.Anonymous)]
+    [MobileAppController]
     public class RuntimeInfoController : ApiController
     {
-        public ApiServices Services { get; set; }
-
         [Route("api/runtimeInfo")]
         public JObject GetFeatures()
         {
             string version = "unknown";
             try
             {
-                var afva = typeof(ApiServices).Assembly.CustomAttributes.FirstOrDefault(p => p.AttributeType == typeof(AssemblyFileVersionAttribute));
+                var afva = typeof(MobileAppControllerAttribute).Assembly.CustomAttributes.FirstOrDefault(p => p.AttributeType == typeof(AssemblyFileVersionAttribute));
                 if (afva != null)
                 {
                     version = afva.ConstructorArguments[0].Value as string;

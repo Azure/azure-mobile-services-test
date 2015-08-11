@@ -21,7 +21,7 @@ namespace ZumoE2EServerApp.Controllers
         {
             base.Initialize(controllerContext);
             context = new SDKClientTestContext();
-            this.DomainManager = new EntityDomainManager<OfflineReady>(context, Request, Services);
+            this.DomainManager = new EntityDomainManager<OfflineReady>(context, Request);
         }
 
         [Queryable(MaxTop = 1000)]

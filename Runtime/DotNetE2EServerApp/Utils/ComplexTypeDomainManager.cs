@@ -2,21 +2,15 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using AutoMapper;
-using Microsoft.Azure.Mobile.Server;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.OData;
+using AutoMapper;
+using Microsoft.Azure.Mobile.Server;
 using ZumoE2EServerApp.Models;
-using Microsoft.Azure.Mobile.Server.Tables;
-using System.Linq.Expressions;
-using System.Data.Entity;
-using AutoMapper.Impl;
-using System.Reflection;
 
 namespace ZumoE2EServerApp.Utils
 {
@@ -24,8 +18,8 @@ namespace ZumoE2EServerApp.Utils
         where TData : class, Microsoft.Azure.Mobile.Server.Tables.ITableData
         where TModel : class
     {
-        public ComplexTypeDomainManager(SDKClientTestContext context, HttpRequestMessage request, ApiServices services)
-            : base(context, request, services)
+        public ComplexTypeDomainManager(SDKClientTestContext context, HttpRequestMessage request)
+            : base(context, request)
         {
         }
 
@@ -90,11 +84,3 @@ namespace ZumoE2EServerApp.Utils
         }
     }
 }
-
-
-
-
-
-
-
-

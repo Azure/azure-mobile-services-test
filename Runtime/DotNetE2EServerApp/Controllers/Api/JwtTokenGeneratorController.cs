@@ -5,17 +5,22 @@
 using System;
 using System.Security.Claims;
 using System.Web.Http;
-using Microsoft.Azure.Mobile.Security;
-using Microsoft.Azure.Mobile.Server;
-using Microsoft.Azure.Mobile.Server.Security;
+using System.Web.Http.Controllers;
+using Microsoft.Azure.Mobile.Server.Authentication;
+using Microsoft.Azure.Mobile.Server.Config;
 
 namespace ZumoE2EServerApp.Controllers
 {
-    [AuthorizeLevel(AuthorizationLevel.Anonymous)]
+    [MobileAppController]
     public class JwtTokenGeneratorController : ApiController
     {
-        public ApiServices Services { get; set; }
-        public IServiceTokenHandler handler { get; set; }
+        public IMobileAppTokenHandler handler { get; set; }
+
+        protected override void Initialize(HttpControllerContext controllerContext)
+        {
+            base.Initialize(controllerContext);
+            this.handler = controllerContext.Configuration.GetMobileAppTokenHandler();
+        }
 
         public TokenInfo GetDummyUserToken()
         {
@@ -28,7 +33,9 @@ namespace ZumoE2EServerApp.Controllers
             Claim claim = new Claim(ClaimTypes.NameIdentifier, creds.UserId);
             ClaimsIdentity claimIdentity = new ClaimsIdentity();
             claimIdentity.AddClaim(claim);
-            return handler.CreateTokenInfo(claimIdentity.Claims, TimeSpan.FromDays(30), this.Services.Settings.SigningKey);
+
+            string signingKey = this.Configuration.GetMobileAppSettingsProvider().GetMobileAppSettings().SigningKey;
+            return handler.CreateTokenInfo(claimIdentity.Claims, TimeSpan.FromDays(30), signingKey);
         }
     }
 }

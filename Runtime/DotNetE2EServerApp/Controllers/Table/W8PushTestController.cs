@@ -16,8 +16,9 @@ namespace ZumoE2EServerApp.Controllers
     {
         public async Task<W8PushTestEntity> PostW8PushTestEntity(W8PushTestEntity item)
         {
-            string notificationHubName = this.Services.Settings.NotificationHubName;
-            string notificationHubConnection = this.Services.Settings.Connections[ServiceSettingsKeys.NotificationHubConnectionString].ConnectionString;
+            var settings = this.Configuration.GetServiceSettingsProvider().GetServiceSettings();
+            string notificationHubName = settings.NotificationHubName;
+            string notificationHubConnection = settings.Connections[ServiceSettingsKeys.NotificationHubConnectionString].ConnectionString;
             NotificationHubClient nhClient = NotificationHubClient.CreateClientFromConnectionString(notificationHubConnection, notificationHubName);
 
             NotificationOutcome pushResponse = null;
@@ -27,13 +28,15 @@ namespace ZumoE2EServerApp.Controllers
                 case "wns":
                     pushResponse = await nhClient.SendWindowsNativeNotificationAsync(item.Payload);
                     break;
+
                 case "apns":
                     pushResponse = await nhClient.SendAppleNativeNotificationAsync(item.Payload);
                     break;
+
                 default:
                     throw new NotImplementedException("Push is not supported on this platform");
             }
-            this.Services.Log.Info("Push sent: " + pushResponse, this.Request);
+            this.Configuration.Services.GetTraceWriter().Info("Push sent: " + pushResponse, this.Request);
             return new W8PushTestEntity()
             {
                 Id = "1",
