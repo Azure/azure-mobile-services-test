@@ -47,6 +47,8 @@
         <script src="TestFramework/js/tests/miscTests.js" type="text/javascript"></script>
         <script src="TestFramework/js/tests/apiTests.js" type="text/javascript"></script>
         <script src="js/pushTests.js" type="text/javascript"></script>
+        <script src="js/MobileServiceMemoryStore.js" type="text/javascript"></script>
+        <script src="js/offlineTests.js" type="text/javascript"></script>
         <script src="TestFramework/js/tests/mobileServiceTable.Functional.js" type="text/javascript"></script>
         <script src="TestFramework/js/tests/allTests.js" type="text/javascript"></script>
         <script type="text/javascript" src="cordova.js"></script>        
@@ -81,6 +83,12 @@
                                 <button id="btnRunAllTests">Run All Tests</button>
                             </td>
 
+                        </tr>
+                        <tr>
+                            <th id='gatewayUrlLabelCell'>App URL:</th>
+                            <th id='gatewayUrlTextCell'>
+                                <input id='txtGatewayUrl' />
+                            </th>
                         </tr>
                         <tr>
                             <th id='appKeyLabelCell'>App Key:</th>
