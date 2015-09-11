@@ -18,16 +18,7 @@
 
 - (id)init
 {
-    self = [super initWithStyle:UITableViewStyleGrouped];
-    if (self) {
-        
-    }
-    return self;
-}
-
-- (id)initWithStyle:(UITableViewStyle)style
-{
-    return [self init];
+    return [super initWithStyle:UITableViewStyleGrouped];
 }
 
 - (void)viewDidLoad

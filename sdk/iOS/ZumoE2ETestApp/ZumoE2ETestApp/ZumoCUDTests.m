@@ -11,11 +11,12 @@
 
 + (NSArray *)createTests {
     NSMutableArray *result = [[NSMutableArray alloc] init];
-    [result addObject:[self createDeleteTestWithName:@"Delete with id" andType:DeleteUsingId]];
-    [result addObject:[self createDeleteTestWithName:@"(Neg) Delete with non-existent id" andType:NegDeleteUsingInvalidId]];
-    [result addObject:[self createDeleteTestWithName:@"Delete with object" andType:DeleteUsingObject]];
-    [result addObject:[self createDeleteTestWithName:@"(Neg) Delete with object and non-existent id" andType:NegDeleteObjectInvalidId]];
-    [result addObject:[self createDeleteTestWithName:@"(Neg) Delete with object without 'id' field" andType:NegDeleteObjectNoId]];
+    [result addObject:[self createDeleteTestWithName:@"[int id] Delete with id" andType:DeleteUsingId]];
+    [result addObject:[self createDeleteTestWithName:@"[int id] Delete with object" andType:DeleteUsingObject]];
+    
+    [result addObject:[self createNegDeleteTestWithName:@"(Neg) Delete with non-existent id" andType:NegDeleteUsingInvalidId]];
+    [result addObject:[self createNegDeleteTestWithName:@"(Neg) Delete with object and non-existent id" andType:NegDeleteObjectInvalidId]];
+    [result addObject:[self createNegDeleteTestWithName:@"(Neg) Delete with object without 'id' field" andType:NegDeleteObjectNoId]];
     
     NSArray *validStringIds = @[@"iOS with space", @"random number", @"iOS non-english ãéìôü ÇñÑالكتاب على الطاولة这本书在桌子上הספר הוא על השולחן"];
     for (NSString *validId in validStringIds) {
@@ -57,9 +58,9 @@
         }
     }
 
-    [result addObject:[self createUpdateTestWithName:@"Update item" andType:UpdateUsingObject]];
-    [result addObject:[self createUpdateTestWithName:@"(Neg) Update with non-existing id" andType:NegUpdateObjectInvalidId]];
-    [result addObject:[self createUpdateTestWithName:@"(Neg) Update with no id" andType:NegUpdateObjectNoId]];
+    [result addObject:[self createUpdateTestWithName:@"[int id] Update item" andType:UpdateUsingObject]];
+    [result addObject:[self createNegUpdateTestWithName:@"(Neg) Update with non-existing id" andType:NegUpdateObjectInvalidId]];
+    [result addObject:[self createNegUpdateTestWithName:@"(Neg) Update with no id" andType:NegUpdateObjectNoId]];
     
     for (NSString *validId in validStringIds) {
         NSString *testName = [@"[string id] Update with id = " stringByAppendingString:validId];
@@ -84,8 +85,10 @@
                     } else {
                         [test addLog:[NSString stringWithFormat:@"Updated: %@", updated]];
                         NSMutableArray *errors = [[NSMutableArray alloc] init];
-                        if ([ZumoTestGlobals compareObjects:toUpdate with:updated ignoreKeys:@[@"id",@"complex"] log:errors]) {
-                        //if ([ZumoTestGlobals compareObjects:toUpdate with:updated log:errors]) {
+                        if ([ZumoTestGlobals compareObjects:toUpdate
+                                                       with:updated
+                                                 ignoreKeys:@[ @"id", @"complex", @"bool", @"date1", @"integer", @"number", MSSystemColumnVersion, MSSystemColumnUpdatedAt, MSSystemColumnCreatedAt, MSSystemColumnDeleted ]
+                                                        log:errors]) {
                             [test addLog:@"Object compared successfully"];
                             testPassed = YES;
                         } else {
@@ -115,80 +118,106 @@
 typedef enum { UpdateUsingObject, NegUpdateObjectInvalidId, NegUpdateObjectNoId } UpdateTestType;
 
 + (ZumoTest *)createUpdateTestWithName:(NSString *)name andType:(UpdateTestType)type {
-    ZumoTest *result = [ZumoTest createTestWithName:name andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
+    ZumoTest *result = [ZumoTest createTestWithName:name
+                                       andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion)
+    {
         MSClient *client = [[ZumoTestGlobals sharedInstance] client];
         MSTable *table = [client tableWithName:TABLES_ROUND_TRIP_INT_ID];
-        [table insert:@{@"name":@"John Doe",@"age":[NSNumber numberWithInt:33]} completion:^(NSDictionary *inserted, NSError *insertError) {
+        [table insert:@{ @"name" : @"John Doe", @"age" : @33 }
+           completion:^(NSDictionary *inserted, NSError *insertError)
+        {
             if (insertError) {
                 [test addLog:[NSString stringWithFormat:@"Error inserting data: %@", insertError]];
-                [test setTestStatus:TSFailed];
+                test.testStatus = TSFailed;
                 completion(NO);
-            } else {
-                NSNumber *itemId = [inserted objectForKey:@"id"];
-                [test addLog:[NSString stringWithFormat:@"Inserted element %d to be deleted", [itemId intValue]]];
-                [table readWithId:itemId completion:^(NSDictionary *roundTripped, NSError *rtError) {
-                    if (rtError) {
-                        [test addLog:[NSString stringWithFormat:@"Error retrieving inserted item: %@", rtError]];
-                        [test setTestStatus:TSFailed];
-                        completion(NO);
+                return;
+            }
+               
+            NSNumber *itemId = [inserted objectForKey:@"id"];
+            [test addLog:[NSString stringWithFormat:@"Inserted element %d to be deleted", [itemId intValue]]];
+            [table readWithId:itemId
+                   completion:^(NSDictionary *roundTripped, NSError *rtError)
+            {
+                if (rtError) {
+                    [test addLog:[NSString stringWithFormat:@"Error retrieving inserted item: %@", rtError]];
+                    [test setTestStatus:TSFailed];
+                    completion(NO);
+                    return;
+                }
+                
+                NSMutableDictionary *itemToUpdate = [inserted mutableCopy];
+                NSNumber *updatedValue = @35;
+                itemToUpdate[@"age"] = updatedValue;
+                
+                [table update:itemToUpdate
+                   completion:^(NSDictionary *updatedItem, NSError *updateError)
+                {
+                    BOOL passed = YES;
+                    if (updateError) {
+                        passed = NO;
+                        [test addLog:[NSString stringWithFormat:@"Error updating item: %@", updateError]];
                     } else {
-                        BOOL isPositiveTest = type == UpdateUsingObject;
-                        NSNumber *updatedValue = [NSNumber numberWithInt:35];
-                        NSMutableDictionary *itemToUpdate = [[NSMutableDictionary alloc] initWithDictionary:inserted copyItems:YES];
-                        if (type == NegUpdateObjectNoId) {
-                            [itemToUpdate removeObjectForKey:@"id"];
-                        } else if (type == NegUpdateObjectInvalidId) {
-                            [itemToUpdate setValue:[NSNumber numberWithInt:1000000000] forKey:@"id"];
-                        } else {
-                            [itemToUpdate setValue:updatedValue forKey:@"age"];
+                        if (![updatedValue isEqualToNumber:[updatedItem objectForKey:@"age"]]) {
+                            passed = NO;
+                            [test addLog:[NSString stringWithFormat:@"Incorrect value for updated object: %@", updatedItem]];
                         }
-                        
-                        [table update:itemToUpdate completion:^(NSDictionary *updatedItem, NSError *updateError) {
-                            BOOL passed = YES;
-                            if (isPositiveTest) {
-                                if (updateError) {
-                                    passed = NO;
-                                    [test addLog:[NSString stringWithFormat:@"Error updating item: %@", updateError]];
-                                } else {
-                                    if (![updatedValue isEqualToNumber:[updatedItem objectForKey:@"age"]]) {
-                                        passed = NO;
-                                        [test addLog:[NSString stringWithFormat:@"Incorrect value for updated object: %@", updatedItem]];
-                                    }
-                                }
-                            } else {
-                                if (!updateError) {
-                                    passed = NO;
-                                    [test addLog:[NSString stringWithFormat:@"Expected error, but update succeeded for item: %@", itemToUpdate]];
-                                } else if (type == NegUpdateObjectNoId) {
-                                    if (updateError.code != MSMissingItemIdWithRequest) {
-                                        [test addLog:[NSString stringWithFormat:@"Unexpected error code: %ld", (long)updateError.code]];
-                                        passed = NO;
-                                    }
-                                } else if (updateError.code != MSErrorMessageErrorCode) {
-                                    [test addLog:[NSString stringWithFormat:@"Unexpected error code: %ld", (long)updateError.code]];
-                                    passed = NO;
-                                } else {
-                                    NSHTTPURLResponse *resp = [[updateError userInfo] objectForKey:MSErrorResponseKey];
-                                    if (resp.statusCode != 404) {
-                                        [test addLog:[NSString stringWithFormat:@"Invalid response status code, expected 404, found %ld", (long)resp.statusCode]];
-                                        passed = NO;
-                                    }
-                                }
-                            }
-                            
-                            if (isPositiveTest && passed) {
-                                [self validateUpdateForTest:test andTable:table andId:itemId andExpectedValue:updatedValue withCompletion:completion];
-                            } else {
-                                [test setTestStatus:(passed ? TSPassed : TSFailed)];
-                                completion(passed);
-                            }
-                        }];
+                    }
+                    
+                    if (passed) {
+                        [self validateUpdateForTest:test andTable:table andId:itemId andExpectedValue:updatedValue withCompletion:completion];
+                    } else {
+                        [test setTestStatus:(passed ? TSPassed : TSFailed)];
+                        completion(passed);
                     }
                 }];
-            }
+            }];
         }];
     }];
+    
     [result addRequiredFeature:FEATURE_INT_ID_TABLES];
+    return result;
+}
+
++ (ZumoTest *)createNegUpdateTestWithName:(NSString *)name andType:(UpdateTestType)type {
+    ZumoTest *result = [ZumoTest createTestWithName:name
+                                       andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion)
+    {
+        MSClient *client = [[ZumoTestGlobals sharedInstance] client];
+        MSTable *table = [client tableWithName:TABLES_ROUND_TRIP_STRING_ID];
+        
+        NSDictionary *itemToUpdate;
+        if (type == NegUpdateObjectNoId) {
+            itemToUpdate = @{ @"name" : @"John Doe", @"age" : @33 };
+        } else if (type == NegUpdateObjectInvalidId) {
+            itemToUpdate = @{ @"id": @"IdThatCan'tExistHere!", @"name" : @"John Doe", @"age" : @33 };
+        }
+        
+        [table update:itemToUpdate completion:^(NSDictionary *updatedItem, NSError *updateError) {
+            BOOL passed = YES;
+            if (!updateError) {
+                passed = NO;
+                [test addLog:[NSString stringWithFormat:@"Expected error, but update succeeded for item: %@", itemToUpdate]];
+            } else if (type == NegUpdateObjectNoId) {
+                if (updateError.code != MSMissingItemIdWithRequest) {
+                    [test addLog:[NSString stringWithFormat:@"Unexpected error code: %ld", (long)updateError.code]];
+                    passed = NO;
+                }
+            } else if (updateError.code != MSErrorMessageErrorCode) {
+                [test addLog:[NSString stringWithFormat:@"Unexpected error code: %ld", (long)updateError.code]];
+                passed = NO;
+            } else {
+                NSHTTPURLResponse *resp = [[updateError userInfo] objectForKey:MSErrorResponseKey];
+                if (resp.statusCode != 404) {
+                    [test addLog:[NSString stringWithFormat:@"Invalid response status code, expected 404, found %ld", (long)resp.statusCode]];
+                    passed = NO;
+                }
+            }
+            
+            [test setTestStatus:(passed ? TSPassed : TSFailed)];
+            completion(passed);
+        }];
+    }];
+    
     return result;
 }
 
@@ -215,108 +244,104 @@ typedef enum { UpdateUsingObject, NegUpdateObjectInvalidId, NegUpdateObjectNoId 
 typedef enum { DeleteUsingId, DeleteUsingObject, NegDeleteUsingInvalidId, NegDeleteObjectInvalidId, NegDeleteObjectNoId } DeleteTestType;
 
 + (ZumoTest *)createDeleteTestWithName:(NSString *)name andType:(DeleteTestType)type {
-    ZumoTest *result = [ZumoTest createTestWithName:name andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
+    ZumoTest *result = [ZumoTest createTestWithName:name
+                                       andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
         MSClient *client = [[ZumoTestGlobals sharedInstance] client];
         MSTable *table = [client tableWithName:TABLES_ROUND_TRIP_INT_ID];
-        [table insert:@{@"name":@"John Doe",@"age":[NSNumber numberWithInt:33]} completion:^(NSDictionary *inserted, NSError *insertError) {
+                                           
+        [table insert:@{ @"name" : @"John Doe", @"age" : @33 }
+           completion:^(NSDictionary *inserted, NSError *insertError) {
             if (insertError) {
                 [test addLog:[NSString stringWithFormat:@"Error inserting data: %@", insertError]];
                 [test setTestStatus:TSFailed];
                 completion(NO);
-            } else {
-                NSNumber *itemId = [inserted objectForKey:@"id"];
-                [test addLog:[NSString stringWithFormat:@"Inserted element %d to be deleted", [itemId intValue]]];
-                [table readWithId:itemId completion:^(NSDictionary *roundTripped, NSError *rtError) {
-                    if (rtError) {
-                        [test addLog:[NSString stringWithFormat:@"Error retrieving inserted item: %@", rtError]];
-                        [test setTestStatus:TSFailed];
-                        completion(NO);
-                    } else {
-                        BOOL isPositiveTest = type == DeleteUsingId || type == DeleteUsingObject;
-                        if (type == DeleteUsingId || type == NegDeleteUsingInvalidId) {
-                            NSNumber *idToDelete = isPositiveTest ? itemId : [NSNumber numberWithInt:1000000000];
-                            [table deleteWithId:idToDelete completion:^(NSNumber *deletedItemId, NSError *deleteError) {
-                                BOOL passed = YES;
-                                if (isPositiveTest) {
-                                    if (deleteError) {
-                                        passed = NO;
-                                        [test addLog:[NSString stringWithFormat:@"Error deleting item: %@", deleteError]];
-                                    } else if (![itemId isEqualToNumber:deletedItemId]) {
-                                        [test addLog:[NSString stringWithFormat:@"Invalid returned value after deleting: %@", deletedItemId]];
-                                        passed = NO;
-                                    }
-                                } else {
-                                    if (!deleteError) {
-                                        passed = NO;
-                                        [test addLog:[NSString stringWithFormat:@"Expected error, but delete succeeded for item: %@", deletedItemId]];
-                                    } else if (deleteError.code != MSErrorMessageErrorCode) {
-                                        [test addLog:[NSString stringWithFormat:@"Unexpected error code: %ld", (long)deleteError.code]];
-                                        passed = NO;
-                                    } else {
-                                        NSHTTPURLResponse *resp = [[deleteError userInfo] objectForKey:MSErrorResponseKey];
-                                        if (resp.statusCode != 404) {
-                                            [test addLog:[NSString stringWithFormat:@"Invalid response status code, expected 404, found %ld", (long)resp.statusCode]];
-                                            passed = NO;
-                                        }
-                                    }
-                                }
-                                
-                                [test setTestStatus:(passed ? TSPassed : TSFailed)];
-                                completion(passed);
-                            }];
-                        } else {
-                            NSMutableDictionary *itemToDelete = [[NSMutableDictionary alloc] initWithDictionary:inserted copyItems:YES];
-                            if (type == NegDeleteObjectNoId) {
-                                [itemToDelete removeObjectForKey:@"id"];
-                            } else if (type == NegDeleteObjectInvalidId) {
-                                [itemToDelete setValue:[NSNumber numberWithInt:1000000000] forKey:@"id"];
-                            }
-                            
-                            [table delete:itemToDelete completion:^(NSNumber *deletedItemId, NSError *deleteError) {
-                                BOOL passed = YES;
-                                if (isPositiveTest) {
-                                    if (deleteError) {
-                                        passed = NO;
-                                        [test addLog:[NSString stringWithFormat:@"Error deleting item: %@", deleteError]];
-                                    } else if (![itemId isEqualToNumber:deletedItemId]) {
-                                        [test addLog:[NSString stringWithFormat:@"Invalid returned value after deleting: %@", deletedItemId]];
-                                        passed = NO;
-                                    }
-                                } else {
-                                    if (!deleteError) {
-                                        passed = NO;
-                                        [test addLog:[NSString stringWithFormat:@"Expected error, but delete succeeded for item: %@", deletedItemId]];
-                                    } else if (type == NegDeleteObjectNoId) {
-                                        if (deleteError.code != MSMissingItemIdWithRequest) {
-                                            [test addLog:[NSString stringWithFormat:@"Unexpected error code: %ld", (long)deleteError.code]];
-                                            passed = NO;
-                                        }
-                                    } else if (deleteError.code != MSErrorMessageErrorCode) {
-                                        [test addLog:[NSString stringWithFormat:@"Unexpected error code: %ld", (long)deleteError.code]];
-                                        passed = NO;
-                                    } else {
-                                        NSHTTPURLResponse *resp = [[deleteError userInfo] objectForKey:MSErrorResponseKey];
-                                        if (resp.statusCode != 404) {
-                                            [test addLog:[NSString stringWithFormat:@"Invalid response status code, expected 404, found %ld", (long)resp.statusCode]];
-                                            passed = NO;
-                                        }
-                                    }
-                                }
-                                
-                                if (isPositiveTest && passed) {
-                                    [self validateDeletionForTest:test andTable:table andId:itemId withCompletion:completion];
-                                } else {
-                                    [test setTestStatus:(passed ? TSPassed : TSFailed)];
-                                    completion(passed);
-                                }
-                            }];
-                        }
-                    }
-                }];
+                return;
             }
+               
+            id itemId = [inserted objectForKey:@"id"];
+            [test addLog:[NSString stringWithFormat:@"Inserted element %@ to be deleted", itemId]];
+               
+            [table readWithId:itemId completion:^(NSDictionary *roundTripped, NSError *rtError) {
+                if (rtError) {
+                    [test addLog:[NSString stringWithFormat:@"Error retrieving inserted item: %@", rtError]];
+                    [test setTestStatus:TSFailed];
+                    completion(NO);
+                    return;
+                }
+                
+                id postDeleteCheck = ^(NSNumber *deletedItemId, NSError *deleteError) {
+                    BOOL passed = YES;
+                    
+                    if (deleteError) {
+                        passed = NO;
+                        [test addLog:[NSString stringWithFormat:@"Error deleting item: %@", deleteError]];
+                    } else if (![itemId isEqualToNumber:deletedItemId]) {
+                        [test addLog:[NSString stringWithFormat:@"Invalid ID %@ returned after deleting: %@", deletedItemId, itemId]];
+                        passed = NO;
+                    }
+                    
+                    if (passed) {
+                        [self validateDeletionForTest:test andTable:table andId:itemId withCompletion:completion];
+                    } else {
+                        [test setTestStatus:(passed ? TSPassed : TSFailed)];
+                        completion(passed);
+                    }
+                };
+                
+                if (type == DeleteUsingId) {
+                    [table deleteWithId:itemId completion:postDeleteCheck];
+                } else {
+                    NSMutableDictionary *itemToDelete = [[NSMutableDictionary alloc] initWithDictionary:inserted copyItems:YES];
+                    [table delete:itemToDelete completion:postDeleteCheck];
+                }
+            }];
         }];
     }];
     [result addRequiredFeature:FEATURE_INT_ID_TABLES];
+    
+    return result;
+}
+
++ (ZumoTest *)createNegDeleteTestWithName:(NSString *)name andType:(DeleteTestType)type {
+    ZumoTest *result = [ZumoTest createTestWithName:name
+                                       andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion)
+    {
+        MSClient *client = [[ZumoTestGlobals sharedInstance] client];
+        MSTable *table = [client tableWithName:TABLES_ROUND_TRIP_STRING_ID];
+       
+        id postDelete = ^(NSNumber *deletedItemId, NSError *deleteError) {
+            BOOL passed = YES;
+            if (!deleteError) {
+                passed = NO;
+                [test addLog:[NSString stringWithFormat:@"Expected error, but delete succeeded for item: %@", deletedItemId]];
+            } else if (type == NegDeleteObjectNoId) {
+                if (deleteError.code != MSMissingItemIdWithRequest) {
+                    [test addLog:[NSString stringWithFormat:@"Unexpected error code: %ld", (long)deleteError.code]];
+                    passed = NO;
+                }
+            } else if ((deleteError.code != MSErrorMessageErrorCode) && (deleteError.code != MSErrorNoMessageErrorCode)) {
+                [test addLog:[NSString stringWithFormat:@"Unexpected error code: %ld", (long)deleteError.code]];
+                passed = NO;
+            } else {
+                NSHTTPURLResponse *resp = [[deleteError userInfo] objectForKey:MSErrorResponseKey];
+                if (resp.statusCode != 404) {
+                    [test addLog:[NSString stringWithFormat:@"Invalid response status code, expected 404, found %ld", (long)resp.statusCode]];
+                    passed = NO;
+                }
+            }
+            
+            [test setTestStatus:(passed ? TSPassed : TSFailed)];
+            completion(passed);
+        };
+        
+        if (type == NegDeleteUsingInvalidId) {
+          [table deleteWithId:@"MadeUpIdThatDoesn'tExist!" completion:postDelete];
+        } else if (type == NegDeleteObjectNoId) {
+            [table delete:@{ @"name" : @"John Doe", @"age" : @33 } completion:postDelete];
+        } else {
+            [table delete: @{ @"id" : @"MadeUpIdThatDoesn'tExist!", @"name" : @"John Doe", @"age" : @33 } completion:postDelete];
+        }
+    }];
     
     return result;
 }

@@ -10,7 +10,6 @@
 @interface ZumoConfigurationViewController () <UITextFieldDelegate>
 
 @property (weak, nonatomic) IBOutlet UITextField *appUrl;
-@property (weak, nonatomic) IBOutlet UITextField *appKey;
 @property (weak, nonatomic) IBOutlet UITextField *clientId;
 @property (weak, nonatomic) IBOutlet UITextField *clientSecret;
 @property (weak, nonatomic) IBOutlet UITextField *runId;
@@ -38,8 +37,8 @@
     
     // Build the client object
     ZumoTestGlobals *globals = [ZumoTestGlobals sharedInstance];
-    [globals initializeClientWithAppUrl:appUrl andKey:self.appKey.text];
-    [globals saveAppInfo:appUrl key:self.appKey.text];
+    [globals initializeClientWithAppUrl:appUrl andGatewayURL:nil];
+    [globals saveAppInfo:appUrl key:nil];
     
     NSMutableDictionary *globalTestParams = globals.globalTestParameters;
     globalTestParams[RUNTIME_VERSION_TAG] = @"DotNet-App";
@@ -59,7 +58,6 @@
     
     self.navigationController.navigationBar.hidden = YES;
     
-    self.appKey.delegate = self;
     self.appUrl.delegate = self;
     self.clientId.delegate = self;
     self.clientSecret.delegate = self;
@@ -68,7 +66,6 @@
     NSArray *lastUsedApp = [[ZumoTestGlobals sharedInstance] loadAppInfo];
     if (lastUsedApp) {
         self.appUrl.text = [lastUsedApp objectAtIndex:0];
-        self.appKey.text = [lastUsedApp objectAtIndex:1];
     }
 
     [self registerForKeyboardNotifications];
@@ -98,8 +95,8 @@
         }
         
         ZumoTestGlobals *globals = [ZumoTestGlobals sharedInstance];
-        [globals initializeClientWithAppUrl:appUrl andKey:self.appKey.text];
-        [globals saveAppInfo:appUrl key:self.appKey.text];
+        [globals initializeClientWithAppUrl:appUrl andGatewayURL:nil];
+        [globals saveAppInfo:appUrl key:nil];
 
         if (self.reportOn.on) {
             globals.daylightProject = @"zumo2";
@@ -114,7 +111,7 @@
 
 - (BOOL) validateAppInfo {
     
-    if ([self.appUrl.text length] == 0 || [self.appKey.text length] == 0) {
+    if ([self.appUrl.text length] == 0) {
         UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error" message:@"Please set the application URL and key before proceeding" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
         [alert show];
         return NO;
@@ -144,7 +141,7 @@
     NSDictionary* info = [aNotification userInfo];
     CGSize kbSize = [[info objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
 
-    if (self.activeField == self.appKey || self.activeField == self.appUrl) {
+    if (self.activeField == self.appUrl) {
         return;
     }
     

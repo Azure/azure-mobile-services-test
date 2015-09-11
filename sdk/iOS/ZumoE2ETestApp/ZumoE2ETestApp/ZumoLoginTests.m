@@ -46,9 +46,8 @@ static NSString *lastUserIdentityObjectKey = @"lastUserIdentityObject";
     NSMutableArray *result = [[NSMutableArray alloc] init];
     [result addObject:[self createClearAuthCookiesTest]];
     [result addObject:[self createLogoutTest]];
-    [result addObject:[self createCRUDTestForProvider:nil forTable:@"application" ofType:ZumoTableApplication andAuthenticated:NO]];
+    [result addObject:[self createCRUDTestForProvider:nil forTable:@"public" ofType:ZumoTableApplication andAuthenticated:NO]];
     [result addObject:[self createCRUDTestForProvider:nil forTable:@"authenticated" ofType:ZumoTableAuthenticated andAuthenticated:NO]];
-    [result addObject:[self createCRUDTestForProvider:nil forTable:@"admin" ofType:ZumoTableAdminScripts andAuthenticated:NO]];
     
     NSInteger indexOfLastUnattendedTest = [result count];
     
@@ -62,9 +61,8 @@ static NSString *lastUserIdentityObjectKey = @"lastUserIdentityObject";
             [result addObject:[self createLogoutTest]];
             [result addObject:[self createSleepTest:3]];
             [result addObject:[self createLoginTestForProvider:provider usingSimplifiedMode:useSimplified]];
-            [result addObject:[self createCRUDTestForProvider:provider forTable:@"application" ofType:ZumoTableApplication andAuthenticated:YES]];
+            [result addObject:[self createCRUDTestForProvider:provider forTable:@"public" ofType:ZumoTableApplication andAuthenticated:YES]];
             [result addObject:[self createCRUDTestForProvider:provider forTable:@"authenticated" ofType:ZumoTableAuthenticated andAuthenticated:YES]];
-            [result addObject:[self createCRUDTestForProvider:provider forTable:@"admin" ofType:ZumoTableAdminScripts andAuthenticated:YES]];
             
             if ([providersWithRecycledTokenSupport containsObject:provider]) {
                 [result addObject:[self createLogoutTest]];

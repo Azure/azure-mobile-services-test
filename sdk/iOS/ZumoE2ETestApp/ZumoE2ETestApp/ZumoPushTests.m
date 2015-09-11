@@ -316,6 +316,8 @@ static NSString *pushClientKey = @"PushClientKey";
                 return;
             }
             
+            [client logout];
+            
             completion(test.testStatus != TSFailed);
         };
         
