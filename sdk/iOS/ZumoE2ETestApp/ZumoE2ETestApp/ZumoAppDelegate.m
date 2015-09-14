@@ -12,6 +12,10 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     if([application respondsToSelector:@selector(registerForRemoteNotifications)]) {
+        
+        UIUserNotificationSettings *notificationSettings = [UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound categories:nil];
+        [application registerUserNotificationSettings:notificationSettings];
+        
         [application registerForRemoteNotifications];
     } else {
         // Override point for customization after application launch.
