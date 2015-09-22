@@ -5,7 +5,6 @@
 using System.Data.Entity;
 using System.Data.Entity.ModelConfiguration.Conventions;
 using System.Linq;
-using Microsoft.Azure.Mobile.Server;
 using Microsoft.Azure.Mobile.Server.Tables;
 using ZumoE2EServerApp.DataObjects;
 
@@ -39,12 +38,6 @@ namespace ZumoE2EServerApp.Models
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
-            string schema = MobileAppSettingsDictionary.GetSchemaName();
-            if (!string.IsNullOrEmpty(schema))
-            {
-                modelBuilder.HasDefaultSchema(schema);
-            }
-
             modelBuilder.Conventions.Add(
                 new AttributeToColumnAnnotationConvention<TableColumnAttribute, string>(
                     "ServiceTableColumn", (property, attributes) => attributes.Single().ColumnType.ToString()));

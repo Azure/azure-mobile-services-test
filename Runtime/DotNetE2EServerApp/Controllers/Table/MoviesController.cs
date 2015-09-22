@@ -5,6 +5,7 @@
 using System.Linq;
 using System.Web.Http;
 using System.Web.Http.Controllers;
+using System.Web.Http.OData;
 using Microsoft.Azure.Mobile.Server;
 using ZumoE2EServerApp.DataObjects;
 using ZumoE2EServerApp.Models;
@@ -22,7 +23,7 @@ namespace ZumoE2EServerApp.Controllers
             this.DomainManager = new EntityDomainManager<Movie>(context, Request);
         }
 
-        [Queryable(MaxTop = 1000)]
+        [EnableQuery(MaxTop = 1000)]
         public IQueryable<Movie> GetAll()
         {
             return Query();
