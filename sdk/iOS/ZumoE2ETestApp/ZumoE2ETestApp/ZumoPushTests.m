@@ -52,7 +52,11 @@
     [timer invalidate];
     [_test addLog:[NSString stringWithFormat:@"Push notification received: %@", userInfo]];
     if (_payload) {
-        NSDictionary *expectedPushInfo = [self zumoPayloadToApsPayload:_payload];
+        NSDictionary *expectedPushInfo = _payload;
+        if (!_payload[@"aps"]) {
+            expectedPushInfo = @{ @"aps" : _payload };
+        }
+        
         if ([self compareExpectedPayload:expectedPushInfo withActual:userInfo]) {
             [_test setTestStatus:TSPassed];
             _completion(YES);
@@ -103,33 +107,6 @@
     }
     
     return allEqual;
-}
-
-- (NSDictionary *)zumoPayloadToApsPayload:(NSDictionary *)originalPayload {
-    NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
-    NSMutableDictionary *aps = [[NSMutableDictionary alloc] init];
-    [result setValue:aps forKey:@"aps"];
-    id alert = originalPayload[@"alert"];
-    if (alert) {
-        [aps setValue:alert forKey:@"alert"];
-    }
-    
-    id badge = originalPayload[@"badge"];
-    if (badge) {
-        [aps setValue:badge forKey:@"badge"];
-    }
-    
-    id sound = originalPayload[@"sound"];
-    if (sound) {
-        [aps setValue:sound forKey:@"sound"];
-    }
-    
-    NSDictionary *payload = originalPayload[@"payload"];
-    if (payload) {
-        [result addEntriesFromDictionary:payload];
-    }
-    
-    return result;
 }
 
 @end
@@ -198,13 +175,24 @@ static NSString *pushClientKey = @"PushClientKey";
     return [self createPushTestWithName:name forPayload:payload withDelay:seconds isNegativeTest:NO];
 }
 
-+ (void)sendNotificationViaInsert:(MSClient *)client test:(ZumoTest *)test seconds:(int)seconds deviceToken:(NSString *)deviceToken payload:(NSDictionary *)payload completion:(ZumoTestCompletion)completion isNegative:(BOOL)isNegative {
-    MSTable *table = [client tableWithName:tableName];
++ (void)sendNotification:(MSClient *)client
+                    test:(ZumoTest *)test
+                 seconds:(int)seconds
+             deviceToken:(NSString *)deviceToken
+                 payload:(NSDictionary *)payload
+              completion:(ZumoTestCompletion)completion isNegative:(BOOL)isNegative
+{
     
-    [test addLog:[NSString stringWithFormat:@"Sending a request to %@ / table %@", client.applicationURL.description, tableName]];
+    [test addLog:[NSString stringWithFormat:@"Sending push request to API 'push'"]];
+    NSDictionary *item = @{@"method" : @"send", @"type" : @"apns", @"payload" : payload, @"token": deviceToken, @"delay": @(seconds)};
     
-    NSDictionary *item = @{@"method" : @"send", @"payload" : payload, @"token": deviceToken, @"delay": @(seconds)};
-    [table insert:item completion:^(NSDictionary *insertedItem, NSError *error) {
+    [client invokeAPI:@"push"
+                 body:item
+           HTTPMethod:@"POST"
+           parameters:nil
+              headers:nil
+           completion:^(id result, NSHTTPURLResponse *response, NSError *error)
+    {
         if (error) {
             [test addLog:[NSString stringWithFormat:@"Error requesting push: %@", error]];
             [test setTestStatus:TSFailed];
@@ -215,7 +203,7 @@ static NSString *pushClientKey = @"PushClientKey";
             ZumoPushClient *pushClient = [[ZumoPushClient alloc] initForTest:test withPayload:expectedPayload waitFor:timeToWait withTestCompletion:completion];
             [[test propertyBag] setValue:pushClient forKey:pushClientKey];
             
-            // completion will be called on the push client
+            // completion will be called on the push client...
         }
     }];
 }
@@ -498,10 +486,8 @@ static NSString *pushClientKey = @"PushClientKey";
         [client.push registerDeviceToken:deviceToken
                                 template:@{ @"t1": @{ @"body": @{ @"aps": @{ @"alert": @"boo!" }, @"extraprop" : @"($message)" } } }
                               completion:pushTwo];
-        
-        
     };
-    
+
     return [ZumoTest createTestWithName:@"overrideRegistrationTest" andExecution:testExecution];
 }
 
@@ -531,13 +517,13 @@ static NSString *pushClientKey = @"PushClientKey";
                     return;
                 }
                 
-                [self sendNotificationViaInsert:client
-                                           test:test
-                                        seconds:seconds
-                                    deviceToken:client.push.installationId
-                                        payload:payload
-                                     completion:completion
-                                     isNegative:isNegative];
+                [self sendNotification:client
+                                  test:test
+                               seconds:seconds
+                           deviceToken:client.push.installationId
+                               payload:payload
+                            completion:completion
+                            isNegative:isNegative];
             }];
         }
     }];

@@ -1,4 +1,4 @@
-﻿// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
@@ -53,16 +53,18 @@ namespace ZumoE2EServerApp.Controllers
 
                 var token = (string)data["token"];
 
-                var payloadString = (string)data["payload"];
-                var type = (string)data["type"];
-                var tag = (string)data["tag"];
 
-                if (payloadString == null || token == null)
+                if (data["payload"] == null || token == null)
                 {
                     return new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
                 }
 
-                this.traceWriter.Info(payloadString);
+                // Payload could be a string or a dictionary
+                var payloadString = data["payload"].ToString();
+
+                var type = (string)data["type"];
+                var tag = (string)data["tag"];
+
 
                 if (type == "template")
                 {
