@@ -149,8 +149,11 @@ static NSString *pushClientKey = @"PushClientKey";
 }
 
 + (BOOL)isRunningOnSimulator {
-    NSString *deviceModel = [UIDevice currentDevice].model;
-    return [deviceModel rangeOfString:@"Simulator" options:NSCaseInsensitiveSearch].location != NSNotFound;
+    if (TARGET_IPHONE_SIMULATOR) {
+        return YES;
+    }
+    
+    return NO;
 }
 
 + (ZumoTest *)createValidatePushRegistrationTest {
