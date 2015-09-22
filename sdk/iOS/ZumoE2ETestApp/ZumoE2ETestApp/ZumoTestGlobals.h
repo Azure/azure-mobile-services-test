@@ -46,7 +46,7 @@ extern NSString *const TABLES_ROUND_TRIP_INT_ID;
 @property (nonatomic, copy) NSString *daylightClientSecret;
 @property (nonatomic, copy) NSString *daylightMasterRunId;
 
-- (void)initializeClientWithAppUrl:(NSString *)url andKey:(NSString *)appKey;
+-(void) initializeClientWithAppUrl:(NSString *)url andGatewayURL:(NSString *)gatewayUrl;
 - (void)saveAppInfo:(NSString *)appUrl key:(NSString *)appKey;
 - (NSArray *)loadAppInfo;
 - (NSMutableDictionary *)globalTestParameters;

@@ -177,7 +177,7 @@ static NSString *stringIdQueryTestsTableName = @"Movies";
     for (NSString *unsupportedPredicate in unsupportedPredicates) {
         ZumoTest *negTest = [ZumoTest createTestWithName:[NSString stringWithFormat:@"(Neg) Unsupported predicate: %@", unsupportedPredicate] andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
             MSClient *client = [[ZumoTestGlobals sharedInstance] client];
-            MSTable *table = [client tableWithName:queryTestsTableName];
+            MSTable *table = [client tableWithName:stringIdQueryTestsTableName];
             NSPredicate *predicate;
             if ([unsupportedPredicate isEqualToString:@"predicate from block"]) {
                 predicate = [NSPredicate predicateWithBlock:^BOOL(id evaluatedObject, NSDictionary *bindings) {
@@ -204,7 +204,6 @@ static NSString *stringIdQueryTestsTableName = @"Movies";
                 completion(passed);
             }];
         }];
-        [negTest addRequiredFeature:@"intIdTables"];
         [result addObject:negTest];
     }
     
@@ -251,7 +250,7 @@ typedef BOOL (^QueryValidation)(ZumoTest *test, NSError *error);
 + (ZumoTest *)createNegativeTestWithName:(NSString *)name andQuerySettings:(ActionQuery)settings andQueryValidation:(QueryValidation)queryValidation {
     ZumoTest *result = [ZumoTest createTestWithName:name andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
         MSClient *client = [[ZumoTestGlobals sharedInstance] client];
-        MSTable *table = [client tableWithName:queryTestsTableName];
+        MSTable *table = [client tableWithName:stringIdQueryTestsTableName];
         MSQuery *query = [table query];
         settings(query);
         
@@ -273,8 +272,7 @@ typedef BOOL (^QueryValidation)(ZumoTest *test, NSError *error);
             }
         }];
     }];
-    
-    [result addRequiredFeature:@"intIdTables"];
+
     return result;
 }
 
@@ -291,15 +289,27 @@ typedef BOOL (^QueryValidation)(ZumoTest *test, NSError *error);
     [testGroup addObject:[self createQueryTestWithName:name andPredicate:predicate andTop:top andSkip:skip andOrderBy:orderByClauses andIncludeTotalCount:includeTotalCount andSelectFields:selectFields useStringIdTable:YES]];
 }
 
-+ (ZumoTest *)createQueryTestWithName:(NSString *)name andPredicate:(NSPredicate *)predicate andTop:(NSNumber *)top andSkip:(NSNumber *)skip andOrderBy:(NSArray *)orderByClauses andIncludeTotalCount:(BOOL)includeTotalCount andSelectFields:(NSArray *)selectFields useStringIdTable:(BOOL)useStringIdTable {
++ (ZumoTest *)createQueryTestWithName:(NSString *)name
+                         andPredicate:(NSPredicate *)predicate
+                               andTop:(NSNumber *)top
+                              andSkip:(NSNumber *)skip
+                           andOrderBy:(NSArray *)orderByClauses
+                 andIncludeTotalCount:(BOOL)includeTotalCount
+                      andSelectFields:(NSArray *)selectFields
+                     useStringIdTable:(BOOL)useStringIdTable {
     NSString *testName = [NSString stringWithFormat:@"[%@ id] %@", useStringIdTable ? @"string" : @"int", name];
-    ZumoTest *result = [ZumoTest createTestWithName:testName andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
+    
+    ZumoTest *result = [ZumoTest createTestWithName:testName
+                                       andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
 
         MSClient *client = [[ZumoTestGlobals sharedInstance] client];
         MSTable *table = [client tableWithName:useStringIdTable ? stringIdQueryTestsTableName : queryTestsTableName];
         NSArray *allItems = [ZumoQueryTestData getMovies];
         if (!top && !skip && !orderByClauses && !includeTotalCount && !selectFields) {
             // use simple readWithPredicate
+            MSQuery *queryForLog = [[MSQuery alloc] initWithTable:table predicate:predicate];
+            [test addLog:[NSString stringWithFormat:@"Query = %@", [queryForLog queryStringOrError:nil]]];
+            
             [table readWithPredicate:predicate completion:^(MSQueryResult *result, NSError *readWhereError) {
                 if (readWhereError) {
                     [test addLog:[NSString stringWithFormat:@"Error calling readWhere: %@", readWhereError]];
@@ -454,6 +464,7 @@ typedef BOOL (^QueryValidation)(ZumoTest *test, NSError *error);
 
 + (BOOL)compareExpectedArray:(NSArray *)expectedItems withActual:(NSArray *)actualItems forTest:(__weak ZumoTest *)test {
     BOOL result = NO;
+    
     NSInteger actualCount = [actualItems count];
     NSInteger expectedCount = [expectedItems count];
     if (actualCount != expectedCount) {
@@ -465,6 +476,7 @@ typedef BOOL (^QueryValidation)(ZumoTest *test, NSError *error);
         for (int i = 0; i < actualCount; i++) {
             NSDictionary *expectedItem = [expectedItems objectAtIndex:i];
             NSDictionary *actualItem = [actualItems objectAtIndex:i];
+            
             if ([self shouldNormalizeDictionaryKeys]) {
                 expectedItem = [self lowercaseKeysForDictionary:expectedItem];
                 actualItem = [self lowercaseKeysForDictionary:actualItem];

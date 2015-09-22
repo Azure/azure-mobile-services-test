@@ -10,57 +10,52 @@
 @implementation ZumoCustomApiTests
 
 static NSString *apiPublicName = @"publicPermission";
-static NSString *apiApplicationName = @"applicationPermission";
 static NSString *apiUserName = @"userPermission";
-static NSString *apiAdminName = @"adminPermission";
 
 typedef enum { DataFormatJson, DataFormatXml, DataFormatOther } ApiDataFormat;
 
 + (NSArray *)createTests {
     NSMutableArray *result = [[NSMutableArray alloc] init];
-    [result addObject:[self createJsonBasedTestWithName:@"Simple object - POST" apiName:apiApplicationName httpMethod:@"POST" body:@{@"name":@"value"} headers:nil query:nil statusCode:200]];
-    [result addObject:[self createJsonBasedTestWithName:@"Simple call - GET" apiName:apiApplicationName httpMethod:@"GET" body:nil headers:nil query:@{@"param": @"value"} statusCode:200]];
-    [result addObject:[self createJsonBasedTestWithName:@"Simple object - PUT" apiName:apiApplicationName httpMethod:@"PUT" body:@{@"array":@[@1, @YES, @"str"]} headers:nil query:@{@"method": @"PUT"} statusCode:200]];
-    [result addObject:[self createJsonBasedTestWithName:@"Simple object - PATCH" apiName:apiApplicationName httpMethod:@"PATCH" body:@{@"array":@[@1, @YES, @"str"]} headers:nil query:@{@"method": @"PATCH"} statusCode:200]];
-    [result addObject:[self createJsonBasedTestWithName:@"Simple call - DELETE" apiName:apiApplicationName httpMethod:@"DELETE" body:nil headers:nil query:@{@"method": @"DELETE"} statusCode:200]];
+    [result addObject:[self createJsonBasedTestWithName:@"Simple object - POST" apiName:apiPublicName httpMethod:@"POST" body:@{@"name":@"value"} headers:nil query:nil statusCode:200]];
+    [result addObject:[self createJsonBasedTestWithName:@"Simple call - GET" apiName:apiPublicName httpMethod:@"GET" body:nil headers:nil query:@{@"param": @"value"} statusCode:200]];
+    [result addObject:[self createJsonBasedTestWithName:@"Simple object - PUT" apiName:apiPublicName httpMethod:@"PUT" body:@{@"array":@[@1, @YES, @"str"]} headers:nil query:@{@"method": @"PUT"} statusCode:200]];
+    [result addObject:[self createJsonBasedTestWithName:@"Simple object - PATCH" apiName:apiPublicName httpMethod:@"PATCH" body:@{@"array":@[@1, @YES, @"str"]} headers:nil query:@{@"method": @"PATCH"} statusCode:200]];
+    [result addObject:[self createJsonBasedTestWithName:@"Simple call - DELETE" apiName:apiPublicName httpMethod:@"DELETE" body:nil headers:nil query:@{@"method": @"DELETE"} statusCode:200]];
     
-    [result addObject:[self createJsonBasedTestWithName:@"POST - array body" apiName:apiApplicationName httpMethod:@"POST" body:@[@1,@NO,@2] headers:nil query:nil statusCode:200]];
-    [result addObject:[self createJsonBasedTestWithName:@"POST - empty array body" apiName:apiApplicationName httpMethod:@"POST" body:@[] headers:nil query:nil statusCode:200]];
-    [result addObject:[self createJsonBasedTestWithName:@"POST - empty object body" apiName:apiApplicationName httpMethod:@"POST" body:@{} headers:nil query:nil statusCode:200]];
+    [result addObject:[self createJsonBasedTestWithName:@"POST - array body" apiName:apiPublicName httpMethod:@"POST" body:@[@1,@NO,@2] headers:nil query:nil statusCode:200]];
+    [result addObject:[self createJsonBasedTestWithName:@"POST - empty array body" apiName:apiPublicName httpMethod:@"POST" body:@[] headers:nil query:nil statusCode:200]];
+    [result addObject:[self createJsonBasedTestWithName:@"POST - empty object body" apiName:apiPublicName httpMethod:@"POST" body:@{} headers:nil query:nil statusCode:200]];
     
-    [result addObject:[self createJsonBasedTestWithName:@"GET - custom headers" apiName:apiApplicationName httpMethod:@"GET" body:nil headers:@{@"x-test-zumo-1": @"header value"} query:nil statusCode:200]];
+    [result addObject:[self createJsonBasedTestWithName:@"GET - custom headers" apiName:apiPublicName httpMethod:@"GET" body:nil headers:@{@"x-test-zumo-1": @"header value"} query:nil statusCode:200]];
     
-    [result addObject:[self createJsonBasedTestWithName:@"PATCH - query parameters" apiName:apiApplicationName httpMethod:@"PATCH" body:@{@"name":@123} headers:nil query:@{@"key":@"value"} statusCode:200]];
-    [result addObject:[self createJsonBasedTestWithName:@"GET - query parameters non-ASCII" apiName:apiApplicationName httpMethod:@"GET" body:nil headers:nil query:@{@"latin":@"áñüø",@"arabic":@"الكتاب على الطاولة", @"japanese":@"本は机の上に", @"name needs & escape": @"value too"} statusCode:200]];
+    [result addObject:[self createJsonBasedTestWithName:@"PATCH - query parameters" apiName:apiPublicName httpMethod:@"PATCH" body:@{@"name":@123} headers:nil query:@{@"key":@"value"} statusCode:200]];
+    [result addObject:[self createJsonBasedTestWithName:@"GET - query parameters non-ASCII" apiName:apiPublicName httpMethod:@"GET" body:nil headers:nil query:@{@"latin":@"áñüø",@"arabic":@"الكتاب على الطاولة", @"japanese":@"本は机の上に", @"name needs & escape": @"value too"} statusCode:200]];
     
-    [result addObject:[self createJsonBasedTestWithName:@"GET - 500 response" apiName:apiApplicationName httpMethod:@"GET" body:nil headers:nil query:@{@"name":@"value"} statusCode:500]];
-    [result addObject:[self createJsonBasedTestWithName:@"GET - 400 response" apiName:apiApplicationName httpMethod:@"GET" body:nil headers:@{@"x-test-zumo-x":@"header value"} query:@{@"name":@"value"} statusCode:400]];
+    [result addObject:[self createJsonBasedTestWithName:@"GET - 500 response" apiName:apiPublicName httpMethod:@"GET" body:nil headers:nil query:@{@"name":@"value"} statusCode:500]];
+    [result addObject:[self createJsonBasedTestWithName:@"GET - 400 response" apiName:apiPublicName httpMethod:@"GET" body:nil headers:@{@"x-test-zumo-x":@"header value"} query:@{@"name":@"value"} statusCode:400]];
 
-    [result addObject:[self createDataBasedTestWithName:@"GET - JSON result" apiName:apiApplicationName httpMethod:@"GET" body:nil headers:nil query:nil statusCode:200 inputFormat:DataFormatJson outputFormat:DataFormatJson]];
-    [result addObject:[self createDataBasedTestWithName:@"GET - XML result" apiName:apiApplicationName httpMethod:@"GET" body:nil headers:nil query:nil statusCode:200 inputFormat:DataFormatJson outputFormat:DataFormatXml]];
-    [result addObject:[self createDataBasedTestWithName:@"GET - Text result" apiName:apiApplicationName httpMethod:@"GET" body:nil headers:nil query:nil statusCode:200 inputFormat:DataFormatJson outputFormat:DataFormatOther]];
+    [result addObject:[self createDataBasedTestWithName:@"GET - JSON result" apiName:apiPublicName httpMethod:@"GET" body:nil headers:nil query:nil statusCode:200 inputFormat:DataFormatJson outputFormat:DataFormatJson]];
+    [result addObject:[self createDataBasedTestWithName:@"GET - XML result" apiName:apiPublicName httpMethod:@"GET" body:nil headers:nil query:nil statusCode:200 inputFormat:DataFormatJson outputFormat:DataFormatXml]];
+    [result addObject:[self createDataBasedTestWithName:@"GET - Text result" apiName:apiPublicName httpMethod:@"GET" body:nil headers:nil query:nil statusCode:200 inputFormat:DataFormatJson outputFormat:DataFormatOther]];
  
-    [result addObject:[self createDataBasedTestWithName:@"POST - JSON input, XML output" apiName:apiApplicationName httpMethod:@"POST" body:@{@"values":@[@1, @YES]} headers:nil query:nil statusCode:200 inputFormat:DataFormatJson outputFormat:DataFormatXml]];
-    [result addObject:[self createDataBasedTestWithName:@"POST - text input, JSON output" apiName:apiApplicationName httpMethod:@"POST" body:@"This is a text body" headers:nil query:nil statusCode:200 inputFormat:DataFormatOther outputFormat:DataFormatJson]];
-    [result addObject:[self createDataBasedTestWithName:@"POST - XML input, text output" apiName:apiApplicationName httpMethod:@"POST" body:@"<hello id=\"1\">world</hello>" headers:nil query:nil statusCode:200 inputFormat:DataFormatXml outputFormat:DataFormatOther]];
+    [result addObject:[self createDataBasedTestWithName:@"POST - JSON input, XML output" apiName:apiPublicName httpMethod:@"POST" body:@{@"values":@[@1, @YES]} headers:nil query:nil statusCode:200 inputFormat:DataFormatJson outputFormat:DataFormatXml]];
+    [result addObject:[self createDataBasedTestWithName:@"POST - text input, JSON output" apiName:apiPublicName httpMethod:@"POST" body:@"This is a text body" headers:nil query:nil statusCode:200 inputFormat:DataFormatOther outputFormat:DataFormatJson]];
+    [result addObject:[self createDataBasedTestWithName:@"POST - XML input, text output" apiName:apiPublicName httpMethod:@"POST" body:@"<hello id=\"1\">world</hello>" headers:nil query:nil statusCode:200 inputFormat:DataFormatXml outputFormat:DataFormatOther]];
     
-    [result addObject:[self createDataBasedTestWithName:@"PUT - JSON input, XML output, custom headers" apiName:apiApplicationName httpMethod:@"PUT" body:@{} headers:@{@"x-test-zumo-1":@"first header", @"x-test-zumo-2":@"second header"} query:nil statusCode:200 inputFormat:DataFormatJson outputFormat:DataFormatXml]];
-    [result addObject:[self createDataBasedTestWithName:@"PATCH - JSON input, text output, custom query parameters" apiName:apiApplicationName httpMethod:@"PATCH" body:@{@"values":@[@1, @2]} headers:@{@"x-test-zumo-1":@"first header"} query:@{@"latin":@"ñøî†é", @"hebrew":@"הספר הוא על השולחן"} statusCode:200 inputFormat:DataFormatJson outputFormat:DataFormatOther]];
-    [result addObject:[self createDataBasedTestWithName:@"DELETE - XML output, 400 response" apiName:apiApplicationName httpMethod:@"DELETE" body:nil headers:nil query:nil statusCode:400 inputFormat:DataFormatJson outputFormat:DataFormatXml]];
-    [result addObject:[self createDataBasedTestWithName:@"GET - JSON output, 500 response" apiName:apiApplicationName httpMethod:@"GET" body:nil headers:@{@"x-test-zumo-1":@"header value"} query:nil statusCode:500 inputFormat:DataFormatJson outputFormat:DataFormatJson]];
+    [result addObject:[self createDataBasedTestWithName:@"PUT - JSON input, XML output, custom headers" apiName:apiPublicName httpMethod:@"PUT" body:@{} headers:@{@"x-test-zumo-1":@"first header", @"x-test-zumo-2":@"second header"} query:nil statusCode:200 inputFormat:DataFormatJson outputFormat:DataFormatXml]];
+    [result addObject:[self createDataBasedTestWithName:@"PATCH - JSON input, text output, custom query parameters" apiName:apiPublicName httpMethod:@"PATCH" body:@{@"values":@[@1, @2]} headers:@{@"x-test-zumo-1":@"first header"} query:@{@"latin":@"ñøî†é", @"hebrew":@"הספר הוא על השולחן"} statusCode:200 inputFormat:DataFormatJson outputFormat:DataFormatOther]];
+    [result addObject:[self createDataBasedTestWithName:@"DELETE - XML output, 400 response" apiName:apiPublicName httpMethod:@"DELETE" body:nil headers:nil query:nil statusCode:400 inputFormat:DataFormatJson outputFormat:DataFormatXml]];
+    [result addObject:[self createDataBasedTestWithName:@"GET - JSON output, 500 response" apiName:apiPublicName httpMethod:@"GET" body:nil headers:@{@"x-test-zumo-1":@"header value"} query:nil statusCode:500 inputFormat:DataFormatJson outputFormat:DataFormatJson]];
 
     [result addObject:[ZumoLoginTests createLogoutTest]];
     [result addObject:[self createApiPermissionsTestWithName:@"Public API - no keys" apiName:apiPublicName shouldSucceed:YES]];
-    [result addObject:[self createApiPermissionsTestWithName:@"Application API - logged out" apiName:apiApplicationName shouldSucceed:YES]];
     [result addObject:[self createApiPermissionsTestWithName:@"Authenticated API - logged out" apiName:apiUserName shouldSucceed:NO]];
-    [result addObject:[self createApiPermissionsTestWithName:@"Admin API - logged out" apiName:apiAdminName shouldSucceed:NO]];
 
     NSInteger indexOfLastUnattendedTest = [result count];
     
     [result addObject:[ZumoLoginTests createLoginTestForProvider:@"facebook" usingSimplifiedMode:YES]];
-    [result addObject:[self createApiPermissionsTestWithName:@"Application API - logged in" apiName:apiApplicationName shouldSucceed:YES]];
+    [result addObject:[self createApiPermissionsTestWithName:@"Application API - logged in" apiName:apiPublicName shouldSucceed:YES]];
     [result addObject:[self createApiPermissionsTestWithName:@"Authenticated API - logged in" apiName:apiUserName shouldSucceed:YES]];
-    [result addObject:[self createApiPermissionsTestWithName:@"Admin API - logged in" apiName:apiAdminName shouldSucceed:NO]];
 
     for (NSInteger i = indexOfLastUnattendedTest; i < [result count]; i++) {
         ZumoTest *test = result[i];

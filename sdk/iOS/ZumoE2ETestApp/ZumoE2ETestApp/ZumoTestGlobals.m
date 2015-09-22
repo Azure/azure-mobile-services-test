@@ -5,7 +5,6 @@
 #import "ZumoTestGlobals.h"
 
 NSString *const UserDefaultApplicationUrl = @"ZumoE2ETest_AppUrl";
-NSString *const UserDefaultApplicationKey = @"ZumoE2ETest_AppKey";
 
 NSString *const RUNTIME_FEATURES_KEY = @"runtime-features";
 NSString *const RUNTIME_VERSION_TAG = @"runtime-version-tag";
@@ -40,8 +39,8 @@ NSString *const TABLES_ROUND_TRIP_INT_ID = @"IntIdRoundTripTable";
     return self;
 }
 
--(void) initializeClientWithAppUrl:(NSString *)url andKey:(NSString *)appKey {
-    [self setClient:[MSClient clientWithApplicationURLString:url applicationKey:appKey]];
+-(void) initializeClientWithAppUrl:(NSString *)url andGatewayURL:(NSString *)gatewayUrl {
+    self.client = [MSClient clientWithApplicationURLString:url gatewayURLString:gatewayUrl applicationKey:nil];
 }
 
 - (NSMutableDictionary *)globalTestParameters {
@@ -51,19 +50,18 @@ NSString *const TABLES_ROUND_TRIP_INT_ID = @"IntIdRoundTripTable";
 - (void)saveAppInfo:(NSString *)appUrl key:(NSString *)appKey {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:appUrl forKey:UserDefaultApplicationUrl];
-    [defaults setObject:appKey forKey:UserDefaultApplicationKey];
     [defaults synchronize];
 }
 
 - (NSArray *)loadAppInfo {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSString *appUrl = [defaults objectForKey:UserDefaultApplicationUrl];
-    NSString *appKey = [defaults objectForKey:UserDefaultApplicationKey];
-    if (appUrl && appKey) {
-        return [NSArray arrayWithObjects:appUrl, appKey, nil];
-    } else {
+
+    if (appUrl == nil) {
         return nil;
     }
+    
+    return @[ appUrl ];
 }
 
 
