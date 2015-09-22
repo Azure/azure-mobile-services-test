@@ -24,7 +24,7 @@ namespace ZumoE2EServerApp.Controllers
             this.DomainManager = new EntityDomainManager<OfflineReady>(context, Request);
         }
 
-        [Queryable(MaxTop = 1000)]
+        [EnableQuery(MaxTop = 1000)]
         public IQueryable<OfflineReady> GetAll()
         {
             return Query();
