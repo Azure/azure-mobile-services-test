@@ -2,9 +2,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.Azure.Mobile.Server;
 using System;
-using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Server.Tables;
 using ZumoE2EServerApp.Utils;
 
 namespace ZumoE2EServerApp.DataObjects
@@ -37,7 +38,7 @@ namespace ZumoE2EServerApp.DataObjects
         public double? Number { get; set; }
     }
 
-    public class IntIdRoundTripTableItemDto : EntityData
+    public class IntIdRoundTripTableItemDto : ITableData
     {
         public string Name { get; set; }
 
@@ -48,5 +49,19 @@ namespace ZumoE2EServerApp.DataObjects
         public int? Integer { get; set; }
 
         public double? Number { get; set; }
+
+        public string Id { get; set; }
+
+        [NotMapped]
+        public bool Deleted { get; set; }
+
+        [NotMapped]
+        public DateTimeOffset? UpdatedAt { get; set; }
+
+        [NotMapped]
+        public DateTimeOffset? CreatedAt { get; set; }
+
+        [NotMapped]
+        public Byte[] Version { get; set; }
     }
 }
