@@ -442,7 +442,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             await EnsureEmptyTableAsync<RoundTripTableItemWithSystemPropertiesType>();
             string id = Guid.NewGuid().ToString();
             IMobileServiceTable table = GetClient().GetTable("RoundTripTable");
-            table.SystemProperties = MobileServiceSystemProperties.Version;
 
             var item = new JObject() { { "id", id }, { "name", "a value" } };
             var inserted = await table.InsertAsync(item);
@@ -819,7 +818,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         }
 
         [AsyncTestMethod]
-        [Tag("DotNetRuntimeBug")] // BUG #1706815 (OData query for version field (string <--> byte[] mismatch)
         public async Task AsyncTableOperationsWithAllSystemProperties()
         {
             await EnsureEmptyTableAsync<RoundTripTableItemWithSystemPropertiesType>();
@@ -844,6 +842,8 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             Assert.IsNotNull(items[0].Version);
 
             // Filter against version
+            // BUG #1706815 (OData query for version field (string <--> byte[] mismatch)
+            /*
             results = await table.Where(i => i.Version == items[0].Version).ToEnumerableAsync();
             RoundTripTableItemWithSystemPropertiesType[] filterItems = results.ToArray();
 
@@ -854,7 +854,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
 
             // Filter against createdAt
             results = await table.Where(i => i.CreatedAt == items[0].CreatedAt).ToEnumerableAsync();
-            filterItems = results.ToArray();
+            RoundTripTableItemWithSystemPropertiesType[] filterItems = results.ToArray();
 
             Assert.AreEqual(1, items.Count());
             Assert.AreEqual(filterItems[0].CreatedAt, items[0].CreatedAt);
@@ -869,6 +869,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             Assert.AreEqual(filterItems[0].CreatedAt, items[0].CreatedAt);
             Assert.AreEqual(filterItems[0].UpdatedAt, items[0].UpdatedAt);
             Assert.AreEqual(filterItems[0].Version, items[0].Version);
+            */
 
             // Projection
             var projectedResults = await table.Select(i => new { XId = i.Id, XCreatedAt = i.CreatedAt, XUpdatedAt = i.UpdatedAt, XVersion = i.Version }).ToEnumerableAsync();
@@ -933,564 +934,25 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             Assert.IsNotNull(item.UpdatedAt);
             Assert.IsNotNull(item.Version);
 
-            // Explicit System Properties insert
-            RoundTripTableItemWithSystemPropertiesType item2 = new RoundTripTableItemWithSystemPropertiesType();
-            allSystemPropertiesTable.SystemProperties = MobileServiceSystemProperties.Version | MobileServiceSystemProperties.CreatedAt;
-            await allSystemPropertiesTable.InsertAsync(item2);
-
-            Assert.IsNotNull(item2.CreatedAt);
-            Assert.AreEqual(new DateTimeOffset(), item2.UpdatedAt);
-            Assert.IsNotNull(item2.Version);
-
             // Explicit System Properties Read
-            allSystemPropertiesTable.SystemProperties = MobileServiceSystemProperties.Version | MobileServiceSystemProperties.UpdatedAt;
-            IEnumerable<RoundTripTableItemWithSystemPropertiesType> results = await allSystemPropertiesTable.Where(p => p.Id == item2.Id).ToEnumerableAsync();
+            IEnumerable<RoundTripTableItemWithSystemPropertiesType> results = await allSystemPropertiesTable.Where(p => p.Id == item.Id).ToEnumerableAsync();
             RoundTripTableItemWithSystemPropertiesType[] items = results.ToArray();
 
             Assert.AreEqual(1, items.Count());
-            Assert.AreEqual(new DateTimeOffset(), items[0].CreatedAt);
+            Assert.IsNotNull(items[0].CreatedAt);
             Assert.IsNotNull(items[0].UpdatedAt);
             Assert.IsNotNull(items[0].Version);
 
             // Lookup
-            allSystemPropertiesTable.SystemProperties = MobileServiceSystemProperties.None;
-            var item3 = await allSystemPropertiesTable.LookupAsync(item2.Id);
-            Assert.AreEqual(new DateTimeOffset(), item3.CreatedAt);
-            Assert.AreEqual(new DateTimeOffset(), item3.UpdatedAt);
-            Assert.IsNull(item3.Version);
+            var item3 = await allSystemPropertiesTable.LookupAsync(item.Id);
+            Assert.AreEqual(item.CreatedAt, item3.CreatedAt);
+            Assert.AreEqual(item.UpdatedAt, item3.UpdatedAt);
+            Assert.IsNotNull(item3.Version);
 
             await allSystemPropertiesTable.DeleteAsync(item);
-            await allSystemPropertiesTable.DeleteAsync(item2);
         }
-
+ 
         [AsyncTestMethod]
-        [Tag("DotNetRuntimeBug")] // BUG #1706815 (OData query for version field (string <--> byte[] mismatch)
-        public async Task AsyncTableOperationsWithAllSystemPropertiesUsingCustomSystemParameters()
-        {
-            await EnsureEmptyTableAsync<RoundTripTableItemWithSystemPropertiesType>();
-
-            foreach (string systemProperties in SystemPropertiesTestData.ValidSystemPropertyQueryStrings)
-            {
-                string[] systemPropertiesKeyValue = systemProperties.Split('=');
-                string key = systemPropertiesKeyValue[0];
-                string value = systemPropertiesKeyValue[1];
-                Dictionary<string, string> userParameters = new Dictionary<string, string>() { { key, value } };
-
-                bool shouldHaveCreatedAt = value.ToLower().Contains("created");
-                bool shouldHaveUpdatedAt = value.ToLower().Contains("updated");
-                bool shouldHaveVersion = value.ToLower().Contains("version");
-
-                if (value.Trim() == "*")
-                {
-                    shouldHaveVersion = shouldHaveUpdatedAt = shouldHaveCreatedAt = true;
-                }
-
-                string id = Guid.NewGuid().ToString();
-                IMobileServiceTable<RoundTripTableItemWithSystemPropertiesType> table = GetClient().GetTable<RoundTripTableItemWithSystemPropertiesType>();
-
-                RoundTripTableItemWithSystemPropertiesType item = new RoundTripTableItemWithSystemPropertiesType() { Id = id, Name = "a value" };
-                await table.InsertAsync(item, userParameters);
-
-                if (shouldHaveCreatedAt)
-                {
-                    Assert.IsNotNull(item.CreatedAt);
-                }
-                else
-                {
-                    Assert.AreEqual(new DateTimeOffset(), item.CreatedAt);
-                }
-                if (shouldHaveUpdatedAt)
-                {
-                    Assert.IsNotNull(item.UpdatedAt);
-                }
-                else
-                {
-                    Assert.AreEqual(new DateTimeOffset(), item.UpdatedAt);
-                }
-                if (shouldHaveVersion)
-                {
-                    Assert.IsNotNull(item.Version);
-                }
-                else
-                {
-                    Assert.IsNull(item.Version);
-                }
-
-                // Read
-                IEnumerable<RoundTripTableItemWithSystemPropertiesType> results = await table.WithParameters(userParameters).ToEnumerableAsync();
-                RoundTripTableItemWithSystemPropertiesType[] items = results.ToArray();
-
-                Assert.AreEqual(1, items.Count());
-                Assert.AreEqual(shouldHaveCreatedAt ? item.CreatedAt : new DateTimeOffset(), items[0].CreatedAt);
-                Assert.AreEqual(shouldHaveUpdatedAt ? item.UpdatedAt : new DateTimeOffset(), items[0].UpdatedAt);
-                Assert.AreEqual(shouldHaveVersion ? item.Version : null, items[0].Version);
-
-                // Filter against version
-                results = await table.Where(i => i.Version == item.Version).WithParameters(userParameters).ToEnumerableAsync();
-                RoundTripTableItemWithSystemPropertiesType[] filterItems = results.ToArray();
-
-                if (shouldHaveVersion)
-                {
-                    Assert.AreEqual(1, filterItems.Count());
-                    Assert.AreEqual(shouldHaveCreatedAt ? item.CreatedAt : new DateTimeOffset(), filterItems[0].CreatedAt);
-                    Assert.AreEqual(shouldHaveUpdatedAt ? item.UpdatedAt : new DateTimeOffset(), filterItems[0].UpdatedAt);
-                    Assert.AreEqual(shouldHaveVersion ? item.Version : null, filterItems[0].Version);
-                }
-                else
-                {
-                    Assert.AreEqual(0, filterItems.Count());
-                }
-
-                // Filter against createdAt
-                results = await table.Where(i => i.CreatedAt == item.CreatedAt).WithParameters(userParameters).ToEnumerableAsync();
-                filterItems = results.ToArray();
-
-                if (shouldHaveCreatedAt)
-                {
-                    Assert.AreEqual(1, filterItems.Count());
-                    Assert.AreEqual(shouldHaveCreatedAt ? item.CreatedAt : new DateTimeOffset(), filterItems[0].CreatedAt);
-                    Assert.AreEqual(shouldHaveUpdatedAt ? item.UpdatedAt : new DateTimeOffset(), filterItems[0].UpdatedAt);
-                    Assert.AreEqual(shouldHaveVersion ? item.Version : null, filterItems[0].Version);
-                }
-                else
-                {
-                    Assert.AreEqual(0, filterItems.Count());
-                }
-
-                // Filter against updatedAt
-                results = await table.Where(i => i.UpdatedAt == item.UpdatedAt).WithParameters(userParameters).ToEnumerableAsync();
-                filterItems = results.ToArray();
-
-                if (shouldHaveUpdatedAt)
-                {
-                    Assert.AreEqual(1, filterItems.Count());
-                    Assert.AreEqual(shouldHaveCreatedAt ? item.CreatedAt : new DateTimeOffset(), filterItems[0].CreatedAt);
-                    Assert.AreEqual(shouldHaveUpdatedAt ? item.UpdatedAt : new DateTimeOffset(), filterItems[0].UpdatedAt);
-                    Assert.AreEqual(shouldHaveVersion ? item.Version : null, filterItems[0].Version);
-                }
-                else
-                {
-                    Assert.AreEqual(0, filterItems.Count());
-                }
-
-                // Projection
-                var projectedResults = await table.Select(i => new { XId = i.Id, XCreatedAt = i.CreatedAt, XUpdatedAt = i.UpdatedAt, XVersion = i.Version })
-                                                  .WithParameters(userParameters)
-                                                  .ToEnumerableAsync();
-                var projectedItems = projectedResults.ToArray();
-
-                Assert.AreEqual(1, projectedItems.Count());
-                Assert.AreEqual(projectedItems[0].XId, item.Id);
-                Assert.AreNotEqual(new DateTimeOffset(), projectedItems[0].XCreatedAt);
-                Assert.AreNotEqual(new DateTimeOffset(), projectedItems[0].XUpdatedAt);
-                Assert.IsNotNull(projectedItems[0].XVersion);
-
-                // Lookup
-                var lookupItem = await table.LookupAsync(id, userParameters);
-                Assert.AreEqual(id, lookupItem.Id);
-                Assert.AreEqual(shouldHaveCreatedAt ? item.CreatedAt : new DateTimeOffset(), lookupItem.CreatedAt);
-                Assert.AreEqual(shouldHaveUpdatedAt ? item.UpdatedAt : new DateTimeOffset(), lookupItem.UpdatedAt);
-                Assert.AreEqual(shouldHaveVersion ? item.Version : null, lookupItem.Version);
-
-                // Refresh
-                var refreshItem = new RoundTripTableItemWithSystemPropertiesType() { Id = id };
-                await table.RefreshAsync(refreshItem, userParameters);
-                Assert.AreEqual(id, refreshItem.Id);
-                Assert.AreEqual(shouldHaveCreatedAt ? item.CreatedAt : new DateTimeOffset(), refreshItem.CreatedAt);
-                Assert.AreEqual(shouldHaveUpdatedAt ? item.UpdatedAt : new DateTimeOffset(), refreshItem.UpdatedAt);
-                Assert.AreEqual(shouldHaveVersion ? item.Version : null, refreshItem.Version);
-
-                // Update
-                item.Name = "Hello!";
-                await table.UpdateAsync(item, userParameters);
-                Assert.AreEqual(item.Id, items[0].Id);
-                Assert.AreEqual(1, items.Count());
-                if (shouldHaveCreatedAt)
-                {
-                    Assert.AreEqual(item.CreatedAt, items[0].CreatedAt);
-                }
-                else
-                {
-                    Assert.AreEqual(new DateTimeOffset(), item.CreatedAt);
-                }
-                if (shouldHaveUpdatedAt)
-                {
-                    Assert.IsTrue(item.UpdatedAt >= items[0].UpdatedAt);
-                }
-                if (shouldHaveVersion)
-                {
-                    Assert.IsNotNull(item.Version);
-                    Assert.AreNotEqual(item.Version, items[0].Version);
-                }
-                else
-                {
-                    Assert.IsNull(item.Version);
-                }
-
-                // Read Again
-                results = await table.WithParameters(userParameters).ToEnumerableAsync();
-                items = results.ToArray();
-                Assert.AreEqual(id, item.Id);
-                Assert.AreEqual(item.Id, items[0].Id);
-                if (shouldHaveCreatedAt)
-                {
-                    Assert.AreEqual(item.CreatedAt, items[0].CreatedAt);
-                }
-                if (shouldHaveUpdatedAt)
-                {
-                    Assert.AreEqual(item.UpdatedAt, items[0].UpdatedAt);
-                }
-                if (shouldHaveVersion)
-                {
-                    Assert.AreEqual(item.Version, items[0].Version);
-                }
-                else
-                {
-                    Assert.IsNull(item.Version);
-                }
-
-                await table.DeleteAsync(item);
-            }
-        }
-
-        [AsyncTestMethod]
-        [Tag("DotNetRuntimeBug")] // BUG #2133523: .NET runtime should respond 400 if query requests invalid system properties
-        public async Task AsyncTableOperationsWithInvalidSystemPropertiesQuerystring()
-        {
-            await EnsureEmptyTableAsync<RoundTripTableItemWithSystemPropertiesType>();
-
-            string id = Guid.NewGuid().ToString();
-            IMobileServiceTable<RoundTripTableItemWithSystemPropertiesType> table = GetClient().GetTable<RoundTripTableItemWithSystemPropertiesType>();
-            table.SystemProperties = MobileServiceSystemProperties.None;
-            RoundTripTableItemWithSystemPropertiesType item = new RoundTripTableItemWithSystemPropertiesType() { Id = id, Name = "a value" };
-
-            // Insert without failing
-            await table.InsertAsync(item);
-
-            foreach (string systemProperties in SystemPropertiesTestData.InvalidSystemPropertyQueryStrings)
-            {
-                string[] systemPropertiesKeyValue = systemProperties.Split('=');
-                string key = systemPropertiesKeyValue[0];
-                string value = systemPropertiesKeyValue[1];
-                Dictionary<string, string> userParameters = new Dictionary<string, string>() { { key, value } };
-
-                // Insert
-                MobileServiceInvalidOperationException exception = null;
-                try
-                {
-                    await table.InsertAsync(item, userParameters);
-                }
-                catch (MobileServiceInvalidOperationException e)
-                {
-                    exception = e;
-                }
-
-                Assert.IsNotNull(exception);
-                Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-                Assert.IsTrue(exception.Message.Contains("is not a supported system property.") ||
-                              exception.Message == "The request could not be completed.  (Bad Request)");
-
-                // Read
-                exception = null;
-                try
-                {
-                    IEnumerable<RoundTripTableItemWithSystemPropertiesType> results = await table.WithParameters(userParameters).ToEnumerableAsync();
-                    RoundTripTableItemWithSystemPropertiesType[] items = results.ToArray();
-                }
-                catch (MobileServiceInvalidOperationException e)
-                {
-                    exception = e;
-                }
-
-                Assert.IsNotNull(exception);
-                Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-                Assert.IsTrue(exception.Message.Contains("is not a supported system property."));
-
-                // Filter against version
-                exception = null;
-                try
-                {
-                    IEnumerable<RoundTripTableItemWithSystemPropertiesType> results = await table.Where(i => i.Version == item.Version).WithParameters(userParameters).ToEnumerableAsync();
-                    RoundTripTableItemWithSystemPropertiesType[] filterItems = results.ToArray();
-                }
-                catch (MobileServiceInvalidOperationException e)
-                {
-                    exception = e;
-                }
-
-                Assert.IsNotNull(exception);
-                Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-                Assert.IsTrue(exception.Message.Contains("is not a supported system property."));
-
-                // Filter against createdAt
-                exception = null;
-                try
-                {
-                    IEnumerable<RoundTripTableItemWithSystemPropertiesType> results = await table.Where(i => i.CreatedAt == item.CreatedAt).WithParameters(userParameters).ToEnumerableAsync();
-                    RoundTripTableItemWithSystemPropertiesType[] filterItems = results.ToArray();
-                }
-                catch (MobileServiceInvalidOperationException e)
-                {
-                    exception = e;
-                }
-
-                Assert.IsNotNull(exception);
-                Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-                Assert.IsTrue(exception.Message.Contains("is not a supported system property."));
-
-                // Filter against updatedAt
-                exception = null;
-                try
-                {
-                    IEnumerable<RoundTripTableItemWithSystemPropertiesType> results = await table.Where(i => i.UpdatedAt == item.UpdatedAt).WithParameters(userParameters).ToEnumerableAsync();
-                    RoundTripTableItemWithSystemPropertiesType[] filterItems = results.ToArray();
-                }
-                catch (MobileServiceInvalidOperationException e)
-                {
-                    exception = e;
-                }
-
-                Assert.IsNotNull(exception);
-                Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-                Assert.IsTrue(exception.Message.Contains("is not a supported system property."));
-
-                // Projection
-                exception = null;
-                try
-                {
-                    var projectedResults = await table.Select(i => new { XId = i.Id, XCreatedAt = i.CreatedAt, XUpdatedAt = i.UpdatedAt, XVersion = i.Version })
-                                  .WithParameters(userParameters)
-                                  .ToEnumerableAsync();
-                    var projectedItems = projectedResults.ToArray();
-                }
-                catch (MobileServiceInvalidOperationException e)
-                {
-                    exception = e;
-                }
-
-                Assert.IsNotNull(exception);
-                Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-                Assert.IsTrue(exception.Message.Contains("is not a supported system property."));
-
-                // Lookup
-                exception = null;
-                try
-                {
-                    var lookupItem = await table.LookupAsync(id, userParameters);
-                }
-                catch (MobileServiceInvalidOperationException e)
-                {
-                    exception = e;
-                }
-
-                Assert.IsNotNull(exception);
-                Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-                Assert.IsTrue(exception.Message.Contains("is not a supported system property."));
-
-                // Refresh
-                exception = null;
-                try
-                {
-                    var refreshItem = new RoundTripTableItemWithSystemPropertiesType() { Id = id };
-                    await table.RefreshAsync(refreshItem, userParameters);
-                }
-                catch (MobileServiceInvalidOperationException e)
-                {
-                    exception = e;
-                }
-
-                Assert.IsNotNull(exception);
-                Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-                Assert.IsTrue(exception.Message.Contains("is not a supported system property."));
-
-                // Update
-                exception = null;
-                try
-                {
-                    item.Name = "Hello!";
-                    await table.UpdateAsync(item, userParameters);
-                }
-                catch (MobileServiceInvalidOperationException e)
-                {
-                    exception = e;
-                }
-
-                Assert.IsNotNull(exception);
-                Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-                Assert.IsTrue(exception.Message.Contains("is not a supported system property."));
-            }
-
-            await table.DeleteAsync(item);
-        }
-
-        [AsyncTestMethod]
-        [Tag("DotNetRuntimeBug")] // BUG #2133523: .NET runtime should respond 400 if query requests invalid system properties
-        public async Task AsyncTableOperationsWithInvalidSystemParameterQueryString()
-        {
-            await EnsureEmptyTableAsync<RoundTripTableItemWithSystemPropertiesType>();
-
-            string id = Guid.NewGuid().ToString();
-            IMobileServiceTable<RoundTripTableItemWithSystemPropertiesType> table = GetClient().GetTable<RoundTripTableItemWithSystemPropertiesType>();
-            table.SystemProperties = MobileServiceSystemProperties.None;
-            RoundTripTableItemWithSystemPropertiesType item = new RoundTripTableItemWithSystemPropertiesType() { Id = id, Name = "a value" };
-
-            // Insert without failing
-            await table.InsertAsync(item);
-
-            string[] systemPropertiesKeyValue = SystemPropertiesTestData.InvalidSystemParameterQueryString.Split('=');
-            string key = systemPropertiesKeyValue[0];
-            string value = systemPropertiesKeyValue[1];
-            Dictionary<string, string> userParameters = new Dictionary<string, string>() { { key, value } };
-
-            // Insert
-            MobileServiceInvalidOperationException exception = null;
-            try
-            {
-                await table.InsertAsync(item, userParameters);
-            }
-            catch (MobileServiceInvalidOperationException e)
-            {
-                exception = e;
-            }
-
-            Assert.IsNotNull(exception);
-            Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-            Assert.IsTrue(exception.Message.Contains("Custom query parameter names must not start with $ or __."));
-
-            // Read
-            exception = null;
-            try
-            {
-                IEnumerable<RoundTripTableItemWithSystemPropertiesType> results = await table.WithParameters(userParameters).ToEnumerableAsync();
-                RoundTripTableItemWithSystemPropertiesType[] items = results.ToArray();
-            }
-            catch (MobileServiceInvalidOperationException e)
-            {
-                exception = e;
-            }
-
-            Assert.IsNotNull(exception);
-            Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-            Assert.IsTrue(exception.Message.Contains("Custom query parameter names must not start with $ or __."));
-
-            // Filter against version
-            exception = null;
-            try
-            {
-                IEnumerable<RoundTripTableItemWithSystemPropertiesType> results = await table.Where(i => i.Version == item.Version).WithParameters(userParameters).ToEnumerableAsync();
-                RoundTripTableItemWithSystemPropertiesType[] filterItems = results.ToArray();
-            }
-            catch (MobileServiceInvalidOperationException e)
-            {
-                exception = e;
-            }
-
-            Assert.IsNotNull(exception);
-            Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-            Assert.IsTrue(exception.Message.Contains("Custom query parameter names must not start with $ or __."));
-
-            // Filter against createdAt
-            exception = null;
-            try
-            {
-                IEnumerable<RoundTripTableItemWithSystemPropertiesType> results = await table.Where(i => i.CreatedAt == item.CreatedAt).WithParameters(userParameters).ToEnumerableAsync();
-                RoundTripTableItemWithSystemPropertiesType[] filterItems = results.ToArray();
-            }
-            catch (MobileServiceInvalidOperationException e)
-            {
-                exception = e;
-            }
-
-            Assert.IsNotNull(exception);
-            Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-            Assert.IsTrue(exception.Message.Contains("Custom query parameter names must not start with $ or __."));
-
-            // Filter against updatedAt
-            exception = null;
-            try
-            {
-                IEnumerable<RoundTripTableItemWithSystemPropertiesType> results = await table.Where(i => i.UpdatedAt == item.UpdatedAt).WithParameters(userParameters).ToEnumerableAsync();
-                RoundTripTableItemWithSystemPropertiesType[] filterItems = results.ToArray();
-            }
-            catch (MobileServiceInvalidOperationException e)
-            {
-                exception = e;
-            }
-
-            Assert.IsNotNull(exception);
-            Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-            Assert.IsTrue(exception.Message.Contains("Custom query parameter names must not start with $ or __."));
-
-            // Projection
-            exception = null;
-            try
-            {
-                var projectedResults = await table.Select(i => new { XId = i.Id, XCreatedAt = i.CreatedAt, XUpdatedAt = i.UpdatedAt, XVersion = i.Version })
-                              .WithParameters(userParameters)
-                              .ToEnumerableAsync();
-                var projectedItems = projectedResults.ToArray();
-            }
-            catch (MobileServiceInvalidOperationException e)
-            {
-                exception = e;
-            }
-
-            Assert.IsNotNull(exception);
-            Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-            Assert.IsTrue(exception.Message.Contains("Custom query parameter names must not start with $ or __."));
-
-            // Lookup
-            exception = null;
-            try
-            {
-                var lookupItem = await table.LookupAsync(id, userParameters);
-            }
-            catch (MobileServiceInvalidOperationException e)
-            {
-                exception = e;
-            }
-
-            Assert.IsNotNull(exception);
-            Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-            Assert.IsTrue(exception.Message.Contains("Custom query parameter names must not start with $ or __."));
-
-            // Refresh
-            exception = null;
-            try
-            {
-                var refreshItem = new RoundTripTableItemWithSystemPropertiesType() { Id = id };
-                await table.RefreshAsync(refreshItem, userParameters);
-            }
-            catch (MobileServiceInvalidOperationException e)
-            {
-                exception = e;
-            }
-
-            Assert.IsNotNull(exception);
-            Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-            Assert.IsTrue(exception.Message.Contains("Custom query parameter names must not start with $ or __."));
-
-            // Update
-            exception = null;
-            try
-            {
-                item.Name = "Hello!";
-                await table.UpdateAsync(item, userParameters);
-            }
-            catch (MobileServiceInvalidOperationException e)
-            {
-                exception = e;
-            }
-
-            Assert.IsNotNull(exception);
-            Assert.AreEqual(exception.Response.StatusCode, HttpStatusCode.BadRequest);
-            Assert.IsTrue(exception.Message.Contains("Custom query parameter names must not start with $ or __."));
-
-            await table.DeleteAsync(item);
-        }
-
-        [AsyncTestMethod]
-        [Tag("DotNetRuntimeBug")] // BUG #1706815 (query system properties)
         public async Task AsyncFilterSelectOrderingOperationsNotImpactedBySystemProperties()
         {
             await EnsureEmptyTableAsync<RoundTripTableItemWithSystemPropertiesType>();
@@ -1511,89 +973,85 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                 items.Add(item);
             }
 
+            // Ordering
+            var results = await table.OrderBy(t => t.CreatedAt).ToEnumerableAsync(); // Fails here with .NET runtime. Why??
+            RoundTripTableItemWithSystemPropertiesType[] orderItems = results.ToArray();
 
-            foreach (MobileServiceSystemProperties systemProperties in SystemPropertiesTestData.SystemProperties)
+            for (int i = 0; i < orderItems.Length - 1; i++)
             {
-                table.SystemProperties = systemProperties;
+                Assert.IsTrue(int.Parse(orderItems[i].Id) < int.Parse(orderItems[i + 1].Id));
+            }
 
-                // Ordering
-                var results = await table.OrderBy(t => t.CreatedAt).ToEnumerableAsync(); // Fails here with .NET runtime. Why??
-                RoundTripTableItemWithSystemPropertiesType[] orderItems = results.ToArray();
+            results = await table.OrderBy(t => t.UpdatedAt).ToEnumerableAsync();
+            orderItems = results.ToArray();
 
-                for (int i = 0; i < orderItems.Length - 1; i++)
-                {
-                    Assert.IsTrue(int.Parse(orderItems[i].Id) < int.Parse(orderItems[i + 1].Id));
-                }
+            for (int i = 0; i < orderItems.Length - 1; i++)
+            {
+                Assert.IsTrue(int.Parse(orderItems[i].Id) < int.Parse(orderItems[i + 1].Id));
+            }
 
-                results = await table.OrderBy(t => t.UpdatedAt).ToEnumerableAsync();
-                orderItems = results.ToArray();
+            results = await table.OrderBy(t => t.Version).ToEnumerableAsync();
+            orderItems = results.ToArray();
 
-                for (int i = 0; i < orderItems.Length - 1; i++)
-                {
-                    Assert.IsTrue(int.Parse(orderItems[i].Id) < int.Parse(orderItems[i + 1].Id));
-                }
+            for (int i = 0; i < orderItems.Length - 1; i++)
+            {
+                Assert.IsTrue(int.Parse(orderItems[i].Id) < int.Parse(orderItems[i + 1].Id));
+            }
 
-                results = await table.OrderBy(t => t.Version).ToEnumerableAsync();
-                orderItems = results.ToArray();
+            // Filtering
+            results = await table.Where(t => t.CreatedAt >= items[4].CreatedAt).ToEnumerableAsync();
+            RoundTripTableItemWithSystemPropertiesType[] filteredItems = results.ToArray();
 
-                for (int i = 0; i < orderItems.Length - 1; i++)
-                {
-                    Assert.IsTrue(int.Parse(orderItems[i].Id) < int.Parse(orderItems[i + 1].Id));
-                }
+            for (int i = 0; i < filteredItems.Length - 1; i++)
+            {
+                Assert.IsTrue(filteredItems[i].CreatedAt >= items[4].CreatedAt);
+            }
 
-                // Filtering
-                results = await table.Where(t => t.CreatedAt >= items[4].CreatedAt).ToEnumerableAsync();
-                RoundTripTableItemWithSystemPropertiesType[] filteredItems = results.ToArray();
+            results = await table.Where(t => t.UpdatedAt >= items[4].UpdatedAt).ToEnumerableAsync();
+            filteredItems = results.ToArray();
 
-                for (int i = 0; i < filteredItems.Length - 1; i++)
-                {
-                    Assert.IsTrue(filteredItems[i].CreatedAt >= items[4].CreatedAt);
-                }
+            for (int i = 0; i < filteredItems.Length - 1; i++)
+            {
+                Assert.IsTrue(filteredItems[i].UpdatedAt >= items[4].UpdatedAt);
+            }
 
-                results = await table.Where(t => t.UpdatedAt >= items[4].UpdatedAt).ToEnumerableAsync();
-                filteredItems = results.ToArray();
+            // TODO: Seperate to own test, to not run for .NET / Fix.Net
+            /*
+            results = await table.Where(t => t.Version == items[4].Version).ToEnumerableAsync();
+            filteredItems = results.ToArray();
 
-                for (int i = 0; i < filteredItems.Length - 1; i++)
-                {
-                    Assert.IsTrue(filteredItems[i].UpdatedAt >= items[4].UpdatedAt);
-                }
+            for (int i = 0; i < filteredItems.Length - 1; i++)
+            {
+                Assert.IsTrue(filteredItems[i].Version == items[4].Version);
+            }
+            */
 
-                results = await table.Where(t => t.Version == items[4].Version).ToEnumerableAsync();
-                filteredItems = results.ToArray();
+            // Selection
+            var selectionResults = await table.Select(t => new { Id = t.Id, CreatedAt = t.CreatedAt }).ToEnumerableAsync();
+            var selectedItems = selectionResults.ToArray();
 
-                for (int i = 0; i < filteredItems.Length - 1; i++)
-                {
-                    Assert.IsTrue(filteredItems[i].Version == items[4].Version);
-                }
+            for (int i = 0; i < selectedItems.Length; i++)
+            {
+                var item = items.Where(t => t.Id == selectedItems[i].Id).FirstOrDefault();
+                Assert.IsTrue(item.CreatedAt == selectedItems[i].CreatedAt);
+            }
 
-                // Selection
-                var selectionResults = await table.Select(t => new { Id = t.Id, CreatedAt = t.CreatedAt }).ToEnumerableAsync();
-                var selectedItems = selectionResults.ToArray();
+            var selectionResults2 = await table.Select(t => new { Id = t.Id, UpdatedAt = t.UpdatedAt }).ToEnumerableAsync();
+            var selectedItems2 = selectionResults2.ToArray();
 
-                for (int i = 0; i < selectedItems.Length; i++)
-                {
-                    var item = items.Where(t => t.Id == selectedItems[i].Id).FirstOrDefault();
-                    Assert.IsTrue(item.CreatedAt == selectedItems[i].CreatedAt);
-                }
+            for (int i = 0; i < selectedItems2.Length; i++)
+            {
+                var item = items.Where(t => t.Id == selectedItems2[i].Id).FirstOrDefault();
+                Assert.IsTrue(item.UpdatedAt == selectedItems2[i].UpdatedAt);
+            }
 
-                var selectionResults2 = await table.Select(t => new { Id = t.Id, UpdatedAt = t.UpdatedAt }).ToEnumerableAsync();
-                var selectedItems2 = selectionResults2.ToArray();
+            var selectionResults3 = await table.Select(t => new { Id = t.Id, Version = t.Version }).ToEnumerableAsync();
+            var selectedItems3 = selectionResults3.ToArray();
 
-                for (int i = 0; i < selectedItems2.Length; i++)
-                {
-                    var item = items.Where(t => t.Id == selectedItems2[i].Id).FirstOrDefault();
-                    Assert.IsTrue(item.UpdatedAt == selectedItems2[i].UpdatedAt);
-                }
-
-                var selectionResults3 = await table.Select(t => new { Id = t.Id, Version = t.Version }).ToEnumerableAsync();
-                var selectedItems3 = selectionResults3.ToArray();
-
-                for (int i = 0; i < selectedItems3.Length; i++)
-                {
-                    var item = items.Where(t => t.Id == selectedItems3[i].Id).FirstOrDefault();
-                    Assert.IsTrue(item.Version == selectedItems3[i].Version);
-                }
-
+            for (int i = 0; i < selectedItems3.Length; i++)
+            {
+                var item = items.Where(t => t.Id == selectedItems3[i].Id).FirstOrDefault();
+                Assert.IsTrue(item.Version == selectedItems3[i].Version);
             }
 
             // Delete
@@ -1609,7 +1067,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             await EnsureEmptyTableAsync<RoundTripTableItemWithSystemPropertiesType>();
             string id = Guid.NewGuid().ToString();
             IMobileServiceTable table = GetClient().GetTable("RoundTripTable");
-            table.SystemProperties = MobileServiceSystemProperties.Version;
 
             var item = new JObject() { { "id", id }, { "name", "a value" } };
             var inserted = await table.InsertAsync(item);

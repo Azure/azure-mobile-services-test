@@ -161,10 +161,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             var client = this.GetClient();
             var typedTable = client.GetTable<VersionedType>();
             var untypedTable = client.GetTable("RoundTripTable");
-            untypedTable.SystemProperties =
-                MobileServiceSystemProperties.CreatedAt |
-                MobileServiceSystemProperties.UpdatedAt |
-                MobileServiceSystemProperties.Version;
+ 
             DateTime now = DateTime.UtcNow;
             int seed = now.Year * 10000 + now.Month * 100 + now.Day;
             Log("Using seed: {0}", seed);
