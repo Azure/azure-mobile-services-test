@@ -2,9 +2,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Microsoft.Azure.Mobile.Server;
-using Newtonsoft.Json;
 using System;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Server.Tables;
 using ZumoE2EServerApp.Utils;
 
 namespace ZumoE2EServerApp.DataObjects
@@ -30,7 +31,7 @@ namespace ZumoE2EServerApp.DataObjects
         public int Year { get; set; }
     }
 
-    public class IntIdMovieDto : EntityData
+    public class IntIdMovieDto : ITableData
     {
         public string Title { get; set; }
         public int Duration { get; set; }
@@ -38,6 +39,20 @@ namespace ZumoE2EServerApp.DataObjects
         public DateTime ReleaseDate { get; set; }
         public bool BestPictureWinner { get; set; }
         public int Year { get; set; }
+
+        public string Id { get; set; }
+
+        [NotMapped]
+        public bool Deleted { get; set; }
+
+        [NotMapped]
+        public DateTimeOffset? UpdatedAt { get; set; }
+
+        [NotMapped]
+        public DateTimeOffset? CreatedAt { get; set; }
+
+        [NotMapped]
+        public Byte[] Version { get; set; }
     }
 
     public class AllMovies
