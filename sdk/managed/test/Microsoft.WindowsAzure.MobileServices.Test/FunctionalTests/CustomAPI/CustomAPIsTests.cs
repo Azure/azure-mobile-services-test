@@ -186,63 +186,72 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                 HttpStatusCode expectedStatus;
                 CreateHttpContentTestInput(inputFormat, outputFormat, rndGen, out method, out content, out expectedResult, out headers, out query, out expectedStatus);
 
-                HttpResponseMessage response;
-                try
+                using (HttpResponseMessage response = await InvokeApiAsync(AppApiName, content, method, headers, query))
                 {
-                    response = await GetClient().InvokeApiAsync(AppApiName, content, method, headers, query);
-                }
-                catch (MobileServiceInvalidOperationException e)
-                {
-                    response = e.Response;
-                }
+                    ValidateResponseHeader(expectedStatus, headers, response);
 
-                ValidateResponseHeader(expectedStatus, headers, response);
+                    Log("  - All request / response headers validated successfully");
 
-                Log("  - All request / response headers validated successfully");
+                    string responseContent = null;
+                    if (response.Content != null)
+                    {
+                        responseContent = await response.Content.ReadAsStringAsync();
+                        Log("Response content: {0}", responseContent);
+                    }
 
-                string responseContent = null;
-                if (response.Content != null)
-                {
-                    responseContent = await response.Content.ReadAsStringAsync();
-                    Log("Response content: {0}", responseContent);
-                }
+                    JToken jsonResponse = null;
+                    if (outputFormat == DataFormat.Json)
+                    {
+                        jsonResponse = JToken.Parse(responseContent);
+                    }
+                    else if (outputFormat == DataFormat.Other)
+                    {
+                        string decodedContent = responseContent
+                            .Replace("__{__", "{")
+                            .Replace("__}__", "}")
+                            .Replace("__[__", "[")
+                            .Replace("__]__", "]");
+                        jsonResponse = JToken.Parse(decodedContent);
+                    }
 
-                JToken jsonResponse = null;
-                if (outputFormat == DataFormat.Json)
-                {
-                    jsonResponse = JToken.Parse(responseContent);
-                }
-                else if (outputFormat == DataFormat.Other)
-                {
-                    string decodedContent = responseContent
-                        .Replace("__{__", "{")
-                        .Replace("__}__", "}")
-                        .Replace("__[__", "[")
-                        .Replace("__]__", "]");
-                    jsonResponse = JToken.Parse(decodedContent);
-                }
+                    bool contentIsExpected = false;
+                    List<string> errors = new List<string>();
+                    switch (outputFormat)
+                    {
+                        case DataFormat.Json:
+                        case DataFormat.Other:
+                            contentIsExpected = CompareJson(expectedResult, jsonResponse, errors);
+                            break;
+                        case DataFormat.Xml:
+                            string expectedResultContent = JsonToXml(expectedResult);
 
-                bool contentIsExpected = false;
-                List<string> errors = new List<string>();
-                switch (outputFormat)
-                {
-                    case DataFormat.Json:
-                    case DataFormat.Other:
-                        contentIsExpected = CompareJson(expectedResult, jsonResponse, errors);
-                        break;
-                    case DataFormat.Xml:
-                        string expectedResultContent = JsonToXml(expectedResult);
+                            // Normalize CRLF
+                            expectedResultContent = expectedResultContent.Replace("\r\n", "\n");
+                            responseContent = responseContent.Replace("\r\n", "\n");
 
-                        // Normalize CRLF
-                        expectedResultContent = expectedResultContent.Replace("\r\n", "\n");
-                        responseContent = responseContent.Replace("\r\n", "\n");
-
-                        Assert.AreEqual(expectedResultContent, responseContent);
-                        break;
+                            Assert.AreEqual(expectedResultContent, responseContent);
+                            break;
+                    }
                 }
 
                 Log("  - Validation completed successfully");
             }
+        }
+
+        private async Task<HttpResponseMessage> InvokeApiAsync(string apiName, HttpContent content, HttpMethod method, Dictionary<string, string> headers, Dictionary<string, string> query)
+        {
+            HttpResponseMessage response = null;
+
+            try
+            {
+                response = await GetClient().InvokeApiAsync(apiName, content, method, headers, query);
+            }
+            catch (MobileServiceInvalidOperationException e)
+            {
+                response = e.Response;
+            }
+
+            return response;
         }
 
         private static void CreateHttpContentTestInput(DataFormat inputFormat, DataFormat outputFormat, Random rndGen, out HttpMethod method, out HttpContent content, out JObject expectedResult, out Dictionary<string, string> headers, out Dictionary<string, string> query, out HttpStatusCode expectedStatus)
