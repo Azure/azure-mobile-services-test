@@ -66,10 +66,10 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         {
             MobileServiceUser user = await GetDummyUser();
             this.GetClient().CurrentUser = user;
-            var channelUri = this.pushTestUtility.GetPushHandle();
+            NSData channelUri = NSDataFromDescription(this.pushTestUtility.GetPushHandle());
             Dictionary<string, string> channelUriParam = new Dictionary<string, string>()
             {
-                {"channelUri", channelUri}
+                {"channelUri", TrimDeviceToken(channelUri.Description)}
             };
             var push = this.GetClient().GetPush();
             await push.RegisterAsync(channelUri);
