@@ -192,25 +192,24 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             PushWatcher watcher = new PushWatcher();
             var client = this.GetClient();
             var push = this.GetClient().GetPush();
+            string pushChannelUri = await GetChannelUri();
 
             //Build push payload
-            string wnsMethod = "sendToastText01";
-            string text = "Hello World";
-            string pushChannelUri = await GetChannelUri();
-            var payload = new JObject();
-            payload.Add("text1", text);
-            XElement expectedResult = BuildXmlToastPayload(wnsMethod, text);
-            var item = new JObject();
-            item.Add("payload", expectedResult.ToString());
-            item.Add("nhNotificationType", "wns");
+            XElement expectedResult = BuildXmlToastPayload("sendToastText01", "Hello World");
+            var xmlPayload = "<?xml version=\"1.0\"?>" + expectedResult;
+            JObject body = new JObject();
+            body["method"] = "send";
+            body["type"] = "wns";
+            body["payload"] = xmlPayload;
+            body["token"] = "dummy";
+            body["wnsType"] = "toast";
+
             try
             {
                 //Register for Push
                 await push.RegisterAsync(pushChannelUri);
-
-                //Invoke push send on insert
-                var table = client.GetTable(PushTestTableName);
-                var pushResult = await table.InsertAsync(item);
+                //Invoke API to send push
+                await this.GetClient().InvokeApiAsync("push", body);
                 var notificationResult = await watcher.WaitForPush(TimeSpan.FromSeconds(10));
                 if (notificationResult == null)
                 {
