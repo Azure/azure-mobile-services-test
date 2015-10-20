@@ -70,8 +70,8 @@
       <Link>js\testFrameworkConnections.js</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\TestFramework\js\daylightFramework.js">
-      <Link>js\daylightFramework.js</Link>
+    <Content Include="..\..\TestFramework\js\storageFramework.js">
+      <Link>js\storageFramework.js</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="..\..\TestFramework\js\lib\jquery-2.1.1.js">
