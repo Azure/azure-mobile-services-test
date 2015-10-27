@@ -1,11 +1,19 @@
-exports.get = handleRequest;
-exports.post = handleRequest;
-exports.put = handleRequest;
-exports.patch = handleRequest;
-exports.del = handleRequest;
+// ----------------------------------------------------------------------------
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// ----------------------------------------------------------------------------
+var authorize = require('azure-mobile-apps/src/express/middleware/authorize'),
+    bodyParser = require('body-parser'),
+    rawBodyParser = require('../bodyParser');
 
-exports.handleRequest = handleRequest;
-function handleRequest(req, res) {
+module.exports = {
+    register: function (app) {
+        app.use('/api/applicationPermission', [bodyParser.json(), rawBodyParser(), handleRequest]);
+        app.use('/api/publicPermission', [bodyParser.json(), rawBodyParser(), handleRequest]);
+        app.use('/api/userPermission', [authorize, rawBodyParser(), handleRequest]);
+    }
+}
+
+function handleRequest(req, res, next) {
     var format = req.query.format || 'json';
     var status = req.query.status || 200;
     var output = { method: req.method };
@@ -25,11 +33,12 @@ function handleRequest(req, res) {
         }
     }
 
-    if (req.body) {
+    if (req.body && (typeof req.body !== 'object' || Object.keys(req.body).length)) {
         output.body = req.body;
     }
 
-    output.user = JSON.parse(JSON.stringify(req.user)); // remove functions
+    //output.user = JSON.parse(JSON.stringify(req.user)); // remove functions
+    output.user = { level: 'anonymous' };
 
     switch (format) {
         case 'json':
@@ -47,8 +56,8 @@ function handleRequest(req, res) {
                          .replace(/\]/g, '__]__');
             break;
     }
-    
-    res.send(status, output);
+
+    res.status(status).send(output);
     res.end();
 }
 
