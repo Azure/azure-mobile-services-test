@@ -21,12 +21,9 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
 
             harness.Settings.Custom["MobileServiceRuntimeUrl"] = config.MobileServiceRuntimeUrl;
             harness.Settings.Custom["MobileServiceRuntimeKey"] = config.MobileServiceRuntimeKey;
-            harness.Settings.Custom["MasterRunId"] = config.MasterRunId;
+            harness.Settings.Custom["TestFrameworkStorageContainerUrl"] = config.TestFrameworkStorageContainerUrl;
+            harness.Settings.Custom["TestFrameworkStorageContainerSasToken"] = config.TestFrameworkStorageContainerSasToken;
             harness.Settings.Custom["RuntimeVersion"] = config.RuntimeVersion;
-            harness.Settings.Custom["CliendId"] = config.CliendId;
-            harness.Settings.Custom["ClientSecret"] = config.ClientSecret;
-            harness.Settings.Custom["DayLightUrl"] = config.DayLightUrl;
-            harness.Settings.Custom["DaylightProject"] = config.DaylightProject;
             harness.Settings.TagExpression = config.TagExpression;
             harness.Settings.ManualMode = false;
         }
@@ -59,12 +56,9 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
             {
                 harness.Settings.Custom["MobileServiceRuntimeUrl"] = getArgumentValue("url", args);
                 harness.Settings.Custom["MobileServiceRuntimeKey"] = getArgumentValue("key", args);
-                harness.Settings.Custom["MasterRunId"] = getArgumentValue("runid", args);
+                harness.Settings.Custom["TestFrameworkStorageContainerUrl"] = getArgumentValue("storageurl", args);
+                harness.Settings.Custom["TestFrameworkStorageContainerSasToken"] = getArgumentValue("storagesastoken", args); ;
                 harness.Settings.Custom["RuntimeVersion"] = getArgumentValue("runtimeversion", args);
-                harness.Settings.Custom["CliendId"] = getArgumentValue("clientid", args);
-                harness.Settings.Custom["ClientSecret"] = getArgumentValue("clientsecret", args);
-                harness.Settings.Custom["DayLightUrl"] = getArgumentValue("daylighturl", args);
-                harness.Settings.Custom["DaylightProject"] = getArgumentValue("daylightproject", args);
                 harness.Settings.TagExpression = getArgumentValue("tags", args);
                 harness.Settings.ManualMode = false;
             }
