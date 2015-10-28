@@ -16,7 +16,6 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
         /// </summary>
         public TestRun()
         {
-            this.VersionSpec = new RunVersionSpec();
             this.Tags = new List<string>();
             this.testResults = new List<TestResult>();
             this.TestCount = 0;
@@ -25,17 +24,11 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
         [JsonProperty("name")]
         public string Name { get; set; }
 
-        [JsonProperty("run_id")]
-        public string RunId { get; set; }
-
         [JsonProperty("start_time"), JsonConverter(typeof(DateTimeToWindowsFileTimeConverter))]
         public DateTime StartTime { get; set; }
 
         [JsonProperty("end_time"), JsonConverter(typeof(DateTimeToWindowsFileTimeConverter))]
         public DateTime EndTime { get; set; }
-
-        [JsonProperty("version_spec")]
-        public RunVersionSpec VersionSpec { get; set; }
 
         [JsonProperty("tags")]
         public List<string> Tags { get; private set; }
