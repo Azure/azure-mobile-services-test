@@ -14,7 +14,6 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
         {
             var defaults = NSUserDefaults.StandardUserDefaults;
             string mobileServiceUri = defaults.StringForKey(MobileServiceUriKey);
-            string mobileServiceKey = defaults.StringForKey(MobileServiceKeyKey);
             string tags = defaults.StringForKey(TagsKey);
             string daylightUri = defaults.StringForKey(DaylightUriKey);
             string daylightProject = defaults.StringForKey(DaylightProjectKey);
@@ -24,7 +23,6 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
             string runtimeVersion = defaults.StringForKey(RuntimeVersionKey);
 
             this.uriEntry = new AccessibleEntryElement(null, "Mobile Service URI", mobileServiceUri, accessibilityId: MobileServiceUriKey);
-            this.keyEntry = new AccessibleEntryElement(null, "Mobile Service Key", mobileServiceKey, accessibilityId: MobileServiceKeyKey);
             this.tagsEntry = new AccessibleEntryElement(null, "Tags", tags, accessibilityId: TagsKey);
 
             this.daylightUriEntry = new AccessibleEntryElement(null, "Daylight URI", daylightUri, accessibilityId: DaylightUriKey);
@@ -37,7 +35,6 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
             Root = new RootElement("C# Client Library Tests") {
                 new Section("Login") {
                     this.uriEntry,
-                    this.keyEntry,
                     this.tagsEntry
                 },
 
@@ -64,7 +61,6 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
         }
 
         private const string MobileServiceUriKey = "MobileServiceUri";
-        private const string MobileServiceKeyKey = "MobileServiceKey";
         private const string TagsKey = "Tags";
         private const string DaylightUriKey = "DaylightUri";
         private const string DaylightProjectKey = "DaylightProject";
@@ -87,7 +83,6 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
         {
             var defaults = NSUserDefaults.StandardUserDefaults;
             defaults.SetString(this.uriEntry.Value, MobileServiceUriKey);
-            defaults.SetString(this.keyEntry.Value, MobileServiceKeyKey);
             defaults.SetString(this.tagsEntry.Value, TagsKey);
             defaults.SetString(this.daylightUriEntry.Value, DaylightUriKey);
             defaults.SetString(this.daylightProjectEntry.Value, DaylightProjectKey);
@@ -99,7 +94,6 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
             AppDelegate.Harness.SetAutoConfig(new TestConfig()
             {
                 MobileServiceRuntimeUrl = this.uriEntry.Value,
-                MobileServiceRuntimeKey = this.keyEntry.Value,
                 TagExpression = this.tagsEntry.Value,
                 MasterRunId = this.runIdEntry.Value,
                 DayLightUrl = this.daylightUriEntry.Value,
@@ -129,7 +123,7 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
 
         private async void Login(MobileServiceAuthenticationProvider provider)
         {
-            var client = new MobileServiceClient(this.uriEntry.Value, this.keyEntry.Value);
+            var client = new MobileServiceClient(this.uriEntry.Value);
             var user = await client.LoginAsync(this, provider);
             var alert = new UIAlertView("Welcome", "Your userId is: " + user.UserId, null, "OK");
             alert.Show();
