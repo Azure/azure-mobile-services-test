@@ -46,30 +46,31 @@ static NSString *lastUserIdentityObjectKey = @"lastUserIdentityObject";
     NSMutableArray *result = [[NSMutableArray alloc] init];
     [result addObject:[self createClearAuthCookiesTest]];
     [result addObject:[self createLogoutTest]];
-    [result addObject:[self createCRUDTestForProvider:nil forTable:@"public" ofType:ZumoTableApplication andAuthenticated:NO]];
+    [result addObject:[self createCRUDTestForProvider:nil forTable:@"public" ofType:ZumoTableAnonymous andAuthenticated:NO]];
     [result addObject:[self createCRUDTestForProvider:nil forTable:@"authenticated" ofType:ZumoTableAuthenticated andAuthenticated:NO]];
     
     NSInteger indexOfLastUnattendedTest = [result count];
     
-    NSArray *providers = @[@"facebook", @"google", @"twitter", @"microsoftaccount", @"aad"];
-    NSArray *providersWithRecycledTokenSupport = @[@"facebook"]; //, @"google"]; Known bug - Drop login via Google token until Google client flow is reintroduced
-    NSString *provider;
+    NSArray *providers = @[ @"facebook", @"twitter", @"google", @"microsoftaccount", @"aad" ];
+    NSArray *clientProviders = @[ @"facebook", @"twitter", @"microsoftaccount" ];
     
     for (int useSimplifiedLogin = 0; useSimplifiedLogin <= 1; useSimplifiedLogin++) {
-        for (provider in providers) {
+        for (NSString *provider in providers) {
             BOOL useSimplified = useSimplifiedLogin == 1;
             [result addObject:[self createLogoutTest]];
             [result addObject:[self createSleepTest:3]];
             [result addObject:[self createLoginTestForProvider:provider usingSimplifiedMode:useSimplified]];
-            [result addObject:[self createCRUDTestForProvider:provider forTable:@"public" ofType:ZumoTableApplication andAuthenticated:YES]];
+            [result addObject:[self createCRUDTestForProvider:provider forTable:@"public" ofType:ZumoTableAnonymous andAuthenticated:YES]];
             [result addObject:[self createCRUDTestForProvider:provider forTable:@"authenticated" ofType:ZumoTableAuthenticated andAuthenticated:YES]];
             
-            if ([providersWithRecycledTokenSupport containsObject:provider]) {
-                [result addObject:[self createLogoutTest]];
+            if (useSimplifiedLogin && [clientProviders containsObject:provider]) {
                 [result addObject:[self createSleepTest:1]];
                 [result addObject:[self createClientSideLoginWithProvider:provider]];
                 [result addObject:[self createCRUDTestForProvider:provider forTable:@"authenticated" ofType:ZumoTableAuthenticated andAuthenticated:YES]];
             }
+            
+            [result addObject:[self createLogoutTest]];
+            [result addObject:[self createCRUDTestForProvider:nil forTable:@"authenticated" ofType:ZumoTableAuthenticated andAuthenticated:NO]];
         }
     }
 
@@ -83,7 +84,7 @@ static NSString *lastUserIdentityObjectKey = @"lastUserIdentityObject";
     return result;
 }
 
-typedef enum { ZumoTableUnauthenticated, ZumoTableApplication, ZumoTableAuthenticated, ZumoTableAdminScripts } ZumoTableType;
+typedef enum { ZumoTableAnonymous, ZumoTableAuthenticated } ZumoTableType;
 
 + (ZumoTest *)createSleepTest:(int)seconds {
     NSString *testName = [NSString stringWithFormat:@"Sleep for %d seconds", seconds];
@@ -98,14 +99,6 @@ typedef enum { ZumoTableUnauthenticated, ZumoTableApplication, ZumoTableAuthenti
 + (ZumoTest *)createCRUDTestForProvider:(NSString *)providerName forTable:(NSString *)tableName ofType:(ZumoTableType)tableType andAuthenticated:(BOOL)isAuthenticated {
     NSString *tableTypeName;
     switch (tableType) {
-        case ZumoTableAdminScripts:
-            tableTypeName = @"admin";
-            break;
-            
-        case ZumoTableApplication:
-            tableTypeName = @"application";
-            break;
-            
         case ZumoTableAuthenticated:
             tableTypeName = @"authenticated users";
             break;
@@ -120,7 +113,7 @@ typedef enum { ZumoTableUnauthenticated, ZumoTableApplication, ZumoTableAuthenti
     }
     
     NSString *testName = [NSString stringWithFormat:@"CRUD, %@ auth, table with %@ permissions", providerName, tableTypeName];
-    BOOL crudShouldWork = tableType == ZumoTableUnauthenticated || tableType == ZumoTableApplication || (tableType == ZumoTableAuthenticated && isAuthenticated);
+    BOOL crudShouldWork = tableType == ZumoTableAnonymous || (tableType == ZumoTableAuthenticated && isAuthenticated);
     ZumoTest *result = [ZumoTest createTestWithName:testName andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
         MSClient *client = [[ZumoTestGlobals sharedInstance] client];
         MSTable *table = [client tableWithName:tableName];
@@ -130,7 +123,7 @@ typedef enum { ZumoTableUnauthenticated, ZumoTableApplication, ZumoTableAuthenti
                 return;
             }
             
-            NSDictionary *toUpdate = crudShouldWork ? inserted : @{@"name":@"jane",@"id":[NSNumber numberWithInt:1]};
+            NSDictionary *toUpdate = crudShouldWork ? inserted : @{ @"name":@"jane",@"id":@1 };
             [table update:toUpdate completion:^(NSDictionary *updated, NSError *updateError) {
                 if (![self validateCRUDResultForTest:test andOperation:@"Update" andError:updateError andExpected:crudShouldWork]) {
                     completion(NO);
@@ -145,7 +138,7 @@ typedef enum { ZumoTableUnauthenticated, ZumoTableApplication, ZumoTableAuthenti
                     }
                     
                     if (!readError && tableType == ZumoTableAuthenticated) {
-                        id serverIdentities = [read objectForKey:@"Identities"];
+                        id serverIdentities = [read objectForKey:@"identities"];
                         NSDictionary *identities;
                         if ([serverIdentities isKindOfClass:[NSString class]]) {
                             NSString *identitiesJson = serverIdentities;
@@ -210,7 +203,7 @@ typedef enum { ZumoTableUnauthenticated, ZumoTableApplication, ZumoTableAuthenti
         NSDictionary *lastIdentity = [[[ZumoTestGlobals sharedInstance] globalTestParameters] objectForKey:lastUserIdentityObjectKey];
         if (!lastIdentity) {
             [test addLog:@"Last identity is null. Cannot run this test."];
-            [test setTestStatus:TSFailed];
+            [test setTestStatus:TSSkipped];
             completion(NO);
             return;
         }
@@ -221,13 +214,13 @@ typedef enum { ZumoTableUnauthenticated, ZumoTableApplication, ZumoTableAuthenti
         NSDictionary *providerIdentity = [lastIdentity objectForKey:provider];
         if (!providerIdentity) {
             [test addLog:@"Don't have identity for specified provider. Cannot run this test."];
-            [test setTestStatus:TSFailed];
+            [test setTestStatus:TSSkipped];
             completion(NO);
             return;
         }
 
         MSClient *client = [[ZumoTestGlobals sharedInstance] client];
-        NSDictionary *token = @{@"access_token": [providerIdentity objectForKey:@"accessToken"]};
+        NSDictionary *token = providerIdentity;
         [client loginWithProvider:provider token:token completion:^(MSUser *user, NSError *error) {
             if (error) {
                 [test addLog:[NSString stringWithFormat:@"Error logging in: %@", error]];
@@ -277,12 +270,13 @@ typedef enum { ZumoTableUnauthenticated, ZumoTableApplication, ZumoTableAuthenti
 + (ZumoTest *)createClearAuthCookiesTest {
     ZumoTest *result = [ZumoTest createTestWithName:@"Clear login cookies" andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
         NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
-        NSPredicate *isAuthCookie = [NSPredicate predicateWithFormat:@"domain ENDSWITH '.facebook.com' or domain ENDSWITH '.google.com' or domain ENDSWITH '.live.com' or domain ENDSWITH '.twitter.com'"];
+        NSPredicate *isAuthCookie = [NSPredicate predicateWithFormat:@"domain ENDSWITH '.facebook.com' or domain ENDSWITH '.google.com' or domain ENDSWITH '.live.com' or domain ENDSWITH '.twitter.com' or domain ENDSWITH '.microsoftonline.com' or domain ENDSWITH '.windows.net'"];
         NSArray *cookiesToRemove = [[cookieStorage cookies] filteredArrayUsingPredicate:isAuthCookie];
-        for (NSHTTPCookie *cookie in cookiesToRemove) {
-            NSLog(@"Removed cookie from %@", [cookie domain]);
+        /*
+         for (NSHTTPCookie *cookie in cookiesToRemove) {
+            NSLog(@"Removed cookie from %@ %@ %@ %d", [cookie domain], cookie.name, cookie.comment, cookie.isSessionOnly);
             [cookieStorage deleteCookie:cookie];
-        }
+        }*/
 
         [test addLog:@"Removed authentication-related cookies from this app."];
         completion(YES);
@@ -294,17 +288,18 @@ typedef enum { ZumoTableUnauthenticated, ZumoTableApplication, ZumoTableAuthenti
 + (ZumoTest *)createLogoutTest {
     ZumoTest *result = [ZumoTest createTestWithName:@"Logout" andExecution:^(ZumoTest *test, UIViewController *viewController, ZumoTestCompletion completion) {
         MSClient *client = [[ZumoTestGlobals sharedInstance] client];
-        [client logout];
-        [test addLog:@"Logged out"];
-        MSUser *loggedInUser = [client currentUser];
-        if (loggedInUser == nil) {
-            [test setTestStatus:TSPassed];
-            completion(YES);
-        } else {
-            [test addLog:[NSString stringWithFormat:@"Error, user for client is not null: %@", loggedInUser]];
-            [test setTestStatus:TSFailed];
-            completion(NO);
-        }
+        [client logoutWithCompletion:^(NSError *error) {
+            [test addLog:@"Logged out"];
+            MSUser *loggedInUser = [client currentUser];
+            if (loggedInUser == nil) {
+                [test setTestStatus:TSPassed];
+                completion(YES);
+            } else {
+                [test addLog:[NSString stringWithFormat:@"Error, user for client is not null: %@", loggedInUser]];
+                [test setTestStatus:TSFailed];
+                completion(NO);
+            }
+        }];
     }];
     
     return result;

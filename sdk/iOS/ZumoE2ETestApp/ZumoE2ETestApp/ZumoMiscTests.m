@@ -279,7 +279,7 @@ static NSString *parameterTestTableName = @"ParamsTestTable";
         MSClient *client = [[ZumoTestGlobals sharedInstance] client];
         MSTable *table = [client tableWithName:TABLES_ROUND_TRIP_STRING_ID];
         
-        MSClient *client2 = [MSClient clientWithApplicationURL:[client applicationURL] applicationKey:[client applicationKey]];
+        MSClient *client2 = [MSClient clientWithApplicationURL:[client applicationURL]];
         MSTable *table2 = [client2 tableWithName:TABLES_ROUND_TRIP_STRING_ID];
         
         NSString *firstName = @"John Doe";
@@ -384,7 +384,7 @@ static NSString *parameterTestTableName = @"ParamsTestTable";
             }
             
             [test addLog:[NSString stringWithFormat:@"[client 1] Inserted item: %@", inserted]];
-            MSClient *client2 = [MSClient clientWithApplicationURL:[client applicationURL] applicationKey:[client applicationKey]];
+            MSClient *client2 = [MSClient clientWithApplicationURL:[client applicationURL]];
             MSTable *table2 = [client2 tableWithName:TABLES_ROUND_TRIP_STRING_ID];
             
             [table2 readWithId:[inserted objectForKey:@"id"] completion:^(NSDictionary *retrieved, NSError *error) {
