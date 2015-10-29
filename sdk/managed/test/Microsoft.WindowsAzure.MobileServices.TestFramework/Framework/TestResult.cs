@@ -12,20 +12,11 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
     /// </summary>
     public class TestResult
     {
-        [JsonProperty("adapter")]
-        public string Adapter { get; set; }
-
         [JsonProperty("full_name")]
         public string FullName { get; set; }
 
-        [JsonProperty("name")]
-        public string Name { get; set; }
-
         [JsonProperty("source")]
         public string Source { get; set; }
-
-        [JsonProperty("run_id")]
-        public string RunId { get; set; }
 
         [JsonProperty("outcome")]
         public string Outcome { get; set; }
@@ -36,16 +27,7 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
         [JsonProperty("end_time"), JsonConverter(typeof(DateTimeToWindowsFileTimeConverter))]
         public DateTime EndTime { get; set; }
 
-        [JsonProperty("tags")]
-        public List<string> Tags { get; set; }
-
-        [JsonConverter(typeof(TestLogsConverter)), JsonProperty("attachments")]
-        public TestLogs Logs { get; set; }
-
-        public TestResult()
-        {
-            this.Tags = new List<string>();
-            this.Adapter = "zumotestsconverter";
-        }
+        [JsonProperty("reference_url")]
+        public string ReferenceUrl { get; set; }
     }
 }
