@@ -9,14 +9,17 @@ DIR="$( pwd )"
 
 if [ $# -lt 7 ]
 then
-  echo Usage: $0 \<Application URL\> \<Application key\> \<device\> \<zumotestuser password\> \<clientId\> \<clientSecret\> \<runId\>
+  echo Usage: $0 \<Application URL\> \<Application key\> \<device\> \<zumotestuser password\> \<clientId\> \<clientSecret\> \<runId\> \<iOSsdkZip\>
   echo Where
   echo   \<Application URL\> is the URL of the Mobile Service
   echo   \<Application key\> is the app key for that service
   echo   \<device\> is one of the following:
-  echo   - iPad - Zumo Team iPad
-  echo   - iPadSim - iPad Simulator
+  echo       - iPhoneSim (default)  - iPadSim        - iPadSimResizable
+  echo       - iPadSimAir           - iPadSimRetina  - iPhoneSimResizable
+  echo       - iPhoneSim4s          - iPhoneSim5     - iPhoneSim5s
+  echo       - iPhoneSim6Plus
   echo   \<loginPassword\> - the password to use for log in operations \(for zumotestuser account\)
+  echo   \<iOSsdkZip\> is the zip file location of the framework to test against (optional)
   exit 1
 fi
 
@@ -36,7 +39,7 @@ then
   cp -f $8 sdk.zip
 else
   # Copy in current version of the framework
-  curl --location --output sdk.zip --silent https://go.microsoft.com/fwLink/?LinkID=266533
+  curl --location --output sdk.zip http://aka.ms/gc6fex
 fi
 
 unzip -o sdk.zip
