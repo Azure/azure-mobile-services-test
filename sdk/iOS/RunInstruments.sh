@@ -14,12 +14,12 @@ then
   echo   \<Application URL\> is the URL of the Mobile Service
   echo   \<Application key\> is the app key for that service
   echo   \<device\> is one of the following:
-  echo       - iPhoneSim (default)  - iPadSim        - iPadSimResizable
+  echo       - iPhoneSim \(default\)  - iPadSim        - iPadSimResizable
   echo       - iPadSimAir           - iPadSimRetina  - iPhoneSimResizable
   echo       - iPhoneSim4s          - iPhoneSim5     - iPhoneSim5s
   echo       - iPhoneSim6Plus
   echo   \<loginPassword\> - the password to use for log in operations \(for zumotestuser account\)
-  echo   \<iOSsdkZip\> is the zip file location of the framework to test against (optional)
+  echo   \<iOSsdkZip\> is the zip file location of the framework to test against \(optional\)
   exit 1
 fi
 
