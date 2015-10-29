@@ -313,7 +313,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         [AsyncTestMethod]
         private async Task NoOptimisticConcurrencyTest()
         {
-            // If a table does not have a __version column, then offline will still
+            // If a table does not have a version column, then offline will still
             // work, but there will be no conflicts
             DateTime now = DateTime.UtcNow;
             int seed = now.Year * 10000 + now.Month * 100 + now.Day;
@@ -390,7 +390,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             var globalClient = GetClient();
             var offlineReadyClient = new MobileServiceClient(
                 globalClient.MobileAppUri,
-                globalClient.ApplicationKey,
                 handlers);
 
             if (globalClient.CurrentUser != null)
@@ -734,7 +733,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             Log("Done");
             localStore.Dispose();
             await ClearStore();
-            if(!String.IsNullOrEmpty(errorMessage))
+            if (!String.IsNullOrEmpty(errorMessage))
             {
                 Assert.Fail(errorMessage);
             }

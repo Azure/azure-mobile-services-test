@@ -445,7 +445,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
 
             var item = new JObject() { { "id", id }, { "name", "a value" } };
             var inserted = await table.InsertAsync(item);
-            item["__version"] = "3q3A3g==";
+            item["version"] = "3q3A3g==";
 
             MobileServicePreconditionFailedException expectedException = null;
             try
@@ -457,7 +457,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                 expectedException = ex;
             }
             Assert.IsNotNull(expectedException);
-            Assert.AreEqual(expectedException.Value["__version"], inserted["__version"]);
+            Assert.AreEqual(expectedException.Value["version"], inserted["version"]);
             Assert.AreEqual(expectedException.Value["name"], inserted["name"]);
         }
 
@@ -1070,7 +1070,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
 
             var item = new JObject() { { "id", id }, { "name", "a value" } };
             var inserted = await table.InsertAsync(item);
-            item["__version"] = "3q3A3g==";
+            item["version"] = "3q3A3g==";
 
             MobileServicePreconditionFailedException expectedException = null;
             try
@@ -1082,7 +1082,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                 expectedException = ex;
             }
             Assert.IsNotNull(expectedException);
-            Assert.AreEqual(expectedException.Value["__version"], inserted["__version"]);
+            Assert.AreEqual(expectedException.Value["version"], inserted["version"]);
             Assert.AreEqual(expectedException.Value["name"], inserted["name"]);
         }
 

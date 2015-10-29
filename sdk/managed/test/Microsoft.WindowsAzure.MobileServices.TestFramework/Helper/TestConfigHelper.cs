@@ -20,7 +20,6 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
             }
 
             harness.Settings.Custom["MobileServiceRuntimeUrl"] = config.MobileServiceRuntimeUrl;
-            harness.Settings.Custom["MobileServiceRuntimeKey"] = config.MobileServiceRuntimeKey;
             harness.Settings.Custom["MasterRunId"] = config.MasterRunId;
             harness.Settings.Custom["RuntimeVersion"] = config.RuntimeVersion;
             harness.Settings.Custom["CliendId"] = config.CliendId;
@@ -58,7 +57,6 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
             if (args.Count > 0)
             {
                 harness.Settings.Custom["MobileServiceRuntimeUrl"] = getArgumentValue("url", args);
-                harness.Settings.Custom["MobileServiceRuntimeKey"] = getArgumentValue("key", args);
                 harness.Settings.Custom["MasterRunId"] = getArgumentValue("runid", args);
                 harness.Settings.Custom["RuntimeVersion"] = getArgumentValue("runtimeversion", args);
                 harness.Settings.Custom["CliendId"] = getArgumentValue("clientid", args);

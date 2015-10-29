@@ -26,8 +26,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             if (staticClient == null)
             {
                 string runtimeUrl = this.GetTestSetting("MobileServiceRuntimeUrl");
-                string runtimeKey = this.GetTestSetting("MobileServiceRuntimeKey");
-                staticClient = new MobileServiceClient(runtimeUrl, runtimeKey, new LoggingHttpHandler(this));
+                staticClient = new MobileServiceClient(runtimeUrl, new LoggingHttpHandler(this));
             }
             return staticClient;
         }

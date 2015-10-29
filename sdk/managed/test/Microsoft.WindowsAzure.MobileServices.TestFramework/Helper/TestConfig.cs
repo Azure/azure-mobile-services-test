@@ -12,9 +12,6 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
         [JsonProperty("mobileAppUrl")]
         public string MobileServiceRuntimeUrl { get; set; }
 
-        [JsonProperty("mobileAppKey")]
-        public string MobileServiceRuntimeKey { get; set; }
-
         [JsonProperty("runId")]
         public string MasterRunId { get; set; }
 
