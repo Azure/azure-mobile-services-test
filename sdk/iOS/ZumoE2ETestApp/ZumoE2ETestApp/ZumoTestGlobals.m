@@ -40,7 +40,7 @@ NSString *const TABLES_ROUND_TRIP_INT_ID = @"IntIdRoundTripTable";
 }
 
 -(void) initializeClientWithAppUrl:(NSString *)url andGatewayURL:(NSString *)gatewayUrl {
-    self.client = [MSClient clientWithApplicationURLString:url gatewayURLString:gatewayUrl applicationKey:nil];
+    self.client = [MSClient clientWithApplicationURLString:url applicationKey:nil];
 }
 
 - (NSMutableDictionary *)globalTestParameters {
