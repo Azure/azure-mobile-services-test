@@ -40,7 +40,7 @@
 		A2B509E3199C006600A914CF /* Main_iPad.Storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A2B509E1199C006600A914CF /* Main_iPad.Storyboard */; };
 		A2B509E4199C006600A914CF /* Main_iPhone.Storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A2B509E2199C006600A914CF /* Main_iPhone.Storyboard */; };
 		A2EB9E40199543E30032B8BC /* ZumoConfigurationViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A2EB9E3F199543E30032B8BC /* ZumoConfigurationViewController.m */; };
-		A3660E3E1BB1E277007BE47C /* WindowsAzureMobileServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A3660E3D1BB1E277007BE47C /* WindowsAzureMobileServices.framework */; settings = {ASSET_TAGS = (); }; };
+		D774DA371BE404D00099C99D /* WindowsAzureMobileServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D774DA361BE404D00099C99D /* WindowsAzureMobileServices.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -103,7 +103,7 @@
 		A2B509E2199C006600A914CF /* Main_iPhone.Storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = Main_iPhone.Storyboard; sourceTree = "<group>"; };
 		A2EB9E3E199543E30032B8BC /* ZumoConfigurationViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ZumoConfigurationViewController.h; sourceTree = "<group>"; };
 		A2EB9E3F199543E30032B8BC /* ZumoConfigurationViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ZumoConfigurationViewController.m; sourceTree = "<group>"; };
-		A3660E3D1BB1E277007BE47C /* WindowsAzureMobileServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WindowsAzureMobileServices.framework; path = "../../../../../GitHub/azure-mobile-services/sdk/iOS/WindowsAzureMobileServices.framework"; sourceTree = "<group>"; };
+		D774DA361BE404D00099C99D /* WindowsAzureMobileServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WindowsAzureMobileServices.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,7 +115,7 @@
 				872B02BF1672A73B003613A1 /* UIKit.framework in Frameworks */,
 				872B02C11672A73B003613A1 /* Foundation.framework in Frameworks */,
 				872B02C31672A73B003613A1 /* CoreGraphics.framework in Frameworks */,
-				A3660E3E1BB1E277007BE47C /* WindowsAzureMobileServices.framework in Frameworks */,
+				D774DA371BE404D00099C99D /* WindowsAzureMobileServices.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -142,7 +142,7 @@
 		872B02BD1672A73B003613A1 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				A3660E3D1BB1E277007BE47C /* WindowsAzureMobileServices.framework */,
+				D774DA361BE404D00099C99D /* WindowsAzureMobileServices.framework */,
 				A2B509DC199ABF1A00A914CF /* MessageUI.framework */,
 				872B02BE1672A73B003613A1 /* UIKit.framework */,
 				872B02C01672A73B003613A1 /* Foundation.framework */,

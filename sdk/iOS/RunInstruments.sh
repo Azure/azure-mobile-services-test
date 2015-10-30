@@ -44,7 +44,7 @@ fi
 
 unzip -o sdk.zip
 
-xcodebuild -sdk iphonesimulator8.3 || exit 1
+xcodebuild -sdk iphonesimulator9.1 || exit 1
 # xcodebuild -sdk iphoneos7.1
 popd
 
@@ -62,61 +62,61 @@ fi
 
 if [ "$DEVICE_CMD_ARG" == "iPadSimResizable" ]; then
   echo Using iPad Simulator
-  export DEVICE_ARG=Resizable\ iPad\ \(8.3\ Simulator\)
+  export DEVICE_ARG=Resizable\ iPad\ \(9.1\ Simulator\)
   APP_NAME=$DIR/ZumoE2ETestApp/build/Release-iphonesimulator/ZumoE2ETestApp.app
 fi
 
 if [ "$DEVICE_CMD_ARG" == "iPadSim" ]; then
   echo Using iPad 2 Simulator
-  export DEVICE_ARG=iPad\ 2\ \(8.3\ Simulator\)
+  export DEVICE_ARG=iPad\ 2\ \(9.1\ Simulator\)
   APP_NAME=$DIR/ZumoE2ETestApp/build/Release-iphonesimulator/ZumoE2ETestApp.app
 fi
 
 if [ "$DEVICE_CMD_ARG" == "iPadSimAir" ]; then
   echo Using iPad Air Simulator
-  export DEVICE_ARG=iPad\ Air\ \(8.3\ Simulator\)
+  export DEVICE_ARG=iPad\ Air\ \(9.1\ Simulator\)
   APP_NAME=$DIR/ZumoE2ETestApp/build/Release-iphonesimulator/ZumoE2ETestApp.app
 fi
 
 if [ "$DEVICE_CMD_ARG" == "iPadSimRetina" ]; then
   echo Using iPad Retina Simulator
-  export DEVICE_ARG=iPad\ Retina\ \(8.3\ Simulator\)
+  export DEVICE_ARG=iPad\ Retina\ \(9.1\ Simulator\)
   APP_NAME=$DIR/ZumoE2ETestApp/build/Release-iphonesimulator/ZumoE2ETestApp.app
 fi
 
 if [ "$DEVICE_CMD_ARG" == "iPhoneSimResizable" ]; then
   echo Using iPhone Resizable Simulator
-  export DEVICE_ARG=Resizable\ iPhone\ \(8.3\ Simulator\)
+  export DEVICE_ARG=Resizable\ iPhone\ \(9.1\ Simulator\)
   APP_NAME=$DIR/ZumoE2ETestApp/build/Release-iphonesimulator/ZumoE2ETestApp.app
 fi
 
 if [ "$DEVICE_CMD_ARG" == "iPhoneSim4s" ]; then
   echo Using iPhone 4s Simulator
-  export DEVICE_ARG=iPhone\ 4s\ \(8.3\ Simulator\)
+  export DEVICE_ARG=iPhone\ 4s\ \(9.1\ Simulator\)
   APP_NAME=$DIR/ZumoE2ETestApp/build/Release-iphonesimulator/ZumoE2ETestApp.app
 fi
 
 if [ "$DEVICE_CMD_ARG" == "iPhoneSim5" ]; then
   echo Using iPhone 5 Simulator
-  export DEVICE_ARG=iPhone\ 5\ \(8.3\ Simulator\)
+  export DEVICE_ARG=iPhone\ 5\ \(9.1\ Simulator\)
   APP_NAME=$DIR/ZumoE2ETestApp/build/Release-iphonesimulator/ZumoE2ETestApp.app
 fi
 
 if [ "$DEVICE_CMD_ARG" == "iPhoneSim5s" ]; then
   echo Using iPhone 5s Simulator
-  export DEVICE_ARG=iPhone\ 5s\ \(8.3\ Simulator\)
+  export DEVICE_ARG=iPhone\ 5s\ \(9.1\ Simulator\)
   APP_NAME=$DIR/ZumoE2ETestApp/build/Release-iphonesimulator/ZumoE2ETestApp.app
 fi
 
 if [ "$DEVICE_CMD_ARG" == "iPhoneSim6" ]; then
   echo Using iPhone 6 Simulator
-  export DEVICE_ARG=iPhone\ 6\ \(8.3\ Simulator\)
+  export DEVICE_ARG=iPhone\ 6\ \(9.1\ Simulator\)
   APP_NAME=$DIR/ZumoE2ETestApp/build/Release-iphonesimulator/ZumoE2ETestApp.app
 fi
 
 if [ "$DEVICE_CMD_ARG" == "iPhoneSim6Plus" ]; then
   echo Using iPhone 6 Plus Simulator
-  export DEVICE_ARG=iPhone\ 6\ Plus\ \(8.3\ Simulator\)
+  export DEVICE_ARG=iPhone\ 6\ Plus\ \(9.1\ Simulator\)
   APP_NAME=$DIR/ZumoE2ETestApp/build/Release-iphonesimulator/ZumoE2ETestApp.app
 fi
 
