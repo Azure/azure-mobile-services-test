@@ -35,7 +35,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             Harness = new TestHarness();
             Harness.LoadTestAssembly(typeof(FunctionalTestBase).Assembly);
             Harness.LoadTestAssembly(typeof(LoginTests).Assembly);
-            Harness.Platform = string.Format("Win Phone 8.0|sdk v{0}|", TestPlatform.GetMobileServicesSdkVersion(typeof(App).Assembly));
+            Harness.Platform = TestPlatform.WindowsPhone8;
         }
 
         /// <summary>

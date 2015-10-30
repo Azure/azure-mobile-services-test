@@ -51,7 +51,7 @@
     <Compile Include="Framework\IAsyncExecution.cs" />
     <Compile Include="Framework\IContinuation.cs" />
     <Compile Include="Framework\ITestReporter.cs" />
-    <Compile Include="Framework\RunVersionSpec.cs" />
+    <Compile Include="Framework\MasterTestResult.cs" />
     <Compile Include="Framework\TagAttribute.cs" />
     <Compile Include="Framework\TagManager.cs" />
     <Compile Include="Framework\TagManager.ExpressionEvaluator.cs" />
@@ -61,8 +61,6 @@
     <Compile Include="Framework\TestFilter.cs" />
     <Compile Include="Framework\TestGroup.cs" />
     <Compile Include="Framework\TestHarness.cs" />
-    <Compile Include="Framework\TestLogger.cs" />
-    <Compile Include="Framework\TestLogs.cs" />
     <Compile Include="Framework\TestMethod.cs" />
     <Compile Include="Framework\TestMethodAsyncAction.cs" />
     <Compile Include="Framework\TestMethodAttribute.cs" />
