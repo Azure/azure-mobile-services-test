@@ -2,7 +2,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +9,8 @@ using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
 using System.Threading.Tasks;
+using System.Net.Http;
+using Newtonsoft.Json;
 
 namespace Microsoft.WindowsAzure.MobileServices.TestFramework
 {
@@ -74,6 +75,7 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
         public StringBuilder LogDump { get; set; }
 
         public string Platform { get; set; }
+
         /// <summary>
         /// Logs a message.
         /// </summary>
@@ -127,20 +129,6 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
         }
 
         /// <summary>
-        /// Record the test metadata to the test run object at the start of the test run
-        /// </summary>
-        private void FillTestRunMetaData()
-        {
-            if (!Settings.ManualMode)
-            {
-                testRun.StartTime = DateTime.UtcNow;
-                testRun.Tags.Add(Platform);
-                testRun.Name = Platform + " " + Settings.Custom["RuntimeVersion"];
-                testRun.VersionSpec.BranchName = Settings.Custom["RuntimeVersion"];
-            }
-        }
-
-        /// <summary>
         /// Run the unit tests.
         /// </summary>
         public async void RunAsync()
@@ -151,18 +139,12 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
                 throw new ArgumentNullException("Reporter");
             }
 
-            /// Record the test metadata to the test run object at the start of the test run            
-            FillTestRunMetaData();
-
             // Setup the progress/failure counters
             this.Progress = 0;
             this.Failures = 0;
 
             // Filter out any test methods based on the current settings
             int filteredTestCount = FilterTests();
-
-            // get the actual count of tests going to run
-            testRun.TestCount = filteredTestCount;
 
             // Write out the test status message which may be modified by the
             // filters
@@ -179,13 +161,6 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
             // however, because we close over in the continuation).
             TestGroup currentGroup = null;
 
-            // Create daylight test run and get the run id
-            string runId = String.Empty;
-            if (!Settings.ManualMode)
-            {
-                runId = await TestLogger.CreateDaylightRun(testRun, Settings);
-            }
-
             // Setup the UI
             this.Reporter.StartRun(this);
 
@@ -194,16 +169,9 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
             // 
             // Note: It's really important for performance to note that any
             // calls to testLoop only occur in the tail position.
-            JObject sasResponseObject = null;
             DateTime RunStartTime = DateTime.UtcNow;
             Func<Task> testLoop = null;
 
-            // Get the SAS token to upload the test logs to upload test logs to blob store
-            if (!Settings.ManualMode && !String.IsNullOrEmpty(runId))
-            {
-                sasResponseObject = await TestLogger.GetSaSToken(Settings);
-
-            }
             testLoop =
                 async () =>
                 {
@@ -233,13 +201,17 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
                             // log for next test
                             Func<Task> recordTestResult = async () =>
                             {
-                                if (!Settings.ManualMode && !String.IsNullOrEmpty(runId))
+                                if (!Settings.ManualMode)
                                 {
-                                    var log = new TestLogs()
-                                    {
-                                        LogLines = LogDump.ToString(),
-                                        LogHash = Guid.NewGuid().ToString()
-                                    };
+                                     // upload test log to sunlight blob container
+                                    string relativeFilePath = this.Platform + "/" + Guid.NewGuid().ToString() + ".txt";
+
+                                    string blobStorageSasUrl = GetBlobStorageSasUrl(this.Settings.Custom["TestFrameworkStorageContainerUrl"],
+                                        this.Settings.Custom["TestFrameworkStorageContainerSasToken"],
+                                        relativeFilePath);
+
+                                    await this.UploadToBlobContainer(blobStorageSasUrl, LogDump.ToString());
+
                                     // record the test result
                                     var testResult = new TestResult()
                                     {
@@ -247,18 +219,11 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
                                         StartTime = testStartTime,
                                         EndTime = DateTime.UtcNow,
                                         Outcome = methods.Current.Passed ? "Passed" : "Failed",
-                                        RunId = runId,
-                                        Tags = new List<string> { Platform },
                                         Source = currentGroup.Name,
-                                        Logs = sasResponseObject != null ? log : null
+                                        ReferenceUrl = relativeFilePath
                                     };
 
-                                    // upload test log to the blob store
-                                    if (sasResponseObject != null)
-                                        await TestLogger.UploadTestLog(log, sasResponseObject);
-
-                                    // Add the test result to the test result collection, which will eventually 
-                                    // be uploaded to daylight
+                                    // Add the test result to the test result collection
                                     testRun.AddTestResult(testResult);
                                     LogDump.Clear();
                                 }
@@ -319,43 +284,35 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
                     }
                     else
                     {
-                        if (!Settings.ManualMode && !String.IsNullOrEmpty(runId))
+                        if (!Settings.ManualMode)
                         {
-                            // post all the test results to daylight
-                            await TestLogger.PostTestResults(testRun.TestResults.ToList(), Settings);
+                            // upload test suite result to sunlight blob container
+                            string blobStorageSasUrl = GetBlobStorageSasUrl(this.Settings.Custom["TestFrameworkStorageContainerUrl"],
+                                this.Settings.Custom["TestFrameworkStorageContainerSasToken"],
+                                this.Platform + "-detail.json");
+                            string fileContent = JsonConvert.SerializeObject(testRun.TestResults.ToList(), Formatting.Indented);
+                            await this.UploadToBlobContainer(blobStorageSasUrl, fileContent);
 
-                            // String to store the test result summary of the entire suite
-                            StringBuilder resultLog = new StringBuilder("Total Tests:" + filteredTestCount);
-                            resultLog.AppendLine();
-                            resultLog.AppendLine("Passed Tests:" + (filteredTestCount - Failures).ToString());
-                            resultLog.AppendLine("Failed Tests:" + Failures);
-                            resultLog.AppendLine("Detailed Results:" + Settings.Custom["DayLightUrl"] + "/" + Settings.Custom["DaylightProject"] + "/runs/" + runId);
-
-                            var logs = new TestLogs()
+                            // upload test result summary to blob container
+                            var masterResult = new MasterTestResult()
                             {
-                                LogLines = resultLog.ToString(),
-                                LogHash = Guid.NewGuid().ToString()
-                            };
-                            // Record the the result of the entire test suite to master test run
-                            var testResult = new TestResult()
-                            {
-                                FullName = Platform + " " + Settings.Custom["RuntimeVersion"],
-                                Name = Platform + " " + Settings.Custom["RuntimeVersion"],
+                                FullName = this.Platform + "-" + Settings.Custom["RuntimeVersion"],
+                                Outcome = Failures > 0 ? "Failed" : "Passed",
+                                TotalCount = testRun.TestCount,
+                                Passed = filteredTestCount - Failures,
+                                Failed = Failures,
+                                Skipped = testRun.TestCount - filteredTestCount,
                                 StartTime = RunStartTime,
                                 EndTime = DateTime.UtcNow,
-                                Outcome = Failures > 0 ? "Failed" : "Passed",
-                                RunId = Settings.Custom["MasterRunId"],
-                                Tags = new List<string> { Platform },
-                                Source = "Managed",
-                                Logs = sasResponseObject != null ? logs : null
+                                ReferenceUrl = this.Platform + "-detail.json"
                             };
 
-                            // Upload the log of the test result summary for the test suite
-                            if (sasResponseObject != null)
-                                await TestLogger.UploadTestLog(logs, sasResponseObject);
-
-                            // Post the test suite result to master run
-                            await TestLogger.PostTestResults(new List<TestResult> { testResult }, Settings);
+                            // upload test suite result to sunlight blob container
+                            blobStorageSasUrl = GetBlobStorageSasUrl(this.Settings.Custom["TestFrameworkStorageContainerUrl"],
+                                this.Settings.Custom["TestFrameworkStorageContainerSasToken"],
+                                this.Platform + "-master.json");
+                            fileContent = JsonConvert.SerializeObject(masterResult, Formatting.Indented);
+                            await this.UploadToBlobContainer(blobStorageSasUrl, fileContent);
                         }
                         // Otherwise if we've finished the entire test run
 
@@ -371,6 +328,33 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
 
             // Start running the tests
             await testLoop();
+        }
+
+        public async Task<bool> UploadToBlobContainer(string blobStorageSasUrl, string fileContent)
+        {
+            HttpClient c = new HttpClient();
+            c.DefaultRequestHeaders.Add("x-ms-blob-type", "BlockBlob");
+
+            ByteArrayContent byteContent = new ByteArrayContent(Encoding.UTF8.GetBytes(fileContent));
+
+            using (var blobResponse = await c.PutAsync(blobStorageSasUrl, byteContent))
+            {
+                return blobResponse.IsSuccessStatusCode;
+            }
+        }
+
+        private static string GetBlobStorageSasUrl(string storageContainerUrl, string storageContainerSasToken, string filePath)
+        {
+            // Decode blob storage container Sas token URL
+            byte[] data = Convert.FromBase64String(storageContainerSasToken);
+            string decodedSasToken = Encoding.UTF8.GetString(data, 0, data.Length);
+
+            return GetBlobStorageUrl(storageContainerUrl, filePath) + "?" + decodedSasToken;
+        }
+
+        private static string GetBlobStorageUrl(string storageContainerUrl, string filePath)
+        {
+            return storageContainerUrl.TrimEnd('/') + "/" + filePath;
         }
 
         private static void LoadTestAssembly(TestHarness harness, Assembly testAssembly)
