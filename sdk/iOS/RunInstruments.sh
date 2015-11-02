@@ -7,12 +7,12 @@ mkdir Results
 
 DIR="$( pwd )"
 
-if [ $# -lt 7 ]
+if [ $# -lt 6 ]
 then
-  echo Usage: $0 \<Application URL\> \<Application key\> \<device\> \<zumotestuser password\> \<clientId\> \<clientSecret\> \<runId\> \<iOSsdkZip\>
+  #           $0 $1                  $2         $3                        $4           $5               $6        $7 (optional)       
+  echo Usage: $0 \<Application URL\> \<device\> \<zumotestuser password\> \<clientId\> \<clientSecret\> \<runId\> \<iOSsdkZip\>
   echo Where
   echo   \<Application URL\> is the URL of the Mobile Service
-  echo   \<Application key\> is the app key for that service
   echo   \<device\> is one of the following:
   echo       - iPhoneSim \(default\)  - iPadSim        - iPadSimResizable
   echo       - iPadSimAir           - iPadSimRetina  - iPhoneSimResizable
@@ -23,23 +23,23 @@ then
   exit 1
 fi
 
-echo "$3"
+echo "$2"
 export DEVICE_ARG=
 export APP_NAME=
-export DEVICE_CMD_ARG=$3
+export DEVICE_CMD_ARG=$2
 
 echo Device: $DEVICE_CMD_ARG
 
 # Build current app to test with
 pushd ZumoE2ETestApp
 
-if [ $8 ]
+if [ $7 ]
 then
   # Copy specified framework
-  cp -f $8 sdk.zip
+  cp -f $7 sdk.zip
 else
   # Copy in current version of the framework
-  curl --location --output sdk.zip http://aka.ms/gc6fex
+  curl --location --output sdk.zip https://zumo.blob.core.windows.net/sdk/azuresdk-iOS-v2.2.2.zip
 fi
 
 unzip -o sdk.zip
@@ -146,19 +146,18 @@ fi
 
 if [ "$APP_NAME" == "" ]
 then
-  echo Unsupported device: "$3"
+  echo Unsupported device: "$2"
   exit 1
 fi
 
 echo DEVICE_ARG: $DEVICE_ARG
 echo APP_NAME: $APP_NAME
 
-sed -e "s|--APPLICATION_URL--|$1|g" ZumoAutomationTemplate.js > ZumoAutomationTemplate-temp.js
-sed -e "s/--APPLICATION_KEY--/$2/g" ZumoAutomationTemplate-temp.js > ZumoAutomationTemplate-temp1.js
-sed -e "s/--CLIENT_ID--/$5/g" ZumoAutomationTemplate-temp1.js > ZumoAutomationTemplate-temp.js
-sed -e "s/--CLIENT_SECRET--/$6/g" ZumoAutomationTemplate-temp.js > ZumoAutomationTemplate-temp1.js
-sed -e "s/--RUN_ID--/$7/g" ZumoAutomationTemplate-temp1.js > ZumoAutomationTemplate-temp.js
-sed -e "s/--AUTH_PASSWORD--/$4/g" ZumoAutomationTemplate-temp.js > ZumoAutomationWithData.js
+sed -e "s/--APPLICATION_URL--/$1/g" ZumoAutomationTemplate.js > ZumoAutomationTemplate-temp.js
+sed -e "s/--CLIENT_ID--/$4/g" ZumoAutomationTemplate-temp.js > ZumoAutomationTemplate-temp1.js
+sed -e "s/--CLIENT_SECRET--/$5/g" ZumoAutomationTemplate-temp1.js > ZumoAutomationTemplate-temp.js
+sed -e "s/--RUN_ID--/$6/g" ZumoAutomationTemplate-temp.js > ZumoAutomationTemplate-temp1.js
+sed -e "s/--AUTH_PASSWORD--/$3/g" ZumoAutomationTemplate-temp1.js > ZumoAutomationWithData.js
 
 echo Replaced data on template - now running instruments
 echo Args: DEVICE_ARG = $DEVICE_ARG
