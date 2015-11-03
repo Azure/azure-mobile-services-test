@@ -15,20 +15,12 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
             var defaults = NSUserDefaults.StandardUserDefaults;
             string mobileServiceUri = defaults.StringForKey(MobileServiceUriKey);
             string tags = defaults.StringForKey(TagsKey);
-            string daylightUri = defaults.StringForKey(DaylightUriKey);
-            string daylightProject = defaults.StringForKey(DaylightProjectKey);
-            string clientId = defaults.StringForKey(ClientIdKey);
-            string clientSecret = defaults.StringForKey(ClientSecretKey);
             string runId = defaults.StringForKey(RunIdKey);
             string runtimeVersion = defaults.StringForKey(RuntimeVersionKey);
 
             this.uriEntry = new AccessibleEntryElement(null, "Mobile Service URI", mobileServiceUri, accessibilityId: MobileServiceUriKey);
             this.tagsEntry = new AccessibleEntryElement(null, "Tags", tags, accessibilityId: TagsKey);
 
-            this.daylightUriEntry = new AccessibleEntryElement(null, "Daylight URI", daylightUri, accessibilityId: DaylightUriKey);
-            this.daylightProjectEntry = new AccessibleEntryElement(null, "Daylight Project", daylightProject, accessibilityId: DaylightProjectKey);
-            this.clientIdEntry = new AccessibleEntryElement(null, "Client ID", clientId, accessibilityId: ClientIdKey);
-            this.clientSecretEntry = new AccessibleEntryElement(null, "Client Secret", clientSecret, accessibilityId: ClientSecretKey);
             this.runIdEntry = new AccessibleEntryElement(null, "Run Id", runId, accessibilityId: RunIdKey);
             this.runtimeVersionEntry = new AccessibleEntryElement(null, "Runtime version", runtimeVersion, accessibilityId: RuntimeVersionKey);
 
@@ -39,10 +31,6 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
                 },
 
                 new Section("Report Results"){
-                    this.daylightUriEntry,
-                    this.daylightProjectEntry,
-                    this.clientIdEntry,
-                    this.clientSecretEntry,
                     this.runIdEntry,
                     this.runtimeVersionEntry
                 },
@@ -62,20 +50,11 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
 
         private const string MobileServiceUriKey = "MobileServiceUri";
         private const string TagsKey = "Tags";
-        private const string DaylightUriKey = "DaylightUri";
-        private const string DaylightProjectKey = "DaylightProject";
-        private const string ClientIdKey = "ClientId";
-        private const string ClientSecretKey = "ClientSecret";
         private const string RunIdKey = "RunId";
         private const string RuntimeVersionKey = "RuntimeVersion";
 
         private readonly EntryElement uriEntry;
-        private readonly EntryElement keyEntry;
         private readonly EntryElement tagsEntry;
-        private readonly EntryElement daylightUriEntry;
-        private readonly EntryElement daylightProjectEntry;
-        private readonly EntryElement clientIdEntry;
-        private readonly EntryElement clientSecretEntry;
         private readonly EntryElement runIdEntry;
         private readonly EntryElement runtimeVersionEntry;
 
@@ -84,10 +63,6 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
             var defaults = NSUserDefaults.StandardUserDefaults;
             defaults.SetString(this.uriEntry.Value, MobileServiceUriKey);
             defaults.SetString(this.tagsEntry.Value, TagsKey);
-            defaults.SetString(this.daylightUriEntry.Value, DaylightUriKey);
-            defaults.SetString(this.daylightProjectEntry.Value, DaylightProjectKey);
-            defaults.SetString(this.clientIdEntry.Value, ClientIdKey);
-            defaults.SetString(this.clientSecretEntry.Value, ClientSecretKey);
             defaults.SetString(this.runIdEntry.Value, RunIdKey);
             defaults.SetString(this.runtimeVersionEntry.Value, RuntimeVersionKey);
 
@@ -97,12 +72,7 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
                 TagExpression = this.tagsEntry.Value,
                 RuntimeVersion = this.runtimeVersionEntry.Value,
             });
-            AppDelegate.Harness.Settings.ManualMode =
-                string.IsNullOrWhiteSpace(this.daylightUriEntry.Value) ||
-                string.IsNullOrWhiteSpace(this.daylightProjectEntry.Value) ||
-                string.IsNullOrWhiteSpace(this.clientIdEntry.Value) ||
-                string.IsNullOrWhiteSpace(this.clientSecretEntry.Value) ||
-                string.IsNullOrWhiteSpace(this.runtimeVersionEntry.Value);
+            AppDelegate.Harness.Settings.ManualMode = string.IsNullOrWhiteSpace(this.runtimeVersionEntry.Value);
 
             if (!string.IsNullOrEmpty(AppDelegate.Harness.Settings.TagExpression))
             {

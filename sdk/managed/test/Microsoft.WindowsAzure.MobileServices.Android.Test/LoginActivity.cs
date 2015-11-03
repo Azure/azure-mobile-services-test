@@ -19,12 +19,7 @@ namespace Microsoft.WindowsAzure.Mobile.Android.Test
             public const string TagExpression = "TagExpression";
 
             public const string AutoStart = "AutoStart";
-            public const string MasterRunId = "MasterRunId";
             public const string RuntimeVersion = "RuntimeVersion";
-            public const string CliendId = "CliendId";
-            public const string ClientSecret = "ClientSecret";
-            public const string DayLightUrl = "DayLightUrl";
-            public const string DaylightProject = "DaylightProject";
         }
 
         private EditText uriText, keyText, tagsText;
