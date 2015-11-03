@@ -24,7 +24,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         static App()
         {
             Harness = new TestHarness();
-            Harness.Platform = string.Format("Net 45|sdk v{0}|", TestPlatform.GetMobileServicesSdkVersion(typeof(App).GetTypeInfo().Assembly));
+            Harness.Platform = TestPlatform.Net45;
             Harness.LoadTestAssembly(typeof(FunctionalTestBase).GetTypeInfo().Assembly);
         }
 

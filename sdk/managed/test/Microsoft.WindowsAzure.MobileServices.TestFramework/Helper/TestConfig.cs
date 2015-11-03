@@ -12,23 +12,14 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
         [JsonProperty("mobileAppUrl")]
         public string MobileServiceRuntimeUrl { get; set; }
 
-        [JsonProperty("runId")]
-        public string MasterRunId { get; set; }
+        [JsonProperty("storageUrl")]
+        public string TestFrameworkStorageContainerUrl { get; set; }
+
+        [JsonProperty("storageSasToken")]
+        public string TestFrameworkStorageContainerSasToken { get; set; }
 
         [JsonProperty("runTimeVersion")]
         public string RuntimeVersion { get; set; }
-
-        [JsonProperty("clientId")]
-        public string CliendId { get; set; }
-
-        [JsonProperty("clientSecret")]
-        public string ClientSecret { get; set; }
-
-        [JsonProperty("dayLightUrl")]
-        public string DayLightUrl { get; set; }
-
-        [JsonProperty("dayLightProject")]
-        public string DaylightProject { get; set; }
 
         [JsonProperty("tags")]
         public string TagExpression { get; set; }

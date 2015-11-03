@@ -24,16 +24,13 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         /// </summary>
         public static TestHarness Harness { get; private set; }
 
-
-
-
         /// <summary>
         /// Initialize the test harness.
         /// </summary>
         static App()
         {
             Harness = new TestHarness();
-            Harness.Platform = string.Format("Win8 Store-C#|sdk v{0}|", TestPlatform.GetMobileServicesSdkVersion(typeof(App).GetTypeInfo().Assembly));
+            Harness.Platform = TestPlatform.WindowsStore;
             Harness.LoadTestAssembly(typeof(FunctionalTestBase).GetTypeInfo().Assembly);
             Harness.LoadTestAssembly(typeof(LoginTests).GetTypeInfo().Assembly);
         }
@@ -64,7 +61,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
 
             // Set the App Mode and configuration based on the arguments
             Harness.SetAutoConfig(args.Arguments);
-
             Frame rootFrame = new Frame();
 
             if (Harness.Settings.ManualMode)

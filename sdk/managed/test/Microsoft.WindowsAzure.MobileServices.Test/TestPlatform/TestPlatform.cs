@@ -15,6 +15,11 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
     /// </summary>
     public static class TestPlatform
     {
+        public static readonly string Net45 = "Net45";
+        public static readonly string WindowsStore = "WindowsStore";
+        public static readonly string WindowsPhone8 = "WindowsPhone8";
+        public static readonly string WindowsPhone81 = "WindowsPhone81";
+
         public static string GetMobileServicesSdkVersion(Assembly executingAssembly)
         {
             string packagesConfigResourceName = executingAssembly.GetManifestResourceNames().FirstOrDefault(s => s.EndsWith(".packages.config"));
