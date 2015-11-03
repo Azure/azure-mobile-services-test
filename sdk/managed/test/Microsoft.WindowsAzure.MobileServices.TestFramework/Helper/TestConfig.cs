@@ -12,11 +12,11 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
         [JsonProperty("mobileAppUrl")]
         public string MobileServiceRuntimeUrl { get; set; }
 
-        [JsonProperty("storageUrl")]
-        public string TestFrameworkStorageContainerUrl { get; set; }
-
         [JsonProperty("storageSasToken")]
         public string TestFrameworkStorageContainerSasToken { get; set; }
+
+        [JsonProperty("storageUrl")]
+        public string TestFrameworkStorageContainerUrl { get; set; }
 
         [JsonProperty("runTimeVersion")]
         public string RuntimeVersion { get; set; }
