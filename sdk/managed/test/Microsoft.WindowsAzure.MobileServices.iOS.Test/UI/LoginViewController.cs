@@ -95,11 +95,6 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
             {
                 MobileServiceRuntimeUrl = this.uriEntry.Value,
                 TagExpression = this.tagsEntry.Value,
-                MasterRunId = this.runIdEntry.Value,
-                DayLightUrl = this.daylightUriEntry.Value,
-                DaylightProject = this.daylightProjectEntry.Value,
-                CliendId = this.clientIdEntry.Value,
-                ClientSecret = this.clientSecretEntry.Value,
                 RuntimeVersion = this.runtimeVersionEntry.Value,
             });
             AppDelegate.Harness.Settings.ManualMode =
