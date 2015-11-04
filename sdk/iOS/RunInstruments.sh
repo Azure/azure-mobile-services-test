@@ -39,7 +39,7 @@ then
   cp -f $7 sdk.zip
 else
   # Copy in current version of the framework
-  curl --location --output sdk.zip https://zumo.blob.core.windows.net/sdk/azuresdk-iOS-v2.2.2.zip
+  curl --location --output sdk.zip https://zumo.blob.core.windows.net/sdk/azuresdk-iOS-v3.0.0-beta3.zip
 fi
 
 unzip -o sdk.zip
