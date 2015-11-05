@@ -272,7 +272,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             await table.InsertAsync(item);
             Log("[client 1] Inserted item: {0}", item);
 
-            var client2 = new MobileServiceClient(client.MobileAppUri, client.ApplicationKey);
+            var client2 = new MobileServiceClient(client.MobileAppUri);
             var table2 = client.GetTable<VersionedType>();
             var item2 = await table2.LookupAsync(item.Id);
             Log("[client 2] Retrieved the item");
