@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Claims;
+using System.Security.Principal;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -231,9 +233,9 @@ namespace ZumoE2EServerApp.Controllers
 
         private async Task<bool> VerifyTags(string channelUri, string installationId, NotificationHubClient nhClient)
         {
-            MobileAppUser user = (MobileAppUser)this.User;
+            IPrincipal user = this.User;
             int expectedTagsCount = 1;
-            if (user.Id != null)
+            if (user.Identity != null)
             {
                 expectedTagsCount = 2;
             }
@@ -253,7 +255,12 @@ namespace ZumoE2EServerApp.Controllers
                     {
                         return false;
                     }
-                    if (expectedTagsCount > 1 && !registration.Tags.Contains("_UserId:" + user.Id))
+
+                    ClaimsIdentity identity = user.Identity as ClaimsIdentity;
+                    Claim userIdClaim = identity.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+                    string userId = (userIdClaim != null) ? userIdClaim.Value : string.Empty;
+
+                    if (expectedTagsCount > 1 && !registration.Tags.Contains("_UserId:" + userId))
                     {
                         return false;
                     }
