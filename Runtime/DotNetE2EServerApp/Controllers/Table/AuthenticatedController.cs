@@ -5,6 +5,8 @@
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Claims;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.OData;
@@ -19,9 +21,10 @@ namespace ZumoE2EServerApp.Controllers
     {
         public override async Task<IQueryable<TestUser>> GetAll()
         {
-            MobileAppUser user = (MobileAppUser)this.User;
-            var creds = await user.GetIdentityAsync<FacebookCredentials>();
-            var all = (await base.GetAll()).Where(p => p.UserId == user.Id).ToArray();
+            ClaimsPrincipal user = this.User as ClaimsPrincipal;
+
+            var creds = await user.GetAppServiceIdentityAsync<FacebookCredentials>(this.Request);
+            var all = (await base.GetAll()).Where(p => p.UserId == creds.UserId).ToArray();
 
             var identitiesOld = user.Identities.Select(q => q.Claims.First(p => p.Type == "urn:microsoft:credentials").Value).ToArray();
             foreach (var item in all)
@@ -39,13 +42,17 @@ namespace ZumoE2EServerApp.Controllers
 
         public override async Task<HttpResponseMessage> Patch(string id, Delta<TestUser> patch)
         {
-            MobileAppUser user = (MobileAppUser)this.User;
-            var all = (await base.GetAll()).Where(p => p.UserId == user.Id).ToArray();
+            ClaimsPrincipal user = this.User as ClaimsPrincipal;
+
+            Claim userIdClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            string userId = (userIdClaim != null) ? userIdClaim.Value : string.Empty;
+
+            var all = (await base.GetAll()).Where(p => p.UserId == userId).ToArray();
             if (all.Length == 0)
             {
                 return this.Request.CreateResponse(HttpStatusCode.NotFound);
             }
-            else if (all[0].UserId != user.Id)
+            else if (all[0].UserId != userId)
             {
                 return this.Request.CreateResponse(HttpStatusCode.BadRequest, new JObject(new JProperty("error", "Mismatching user id")));
             }
@@ -57,20 +64,27 @@ namespace ZumoE2EServerApp.Controllers
 
         public override Task<HttpResponseMessage> Post(TestUser item)
         {
-            MobileAppUser user = (MobileAppUser)this.User;
-            item.UserId = user.Id;
+            ClaimsPrincipal user = this.User as ClaimsPrincipal;
+
+            Claim userIdClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            string userId = (userIdClaim != null) ? userIdClaim.Value : string.Empty;
+            item.UserId = userId;
             return base.Post(item);
         }
 
         public override async Task<HttpResponseMessage> Delete(string id)
         {
-            MobileAppUser user = (MobileAppUser)this.User;
-            var all = (await base.GetAll()).Where(p => p.UserId == user.Id).ToArray();
+            ClaimsPrincipal user = this.User as ClaimsPrincipal;
+
+            Claim userIdClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            string userId = (userIdClaim != null) ? userIdClaim.Value : string.Empty;
+
+            var all = (await base.GetAll()).Where(p => p.UserId == userId).ToArray();
             if (all.Length == 0)
             {
                 return this.Request.CreateResponse(HttpStatusCode.NotFound);
             }
-            else if (all[0].UserId != user.Id)
+            else if (all[0].UserId != userId)
             {
                 return this.Request.CreateResponse(HttpStatusCode.BadRequest, new JObject(new JProperty("error", "Mismatching user id")));
             }

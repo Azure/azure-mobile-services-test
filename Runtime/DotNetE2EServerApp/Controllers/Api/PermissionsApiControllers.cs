@@ -16,27 +16,27 @@ namespace ZumoE2EServerApp.Controllers
     {
         public Task<HttpResponseMessage> Get()
         {
-            return CustomSharedApi.handleRequest(this.Request, (MobileAppUser)this.User);
+            return CustomSharedApi.handleRequest(this.Request, this.User);
         }
 
         public Task<HttpResponseMessage> Post()
         {
-            return CustomSharedApi.handleRequest(this.Request, (MobileAppUser)this.User);
+            return CustomSharedApi.handleRequest(this.Request, this.User);
         }
 
         public Task<HttpResponseMessage> Put()
         {
-            return CustomSharedApi.handleRequest(this.Request, (MobileAppUser)this.User);
+            return CustomSharedApi.handleRequest(this.Request, this.User);
         }
 
         public Task<HttpResponseMessage> Delete()
         {
-            return CustomSharedApi.handleRequest(this.Request, (MobileAppUser)this.User);
+            return CustomSharedApi.handleRequest(this.Request, this.User);
         }
 
         public Task<HttpResponseMessage> Patch()
         {
-            return CustomSharedApi.handleRequest(this.Request, (MobileAppUser)this.User);
+            return CustomSharedApi.handleRequest(this.Request, this.User);
         }
     }
 
