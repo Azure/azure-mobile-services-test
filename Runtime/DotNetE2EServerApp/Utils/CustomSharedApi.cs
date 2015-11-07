@@ -109,8 +109,7 @@ namespace ZumoE2EServerApp.Utils
     class NodeUser
     {
         public NodeUser(IPrincipal user)
-        {
-            this.Id = user.Identity.Name;
+        {            
             if (user.Identity.IsAuthenticated)
             {
                 this.Level = "authenticated";
