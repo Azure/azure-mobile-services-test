@@ -272,11 +272,10 @@ typedef enum { ZumoTableAnonymous, ZumoTableAuthenticated } ZumoTableType;
         NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
         NSPredicate *isAuthCookie = [NSPredicate predicateWithFormat:@"domain ENDSWITH '.facebook.com' or domain ENDSWITH '.google.com' or domain ENDSWITH '.live.com' or domain ENDSWITH '.twitter.com' or domain ENDSWITH '.microsoftonline.com' or domain ENDSWITH '.windows.net'"];
         NSArray *cookiesToRemove = [[cookieStorage cookies] filteredArrayUsingPredicate:isAuthCookie];
-        /*
          for (NSHTTPCookie *cookie in cookiesToRemove) {
             NSLog(@"Removed cookie from %@ %@ %@ %d", [cookie domain], cookie.name, cookie.comment, cookie.isSessionOnly);
             [cookieStorage deleteCookie:cookie];
-        }*/
+        }
 
         [test addLog:@"Removed authentication-related cookies from this app."];
         completion(YES);
