@@ -15,7 +15,7 @@ namespace ZumoE2EServerApp.DataObjects
 
         public string UserId { get; set; }
 
-        public string[] Identities { get; set; }
+        public string Identities { get; set; }
 
         public byte[] Version { get; set; }
 

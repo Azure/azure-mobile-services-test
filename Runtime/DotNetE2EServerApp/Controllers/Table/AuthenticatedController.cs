@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -21,15 +22,45 @@ namespace ZumoE2EServerApp.Controllers
     {
         public override async Task<IQueryable<TestUser>> GetAll()
         {
-            ClaimsPrincipal user = this.User as ClaimsPrincipal;
-
-            var creds = await user.GetAppServiceIdentityAsync<FacebookCredentials>(this.Request);
+            ClaimsPrincipal user = (ClaimsPrincipal)this.User;
+            string userId = user.FindFirst(ClaimTypes.NameIdentifier).Value;
             var all = (await base.GetAll()).Where(p => p.UserId == creds.UserId).ToArray();
 
-            var identitiesOld = user.Identities.Select(q => q.Claims.First(p => p.Type == "urn:microsoft:credentials").Value).ToArray();
+            string identity = null;
+            var fbcreds = await user.GetAppServiceIdentityAsync<FacebookCredentials>(this.Request);
+            if (fbcreds != null && fbcreds.Claims.Count > 0)
+            {
+                identity = "{\"facebook\":{\"access_token\":\"" + fbcreds.AccessToken + "\"}}";
+            }
+
+            var twitterCreds = await user.GetAppServiceIdentityAsync<TwitterCredentials>(this.Request);
+            if (twitterCreds != null && twitterCreds.Claims.Count > 0) {
+                identity = "{\"twitter\":{\"access_token\":\"" + twitterCreds.AccessToken + "\",\"access_token_secret\":\"" + twitterCreds.AccessTokenSecret + "\"}}";
+            }
+
+            var googleCreds = await user.GetAppServiceIdentityAsync<GoogleCredentials>(this.Request);
+            if (googleCreds != null && googleCreds.Claims.Count > 0)
+            {
+                identity = "{\"google\":{\"access_token\":\"" + googleCreds.AccessToken + "\",\"authorization-code\":\"\"}}";
+            }
+
+            var msaCreds = await user.GetAppServiceIdentityAsync<MicrosoftAccountCredentials>(this.Request);
+            if (msaCreds != null && msaCreds.Claims.Count > 0)
+            {
+                identity = "{\"microsoftaccount\":{\"access_token\":\"" + msaCreds.AccessToken + "\"}}";
+            }
+
+            var aadCreds = await user.GetAppServiceIdentityAsync<AzureActiveDirectoryCredentials>(this.Request);
+            if (aadCreds != null && aadCreds.Claims.Count > 0)
+            {
+                identity = "{\"aad\":{\"access_token\":\"\"}}";
+            }
+
+            // var creds = await user.GetIdentityAsync<FacebookCredentials>();
+            var all = (await base.GetAll()).Where(p => p.UserId == userId).ToArray();
             foreach (var item in all)
             {
-                item.Identities = identitiesOld;
+                item.Identities = identity;
             }
 
             return all.AsQueryable();
