@@ -10,6 +10,7 @@ using System.Web.Http;
 using System.Web.Http.Cors;
 using AutoMapper;
 using Microsoft.Azure.Mobile.Server;
+using Microsoft.Azure.Mobile.Server.Authentication;
 using Microsoft.Azure.Mobile.Server.Config;
 using Microsoft.Owin.Extensions;
 using Owin;
@@ -70,7 +71,7 @@ namespace ZumoE2EServerApp
 
             Database.SetInitializer(new DbInitializer());
 
-            app.UseMobileAppAuthentication(config);
+            app.UseMobileAppAuthentication(config, AppServiceAuthenticationMode.LocalOnly);
             app.UseWebApi(config);
             app.UseStageMarker(PipelineStage.MapHandler);
         }

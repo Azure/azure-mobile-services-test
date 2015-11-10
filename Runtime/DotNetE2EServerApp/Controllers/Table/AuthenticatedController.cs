@@ -2,9 +2,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // ----------------------------------------------------------------------------
 
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Claims;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.OData;
@@ -19,14 +22,45 @@ namespace ZumoE2EServerApp.Controllers
     {
         public override async Task<IQueryable<TestUser>> GetAll()
         {
-            MobileAppUser user = (MobileAppUser)this.User;
-            var creds = await user.GetIdentityAsync<FacebookCredentials>();
-            var all = (await base.GetAll()).Where(p => p.UserId == user.Id).ToArray();
+            ClaimsPrincipal user = (ClaimsPrincipal)this.User;
+            string userId = user.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var all = (await base.GetAll()).Where(p => p.UserId == creds.UserId).ToArray();
 
-            var identitiesOld = user.Identities.Select(q => q.Claims.First(p => p.Type == "urn:microsoft:credentials").Value).ToArray();
+            string identity = null;
+            var fbcreds = await user.GetAppServiceIdentityAsync<FacebookCredentials>(this.Request);
+            if (fbcreds != null && fbcreds.Claims.Count > 0)
+            {
+                identity = "{\"facebook\":{\"access_token\":\"" + fbcreds.AccessToken + "\"}}";
+            }
+
+            var twitterCreds = await user.GetAppServiceIdentityAsync<TwitterCredentials>(this.Request);
+            if (twitterCreds != null && twitterCreds.Claims.Count > 0) {
+                identity = "{\"twitter\":{\"access_token\":\"" + twitterCreds.AccessToken + "\",\"access_token_secret\":\"" + twitterCreds.AccessTokenSecret + "\"}}";
+            }
+
+            var googleCreds = await user.GetAppServiceIdentityAsync<GoogleCredentials>(this.Request);
+            if (googleCreds != null && googleCreds.Claims.Count > 0)
+            {
+                identity = "{\"google\":{\"access_token\":\"" + googleCreds.AccessToken + "\",\"authorization-code\":\"\"}}";
+            }
+
+            var msaCreds = await user.GetAppServiceIdentityAsync<MicrosoftAccountCredentials>(this.Request);
+            if (msaCreds != null && msaCreds.Claims.Count > 0)
+            {
+                identity = "{\"microsoftaccount\":{\"access_token\":\"" + msaCreds.AccessToken + "\"}}";
+            }
+
+            var aadCreds = await user.GetAppServiceIdentityAsync<AzureActiveDirectoryCredentials>(this.Request);
+            if (aadCreds != null && aadCreds.Claims.Count > 0)
+            {
+                identity = "{\"aad\":{\"access_token\":\"\"}}";
+            }
+
+            // var creds = await user.GetIdentityAsync<FacebookCredentials>();
+            var all = (await base.GetAll()).Where(p => p.UserId == userId).ToArray();
             foreach (var item in all)
             {
-                item.Identities = identitiesOld;
+                item.Identities = identity;
             }
 
             return all.AsQueryable();
@@ -39,13 +73,17 @@ namespace ZumoE2EServerApp.Controllers
 
         public override async Task<HttpResponseMessage> Patch(string id, Delta<TestUser> patch)
         {
-            MobileAppUser user = (MobileAppUser)this.User;
-            var all = (await base.GetAll()).Where(p => p.UserId == user.Id).ToArray();
+            ClaimsPrincipal user = this.User as ClaimsPrincipal;
+
+            Claim userIdClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            string userId = (userIdClaim != null) ? userIdClaim.Value : string.Empty;
+
+            var all = (await base.GetAll()).Where(p => p.UserId == userId).ToArray();
             if (all.Length == 0)
             {
                 return this.Request.CreateResponse(HttpStatusCode.NotFound);
             }
-            else if (all[0].UserId != user.Id)
+            else if (all[0].UserId != userId)
             {
                 return this.Request.CreateResponse(HttpStatusCode.BadRequest, new JObject(new JProperty("error", "Mismatching user id")));
             }
@@ -57,20 +95,27 @@ namespace ZumoE2EServerApp.Controllers
 
         public override Task<HttpResponseMessage> Post(TestUser item)
         {
-            MobileAppUser user = (MobileAppUser)this.User;
-            item.UserId = user.Id;
+            ClaimsPrincipal user = this.User as ClaimsPrincipal;
+
+            Claim userIdClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            string userId = (userIdClaim != null) ? userIdClaim.Value : string.Empty;
+            item.UserId = userId;
             return base.Post(item);
         }
 
         public override async Task<HttpResponseMessage> Delete(string id)
         {
-            MobileAppUser user = (MobileAppUser)this.User;
-            var all = (await base.GetAll()).Where(p => p.UserId == user.Id).ToArray();
+            ClaimsPrincipal user = this.User as ClaimsPrincipal;
+
+            Claim userIdClaim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            string userId = (userIdClaim != null) ? userIdClaim.Value : string.Empty;
+
+            var all = (await base.GetAll()).Where(p => p.UserId == userId).ToArray();
             if (all.Length == 0)
             {
                 return this.Request.CreateResponse(HttpStatusCode.NotFound);
             }
-            else if (all[0].UserId != user.Id)
+            else if (all[0].UserId != userId)
             {
                 return this.Request.CreateResponse(HttpStatusCode.BadRequest, new JObject(new JProperty("error", "Mismatching user id")));
             }

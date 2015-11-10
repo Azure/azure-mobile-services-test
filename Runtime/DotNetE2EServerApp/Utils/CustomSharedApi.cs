@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.Mobile.Server.Authentication;
@@ -19,7 +20,7 @@ namespace ZumoE2EServerApp.Utils
     {
         internal static async Task<HttpResponseMessage> handleRequest(
             HttpRequestMessage request,
-            MobileAppUser user)
+            IPrincipal user)
         {
             var query = request.GetQueryNameValuePairs();
 
@@ -107,13 +108,12 @@ namespace ZumoE2EServerApp.Utils
 
     class NodeUser
     {
-        public NodeUser(MobileAppUser user)
-        {
-            this.Id = user.Id;
+        public NodeUser(IPrincipal user)
+        {            
             if (user.Identity.IsAuthenticated)
             {
                 this.Level = "authenticated";
-                this.Id = user.Id;
+                this.Id = user.Identity.Name;
             }
             else
             {
