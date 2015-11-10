@@ -26,6 +26,8 @@ To get the source code of our E2E tests via **git** just type:
     git clone https://github.com/Azure/azure-mobile-services-test.git
     cd ./azure-mobile-services-test/
 
+Note that the Visual Studio solutions reference SQLite.  If you find that there are compilation errors, you may need to get the correct version of the portable class library for SQLite from their [documentation page](https://sqlitepcl.codeplex.com/documentation).
+
 ## Need Help?
 
 Be sure to check out the Mobile Services [Developer Forum](http://social.msdn.microsoft.com/Forums/en-US/azuremobile/) if you are having trouble. The Mobile Services product team actively monitors the forum and will be more than happy to assist you.
