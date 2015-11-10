@@ -70,7 +70,7 @@ namespace Microsoft.WindowsAzure.Mobile.iOS.Test
             {
                 MobileServiceRuntimeUrl = this.uriEntry.Value,
                 TagExpression = this.tagsEntry.Value,
-                RuntimeVersion = this.runtimeVersionEntry.Value,
+                RuntimeVersion = this.runtimeVersionEntry.Value
             });
             AppDelegate.Harness.Settings.ManualMode = string.IsNullOrWhiteSpace(this.runtimeVersionEntry.Value);
 
