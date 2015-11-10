@@ -44,7 +44,7 @@ extern NSString *const TABLES_ROUND_TRIP_INT_ID;
 @property (nonatomic, copy) NSString *storageURL;
 @property (nonatomic, copy) NSString *storageToken;
 
--(void) initializeClientWithAppUrl:(NSString *)url andGatewayURL:(NSString *)gatewayUrl;
+-(void) initializeClientWithAppUrl:(NSString *)url;
 - (void)saveAppInfo:(NSString *)appUrl key:(NSString *)appKey;
 - (NSArray *)loadAppInfo;
 - (NSMutableDictionary *)globalTestParameters;

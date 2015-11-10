@@ -35,7 +35,7 @@
     
     // Build the client object
     ZumoTestGlobals *globals = [ZumoTestGlobals sharedInstance];
-    [globals initializeClientWithAppUrl:appUrl andGatewayURL:nil];
+    [globals initializeClientWithAppUrl:appUrl];
     [globals saveAppInfo:appUrl key:nil];
     
     NSMutableDictionary *globalTestParams = globals.globalTestParameters;
@@ -90,7 +90,7 @@
         }
         
         ZumoTestGlobals *globals = [ZumoTestGlobals sharedInstance];
-        [globals initializeClientWithAppUrl:appUrl andGatewayURL:nil];
+        [globals initializeClientWithAppUrl:appUrl];
         [globals saveAppInfo:appUrl key:nil];
 
         if (self.storageToken.text && self.storageURL.text) {
@@ -105,7 +105,7 @@
 - (BOOL) validateAppInfo {
     
     if ([self.appUrl.text length] == 0) {
-        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error" message:@"Please set the application URL and key before proceeding" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error" message:@"Please set the application URL before proceeding" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
         [alert show];
         return NO;
     }

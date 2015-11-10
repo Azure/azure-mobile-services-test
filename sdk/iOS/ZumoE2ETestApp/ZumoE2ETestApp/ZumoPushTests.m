@@ -307,9 +307,9 @@ static NSString *pushClientKey = @"PushClientKey";
                 return;
             }
             
-            [client logout];
-            
-            completion(test.testStatus != TSFailed);
+            [client logoutWithCompletion:^(NSError * _Nullable error) {
+                completion(test.testStatus != TSFailed);
+            }];            
         };
         
         MSAPIBlock checkVerifyReg = ^(id result, NSHTTPURLResponse *response, NSError *error) {
