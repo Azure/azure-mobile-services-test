@@ -54,12 +54,7 @@ namespace Microsoft.WindowsAzure.Mobile.Android.Test
                 {
                     MobileServiceRuntimeUrl = ReadSettingFromIntentOrDefault(Keys.MobileServiceUri),
                     MobileServiceRuntimeKey = ReadSettingFromIntentOrDefault(Keys.MobileServiceKey),
-                    MasterRunId = ReadSettingFromIntentOrDefault(Keys.MasterRunId),
                     RuntimeVersion = ReadSettingFromIntentOrDefault(Keys.RuntimeVersion),
-                    CliendId = ReadSettingFromIntentOrDefault(Keys.CliendId),
-                    ClientSecret = ReadSettingFromIntentOrDefault(Keys.ClientSecret),
-                    DayLightUrl = ReadSettingFromIntentOrDefault(Keys.DayLightUrl),
-                    DaylightProject = ReadSettingFromIntentOrDefault(Keys.DaylightProject),
                     TagExpression = ReadSettingFromIntentOrDefault(Keys.TagExpression)
                 };
                 App.Harness.SetAutoConfig(config);

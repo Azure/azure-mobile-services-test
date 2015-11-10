@@ -6,14 +6,14 @@
 #import "ZumoTestHelpViewController.h"
 #import "ZumoTestGlobals.h"
 #import "ZumoTestStore.h"
-#import "ZumoDaylightConnection.h"
+#import "ZumoBlobConnection.h"
 #import <MessageUI/MFMailComposeViewController.h>
 #import "ZumoTestResultViewController.h"
 #import "ZumoTestCallbacks.h"
 
 @interface ZumoTestGroupTableViewController () <MFMailComposeViewControllerDelegate>
 
-@property (nonatomic, strong) ZumoDaylightConnection *daylightConnection;
+@property (nonatomic, strong) ZumoBlobConnection *blobConnection;
 @property (nonatomic, strong) NSString *runName;
 @property (nonatomic, strong) NSString *runId;
 @property (nonatomic, strong) NSIndexPath *selectedRow;
@@ -29,15 +29,12 @@
     NSString *groupName = [self.testGroup name];
     
     ZumoTestGlobals *globals = [ZumoTestGlobals sharedInstance];
-    if (globals.daylightProject) {
-        self.runName = @"E2E: iOS: iPadSim";
-        _daylightConnection = [[ZumoDaylightConnection alloc] initWithName:self.runName
-                                                                forProject:globals.daylightProject
-                                                                      withId:globals.daylightClientId
-                                                                   andSecret:globals.daylightClientSecret];
+    
+    if (globals.storageURL && ![globals.storageURL isEqualToString:@""]) {
+        self.blobConnection = [[ZumoBlobConnection alloc] initWithStorageURL:globals.storageURL token:globals.storageToken];
     }
     
-    [[self navigationItem] setTitle:groupName];
+    self.navigationItem.title = groupName;
     
     [self resetTests:self];
     
@@ -137,15 +134,7 @@
         [self.testGroup startExecutingFrom:weakSelf];        
     };
     
-    if (!self.daylightConnection) {
-        runTestBlock(@"Local");
-    } else {
-        [self.daylightConnection createRunWithCount:self.testGroup.tests.count completion:^(NSString *runId) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                runTestBlock(runId);
-            });
-        }];
-    }
+    runTestBlock(@"Local");
 }
 
 - (IBAction)resetTests:(id)sender {
@@ -159,67 +148,83 @@
 - (void)zumoTestGroupFinished:(NSString *)groupName withPassed:(int)passedTests andFailed:(int)failedTests andSkipped:(int)skippedTests {
     
     NSMutableArray *testResults = [NSMutableArray new];
+    
+    UIDevice *device = [UIDevice currentDevice];
+    NSString *shortId =  [device.identifierForVendor.UUIDString substringToIndex:8];
+    NSString *platform = [NSString stringWithFormat:@"%@_%@_%@_%@", device.systemName, device.systemVersion, device.model, shortId];
+    
+    dispatch_group_t group;
+    if (self.blobConnection) {
+        group = dispatch_group_create();
+    }
+    
     for (ZumoTest *test in self.testGroup.tests) {
         NSArray *log = test.formattedLog;
         if (log) {
-            test.logFileName = self.daylightConnection ? [self.daylightConnection uploadLog:log completion:nil] : @"";
+            NSString *logFileName = [NSString stringWithFormat:@"%@/%@.txt", platform, [[NSUUID UUID] UUIDString]];
+            
+            if (self.blobConnection) {
+                dispatch_group_enter(group);
+                [self.blobConnection uploadLog:log withFileName:logFileName completion:^(NSError *error) {
+                    dispatch_group_leave(group);
+                }];
+            }
             
             NSString *groupName = test.groupName ? test.groupName : self.testGroup.name;
-            [testResults addObject:@{ @"adapter":@"zumotestsconverter",
-                                      @"full_name":test.name,
-                                      @"source":[groupName stringByReplacingOccurrencesOfString:@" " withString:@""],
-                                      @"run_id":self.runId,
-                                      @"outcome":[ZumoTest testStatusToString:test.testStatus],
-                                      @"start_time":[NSString stringWithFormat:@"%lld", [ZumoDaylightConnection fileTime:test.startTime]],
-                                      @"end_time":[NSString stringWithFormat:@"%lld", [ZumoDaylightConnection fileTime:test.endTime]],
-                                      //@"tags":@[],
-                                      @"attachments": @{ @"logs.txt" : test.logFileName }
-                                      }];
+            [testResults addObject:@{
+                @"full_name" : test.name,
+                @"source" : groupName,
+                @"outcome" : [ZumoTest testStatusToString:test.testStatus],
+                @"start_time" : [NSString stringWithFormat:@"%lld", [ZumoBlobConnection fileTime:test.startTime]],
+                @"end_time" : [NSString stringWithFormat:@"%lld", [ZumoBlobConnection fileTime:test.endTime]],
+                @"reference_url" : logFileName
+            }];
         }
     }
     
-    if (self.daylightConnection) {
-        [self.daylightConnection reportTestResult:testResults completion:^(NSError *error) {
-            ZumoTestGlobals *globals = [ZumoTestGlobals sharedInstance];
-            NSString *masterRunId = globals.daylightMasterRunId;
-            if (masterRunId) {
-                NSArray *finalLog = @[[NSString stringWithFormat:@"Total Tests: %d", self.testGroup.testsPassed + self.testGroup.testsFailed],
-                                      [NSString stringWithFormat:@"Passed Tests: %d", self.testGroup.testsPassed],
-                                      [NSString stringWithFormat:@"Failed Tests: %d", self.testGroup.testsFailed],
-                                      [NSString stringWithFormat:@"Test Details: https://www.daylightapp.net/zumo2/runs/%@", self.runId],
-                                      [NSString stringWithFormat:@"Server: %@", globals.globalTestParameters[RUNTIME_VERSION_TAG]]];
-                
-                NSString *finalLogFile = self.daylightConnection ? [self.daylightConnection uploadLog:finalLog completion:nil] : @"";
-                
-                TestStatus finalTestStatus = self.testGroup.testsFailed > 0 ? TSFailed : TSPassed;
-                NSArray *finalResult = @[@{
-                                         @"adapter":@"zumotestsconverter",
-                                         @"full_name":self.runName,
-                                         @"source":@"iOS",
-                                         @"run_id":masterRunId,
-                                         @"outcome":[ZumoTest testStatusToString:finalTestStatus],
-                                         @"start_time":[NSString stringWithFormat:@"%lld", [ZumoDaylightConnection fileTime:self.testGroup.startTime]],
-                                         @"end_time":[NSString stringWithFormat:@"%lld", [ZumoDaylightConnection fileTime:self.testGroup.endTime]],
-                                         @"tags":@[self.runId, @"iOS", globals.globalTestParameters[RUNTIME_VERSION_TAG]],
-                                         @"attachments": @{ @"logs.txt" : finalLogFile }
-                                        }];
-                
-                
-                [self.daylightConnection reportTestResult:finalResult completion:^(NSError *error) {
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        UIAlertView *av = [[UIAlertView alloc] initWithTitle:@"Tests Complete" message:@"reported" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
-                        [av show];
-                    });
-                }];
-            } else {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    UIAlertView *av = [[UIAlertView alloc] initWithTitle:@"Tests Complete" message:@"no master run" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
-                    [av show];
-                });
-            }
+    TestStatus finalTestStatus = self.testGroup.testsFailed > 0 ? TSFailed : TSPassed;
+    
+    if (self.blobConnection) {
+        NSString *detailBlobName = [platform stringByAppendingString:@"-detail.json"];
+        dispatch_group_enter(group);
+        [self.blobConnection uploadJson:testResults withFileName:detailBlobName completion:^(NSError *error) {
+            dispatch_group_leave(group);
+        }];
+        
+        dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+
+        ZumoTestGlobals *globals = [ZumoTestGlobals sharedInstance];
+        NSString *serverVersion = globals.globalTestParameters[RUNTIME_VERSION_TAG];
+        if (serverVersion == nil) {
+            serverVersion = @"Unknown";
+        }
+        
+        
+        NSDictionary *finalResult = @{
+            @"full_name" : platform,
+            @"outcome" : [ZumoTest testStatusToString:finalTestStatus],
+            @"total_count" : [NSNumber numberWithInt:self.testGroup.testsPassed + self.testGroup.testsFailed],
+            @"passed" : [NSNumber numberWithInt:self.testGroup.testsPassed],
+            @"failed" : [NSNumber numberWithInt:self.testGroup.testsFailed],
+            @"skipped" : [NSNumber numberWithInt:self.testGroup.testsSkipped],
+            @"start_time":[NSString stringWithFormat:@"%lld", [ZumoBlobConnection fileTime:self.testGroup.startTime]],
+            @"end_time":[NSString stringWithFormat:@"%lld", [ZumoBlobConnection fileTime:self.testGroup.endTime]],
+            @"reference_url": detailBlobName,
+            @"server" : serverVersion
+        };
+        
+        [self.blobConnection uploadJson:finalResult withFileName:[platform stringByAppendingString:@"-master.json"] completion:^(NSError *error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                UIAlertView *av = [[UIAlertView alloc] initWithTitle:@"Tests Complete" message:@"reported" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+                [av show];
+            });
         }];
     } else {
-        UIAlertView *av = [[UIAlertView alloc] initWithTitle:@"Tests Complete" message:@"happy" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+        UIAlertView *av = [[UIAlertView alloc] initWithTitle:@"Tests Complete"
+                                                     message:[ZumoTest testStatusToString:finalTestStatus]
+                                                    delegate:nil
+                                           cancelButtonTitle:@"OK"
+                                           otherButtonTitles:nil];
         [av show];
     }
 }
