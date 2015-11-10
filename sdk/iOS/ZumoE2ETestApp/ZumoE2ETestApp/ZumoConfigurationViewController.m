@@ -11,10 +11,8 @@
 
 @property (weak, nonatomic) IBOutlet UITextField *appUrl;
 @property (weak, nonatomic) IBOutlet UITextField *appKey;
-@property (weak, nonatomic) IBOutlet UITextField *clientId;
-@property (weak, nonatomic) IBOutlet UITextField *clientSecret;
-@property (weak, nonatomic) IBOutlet UITextField *runId;
-@property (weak, nonatomic) IBOutlet UISwitch *reportOn;
+@property (weak, nonatomic) IBOutlet UITextField *storageURL;
+@property (weak, nonatomic) IBOutlet UITextField *storageToken;
 
 @property (weak, nonatomic) UITextField *activeField;
 @property (weak, nonatomic) IBOutlet UIView *validationView;
@@ -88,17 +86,14 @@
     
     self.appKey.delegate = self;
     self.appUrl.delegate = self;
-    self.clientId.delegate = self;
-    self.clientSecret.delegate = self;
-    self.runId.delegate = self;
+    self.storageURL.delegate = self;
+    self.storageToken.delegate = self;
 
     NSArray *lastUsedApp = [[ZumoTestGlobals sharedInstance] loadAppInfo];
     if (lastUsedApp) {
         self.appUrl.text = [lastUsedApp objectAtIndex:0];
         self.appKey.text = [lastUsedApp objectAtIndex:1];
     }
-
-    [self registerForKeyboardNotifications];
 }
 
 - (void)didReceiveMemoryWarning
@@ -128,11 +123,9 @@
         [globals initializeClientWithAppUrl:appUrl andKey:self.appKey.text];
         [globals saveAppInfo:appUrl key:self.appKey.text];
 
-        if (self.reportOn.on) {
-            globals.daylightProject = @"zumo2";
-            globals.daylightClientId = self.clientId.text;
-            globals.daylightClientSecret = self.clientSecret.text;
-            globals.daylightMasterRunId = self.runId.text;
+        if (self.storageToken.text && self.storageURL.text) {
+            globals.storageURL = self.storageURL.text;
+            globals.storageToken = self.storageToken.text;
         }
         
         self.validationView.hidden = YES;
@@ -153,56 +146,6 @@
 
 # pragma mark UITextFieldDelegate
 
-- (void)registerForKeyboardNotifications
-{
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(keyboardWasShown:)
-                                                 name:UIKeyboardWillShowNotification object:nil];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(keyboardWillBeHidden:)
-                                                 name:UIKeyboardWillHideNotification object:nil];
-    
-}
-
-// Called when the UIKeyboardDidShowNotification is sent.
-- (void)keyboardWasShown:(NSNotification*)aNotification
-{
-    NSDictionary* info = [aNotification userInfo];
-    CGSize kbSize = [[info objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
-
-    if (self.activeField == self.appKey || self.activeField == self.appUrl) {
-        return;
-    }
-    
-    CGRect aRect = self.scrollView.frame;
-    aRect.size.height -= kbSize.height;
-    
-    CGPoint textSpot = self.runId.frame.origin;
-    textSpot.y = self.runId.frame.size.height;
-    
-    if (!CGRectContainsPoint(aRect, textSpot) ) {
-        NSTimeInterval duration = [info[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
-        [UIView animateWithDuration:duration animations:^{
-            [self.view setFrame:CGRectMake(0, -100, self.view.frame.size.width, self.view.frame.size.height)];
-        }];
-    }
-}
-
-// Called when the UIKeyboardWillHideNotification is sent
-- (void)keyboardWillBeHidden:(NSNotification*)aNotification
-{
-    if(self.view.frame.origin.y == 0) {
-        return;
-    }
-    
-    NSDictionary* info = [aNotification userInfo];
-    NSTimeInterval duration = [info[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
-
-    [UIView animateWithDuration:duration animations:^{
-        [self.view setFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height)];
-    }];
-}
 
 - (void)textFieldDidBeginEditing:(UITextField *)textField
 {

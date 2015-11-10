@@ -25,11 +25,6 @@
     return self;
 }
 
-- (id)initWithStyle:(UITableViewStyle)style
-{
-    return [self init];
-}
-
 - (void)viewDidLoad
 {
     [super viewDidLoad];

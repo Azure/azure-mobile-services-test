@@ -15,9 +15,8 @@ var password = '--AUTH_PASSWORD--';
 
 var mobileServiceName = '--APPLICATION_URL--';
 var mobileServiceKey = '--APPLICATION_KEY--';
-var clientId = '--CLIENT_ID--';
-var clientSecret = '--CLIENT_SECRET--';
-var runId = '--RUN_ID--';
+var blobUrl = '--BLOB_URL--';
+var blobToken = '--BLOB_TOKEN--';
 
 var target = UIATarget.localTarget();
 var app = target.frontMostApp();
@@ -26,7 +25,7 @@ var window = app.mainWindow();
 var done = false;
 
 UIATarget.onAlert = function(alert) {
-	var title = alert.name();	
+	var title = alert.name();
 	UIALogger.logDebug("Alert with title: '" + title + "'");
 
 	done = true;
@@ -39,7 +38,7 @@ UIATarget.onAlert = function(alert) {
 	return false;
 }
 
-setMobileService(app, window, mobileServiceName, mobileServiceKey);
+setMobileService(app, window, mobileServiceName, mobileServiceKey, blobUrl, blobToken);
 
 startTests();
 
@@ -51,7 +50,7 @@ while (!done) {
 			var userName = userNames[provider];
 			doLogin(target, app, userName, password, provider);
 		}
-	
+
 		UIALogger.logMessage('Waiting for login or done');
 		target.delay(3);
 	} catch (ex) {
@@ -63,13 +62,12 @@ while (!done) {
 
 backToStart();
 
-function setMobileService(app, window, appUrl, appKey) {
+function setMobileService(app, window, appUrl, appKey, blobUrl, blobToken) {
 	var values = {
 		MobileServiceURL: appUrl,
 		MobileServiceKey: appKey,
-		ClientId: clientId,
-		ClientSecret: clientSecret,
-		RunId: runId
+		BlobURL: blobUrl,
+		BlobToken: blobToken,
 	};
 
 	for (var key in values) {
@@ -78,10 +76,10 @@ function setMobileService(app, window, appUrl, appKey) {
 			if (textField.isValid()) {
 				textField.setValue(values[key]);
 			}
-			app.keyboard().typeString("\n");	
-		}	
+			app.keyboard().typeString("\n");
+		}
 	}
-	
+
 	// Start testing the application
 	window.buttons()["BeginTesting"].tap();
 }
@@ -110,13 +108,13 @@ function isLoginPage() {
 	if (!webView.isValid()) {
 		return null;
 	}
-	
+
 	var alltags = webView.staticTexts();
 
 	if (alltags.withPredicate('name contains "Facebook"').length > 0) {
 		return FACEBOOK;
 	}
-	
+
 	if (alltags.withPredicate('name contains "work"').length > 0) {
 		return AAD;
 	}
@@ -132,7 +130,7 @@ function isLoginPage() {
 	if (alltags.withPredicate('name contains "Google"').length > 0) {
 			return GOOGLE;
 	}
-	
+
 	return null;
 }
 
@@ -147,7 +145,7 @@ function doLogin(target, app, userName, password, provider) {
 	}
 	app.keyboard().typeString(userName);
 	target.delay(3);
-	
+
 	var passwordTextField = webView.secureTextFields()[0];
 	passwordTextField.tap();
 	target.delay(1);

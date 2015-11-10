@@ -41,10 +41,8 @@ extern NSString *const TABLES_ROUND_TRIP_INT_ID;
 @property (nonatomic, copy) NSString *remoteNotificationRegistrationStatus;
 @property (nonatomic, weak) id<PushNotificationReceiver> pushNotificationDelegate;
 
-@property (nonatomic, copy) NSString *daylightProject;
-@property (nonatomic, copy) NSString *daylightClientId;
-@property (nonatomic, copy) NSString *daylightClientSecret;
-@property (nonatomic, copy) NSString *daylightMasterRunId;
+@property (nonatomic, copy) NSString *storageURL;
+@property (nonatomic, copy) NSString *storageToken;
 
 - (void)initializeClientWithAppUrl:(NSString *)url andKey:(NSString *)appKey;
 - (void)saveAppInfo:(NSString *)appUrl key:(NSString *)appKey;
