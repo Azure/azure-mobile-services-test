@@ -32,7 +32,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
 
             CountingHandler handler = new CountingHandler();
             var requestsSentToServer = 0;
-            var offlineReadyClient = await CreateClient(handler);
+            var offlineReadyClient = CreateClient(handler);
 
             var localStore = new MobileServiceSQLiteStore(StoreFileName);
             Log("Defined the table on the local store");
@@ -214,7 +214,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             Log("Using random seed: {0}", seed);
             Random rndGen = new Random(seed);
 
-            var offlineReadyClient = await CreateClient();
+            var offlineReadyClient = CreateClient();
 
             var localStore = new MobileServiceSQLiteStore(StoreFileName);
             Log("Defined the table on the local store");
@@ -319,7 +319,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             Log("Using random seed: {0}", seed);
             Random rndGen = new Random(seed);
 
-            var offlineReadyClient = await CreateClient();
+            var offlineReadyClient = CreateClient();
 
             var localStore = new MobileServiceSQLiteStore(StoreFileName);
             Log("Defined the table on the local store");
@@ -384,7 +384,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             await offlineReadyClient.LogoutAsync();
         }
 
-        private async Task<MobileServiceClient> CreateClient(params HttpMessageHandler[] handlers)
+        private MobileServiceClient CreateClient(params HttpMessageHandler[] handlers)
         {
             var globalClient = GetClient();
             var offlineReadyClient = new MobileServiceClient(
@@ -395,10 +395,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             {
                 offlineReadyClient.CurrentUser = new MobileServiceUser(globalClient.CurrentUser.UserId);
                 offlineReadyClient.CurrentUser.MobileServiceAuthenticationToken = globalClient.CurrentUser.MobileServiceAuthenticationToken;
-            }
-            else
-            {
-                await offlineReadyClient.LogoutAsync();
             }
 
             return offlineReadyClient;
@@ -449,7 +445,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             Log("Using random seed: {0}", seed);
             Random rndGen = new Random(seed);
 
-            var offlineReadyClient = await CreateClient();
+            var offlineReadyClient = CreateClient();
 
             var items = Enumerable.Range(0, 10).Select(_ => new OfflineReadyItem(rndGen)).ToArray();
             foreach (var item in items)
@@ -636,7 +632,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             Log("Using random seed: {0}", seed);
             Random rndGen = new Random(seed);
 
-            var offlineReadyClient = await CreateClient();
+            var offlineReadyClient = CreateClient();
 
             var localStore = new MobileServiceSQLiteStore(StoreFileName);
             Log("Defined the table on the local store");
