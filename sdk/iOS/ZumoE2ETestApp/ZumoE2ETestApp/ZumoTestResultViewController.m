@@ -36,6 +36,10 @@
     [fullText appendAttributedString:[[NSAttributedString alloc] initWithString:logs]];
     
     self.logDisplay.attributedText = fullText;
+    
+    // UI Bug?
+    self.logDisplay.scrollEnabled = NO;
+    self.logDisplay.scrollEnabled = YES;
 }
 
 - (void)didReceiveMemoryWarning

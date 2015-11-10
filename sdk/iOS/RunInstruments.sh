@@ -7,19 +7,19 @@ mkdir Results
 
 DIR="$( pwd )"
 
-if [ $# -lt 7 ]
+if [ $# -lt 6 ]
 then
-  #           $0 $1                  $2                  $3         $4                        $5           $6               $7        $8 (optional)       
-  echo Usage: $0 \<Application URL\> \<Application Key\> \<device\> \<zumotestuser password\> \<clientId\> \<clientSecret\> \<runId\> \<iOSsdkZip\>
+  #           $0 $1                  $2                  $3         $4                        $5           $6             $7 (optional)
+  echo Usage: $0 \<Application URL\> \<Application Key\> \<device\> \<zumotestuser password\> \<Blob URL\> \<Blob Token\> \<iOSsdkZip\>
   echo Where
   echo   \<Application URL\> is the URL of the Mobile Service
   echo   \<Application key\> is the app key for that service
   echo   \<device\> is one of the following:
-  echo       - iPhoneSim \(default\)  - iPadSim             - iPadSimResizable
-  echo       - iPadSimAir           - iPadSimRetina       - iPhoneSimResizable
-  echo       - iPhoneSim4s          - iPhoneSim5          - iPhoneSim5s
-  echo       - iPhoneSim6Plus       - iPhoneSim6PlusWatch - iPhoneSim6sPlus
-  echo       - iPhone6sPlusWatch
+  echo       - iPad2Sim             - iPadSimAir          - iPadSimAir2
+  echo       - iPadSimPro           - iPadSimRetina       - iPhoneSim4s
+  echo       - iPhoneSim5           - iPhoneSim5s         - iPhoneSim6
+  echo       - iPhoneSim6Plus       - iPhoneSim6s         - iPhoneSim6sWatch
+  echo       - iPhone6sPlus         - iPhone6sPlusWatch
   echo   \<loginPassword\> - the password to use for log in operations \(for zumotestuser account\)
   echo   \<iOSsdkZip\> is the zip file location of the framework to test against \(optional\)
   exit 1
@@ -35,10 +35,10 @@ echo Device: $DEVICE_CMD_ARG
 # Build current app to test with
 pushd ZumoE2ETestApp
 
-if [ $8 ]
+if [ $7 ]
 then
   # Copy specified framework
-  cp -f $8 sdk.zip
+  cp -f $7 sdk.zip
 else
   # Copy in current version of the framework
   curl --location --output sdk.zip --silent http://aka.ms/gc6fex
@@ -47,20 +47,8 @@ fi
 unzip -o sdk.zip
 
 xcodebuild -sdk iphonesimulator9.1 || exit 1
-# xcodebuild -sdk iphoneos7.1
+
 popd
-
-if [ "$DEVICE_CMD_ARG" == "iPhone5" ]; then
-  echo Using real device
-  export DEVICE_ARG=2a75c76d6d92841f82746de082e61f9ee90c2dbf
-  APP_NAME=ZumoE2ETestApp
-fi
-
-if [ "$DEVICE_CMD_ARG" == "iPad" ]; then
-  echo Using real device
-  export DEVICE_ARG=2cd4344e476a4496f695a904dd0b24013e865f0c  
-  APP_NAME=ZumoE2ETestApp
-fi
 
 if [ "$DEVICE_CMD_ARG" == "iPad2Sim" ]; then
   echo Using iPad 2 Simulator
@@ -154,13 +142,13 @@ fi
 
 echo DEVICE_ARG: $DEVICE_ARG
 echo APP_NAME: $APP_NAME
+EscapedToken=${6//&/\\&}
 
-sed -e "s/--APPLICATION_URL--/$1/g" ZumoAutomationTemplate.js > ZumoAutomationTemplate-temp.js
-sed -e "s/--APPLICATION_KEY--/$2/g" ZumoAutomationTemplate-temp.js > ZumoAutomationTemplate-temp1.js
-sed -e "s/--CLIENT_ID--/$5/g" ZumoAutomationTemplate-temp1.js > ZumoAutomationTemplate-temp.js
-sed -e "s/--CLIENT_SECRET--/$6/g" ZumoAutomationTemplate-temp.js > ZumoAutomationTemplate-temp1.js
-sed -e "s/--RUN_ID--/$7/g" ZumoAutomationTemplate-temp1.js > ZumoAutomationTemplate-temp.js
-sed -e "s/--AUTH_PASSWORD--/$4/g" ZumoAutomationTemplate-temp.js > ZumoAutomationWithData.js
+sed -e "s|--APPLICATION_URL--|$1|g" ZumoAutomationTemplate.js > ZumoAutomationWithData.js
+sed -e "s|--APPLICATION_KEY--|$2|g" -i "" ZumoAutomationWithData.js
+sed -e "s|--BLOB_URL--|$5|g" -i "" ZumoAutomationWithData.js
+sed -e "s|--BLOB_TOKEN--|$EscapedToken|g" -i "" ZumoAutomationWithData.js
+sed -e "s|--AUTH_PASSWORD--|$4|g" -i "" ZumoAutomationWithData.js
 
 echo Replaced data on template - now running instruments
 echo Args: DEVICE_ARG = $DEVICE_ARG
