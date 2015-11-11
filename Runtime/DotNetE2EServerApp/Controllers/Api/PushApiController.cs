@@ -235,7 +235,7 @@ namespace ZumoE2EServerApp.Controllers
         {
             IPrincipal user = this.User;
             int expectedTagsCount = 1;
-            if (user.Identity != null)
+            if (user.Identity != null && user.Identity.IsAuthenticated)
             {
                 expectedTagsCount = 2;
             }

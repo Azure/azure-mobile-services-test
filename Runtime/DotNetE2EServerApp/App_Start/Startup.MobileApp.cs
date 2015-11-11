@@ -71,7 +71,8 @@ namespace ZumoE2EServerApp
 
             Database.SetInitializer(new DbInitializer());
 
-            app.UseMobileAppAuthentication(config, AppServiceAuthenticationMode.LocalOnly);
+            // Uncomment for local debugging
+            // app.UseAppServiceAuthentication(config, AppServiceAuthenticationMode.LocalOnly);
             app.UseWebApi(config);
             app.UseStageMarker(PipelineStage.MapHandler);
         }
