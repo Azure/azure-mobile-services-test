@@ -104,8 +104,8 @@
       <Link>js\tests\queryTestData.js</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\TestFramework\js\daylightFramework.js">
-      <Link>js\daylightFramework.js</Link>
+    <Content Include="..\..\TestFramework\js\storageFramework.js">
+      <Link>js\storageFramework.js</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="..\..\TestFramework\js\tests\queryTests.js">
