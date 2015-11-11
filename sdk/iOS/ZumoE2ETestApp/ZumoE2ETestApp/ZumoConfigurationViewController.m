@@ -27,10 +27,10 @@
         return;
     }
     
-    // Automatically add azure-mobile.net if not specified for convenience
+    // Automatically add azurewebsites.net if not specified for convenience
     NSString *appUrl = self.appUrl.text;
     if (![appUrl hasPrefix:@"https://"] && ![appUrl hasPrefix:@"http://"]) {
-        appUrl = [NSString stringWithFormat:@"https://%@.azure-mobile.net", appUrl];
+        appUrl = [NSString stringWithFormat:@"https://%@.azurewebsites.net", appUrl];
     }
     
     // Build the client object
@@ -38,10 +38,42 @@
     [globals initializeClientWithAppUrl:appUrl];
     [globals saveAppInfo:appUrl key:nil];
     
-    NSMutableDictionary *globalTestParams = globals.globalTestParameters;
-    globalTestParams[RUNTIME_VERSION_TAG] = @"DotNet-App";
+    // Block to begin test suite if runtime features can be loaded
+    void (^block)(BOOL) = ^(BOOL success) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (success) {
+                self.validationView.hidden = YES;
+                [self performSegueWithIdentifier:@"BeginTests" sender:self];
+            } else {
+                self.validationView.hidden = YES;
+                UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Complete" message:@"Failed to load runtime info" delegate:self cancelButtonTitle:@"OK" otherButtonTitles: nil];
+                [alert show];
+            }
+        });
+    };
 
-    [self performSegueWithIdentifier:@"BeginTests" sender:self];
+    self.validationView.hidden = NO;
+    
+    // Ask runtime what features should be tested
+    MSClient *client = [[ZumoTestGlobals sharedInstance] client];
+    [client invokeAPI:@"runtimeInfo"
+                 body:nil
+           HTTPMethod:@"GET"
+           parameters:nil
+              headers:nil
+           completion:^(NSDictionary *runtimeInfo, NSHTTPURLResponse *response, NSError *error) {
+               if (error) {
+                   block(NO);
+               } else {
+                   NSMutableDictionary *globalTestParams = ZumoTestGlobals.sharedInstance.globalTestParameters;
+                   NSDictionary *runtime = runtimeInfo[@"runtime"];
+                   
+                   globalTestParams[RUNTIME_FEATURES_KEY] = runtimeInfo[@"features"];
+                   globalTestParams[RUNTIME_VERSION_TAG] = [NSString stringWithFormat:@"%@:%@", runtime[@"type"], runtime[@"version"]];
+                   
+                   block(YES);
+               }
+    }];
 }
 
 - (void)viewWillAppear:(BOOL)animated
