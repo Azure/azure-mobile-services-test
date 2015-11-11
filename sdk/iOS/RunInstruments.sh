@@ -9,7 +9,7 @@ DIR="$( pwd )"
 
 if [ $# -lt 6 ]
 then
-  #           $0 $1                  $2         $3                        $4           $5             $6 (optional)       
+  #           $0 $1                  $2         $3                        $4           $5             $6 (optional)
   echo Usage: $0 \<Application URL\> \<device\> \<zumotestuser password\> \<Blob URL\> \<Blob Token\> \<iOSsdkZip\>
   echo Where
   echo   \<Application URL\> is the URL of the Mobile Service
@@ -34,10 +34,10 @@ echo Device: $DEVICE_CMD_ARG
 # Build current app to test with
 pushd ZumoE2ETestApp
 
-if [ $7 ]
+if [ $6 ]
 then
   # Copy specified framework
-  cp -f $7 sdk.zip
+  cp -f $6 sdk.zip
 else
   # Copy in current version of the framework
   curl --location --output sdk.zip https://zumo.blob.core.windows.net/sdk/azuresdk-iOS-v3.0.0-beta3.zip
