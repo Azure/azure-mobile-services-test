@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------------------
 /// <reference path="platformSpecificFunctions.js" />
 /// <reference path="testFramework.js" />
-/// <reference path="daylightFramework.js" />
+/// <reference path="storageFramework.js" />
 /// <reference path="~/js/lib/MobileServices.Web.js" />
 if (!testPlatform.IsHTMLApplication) { // Call UpdateTestListHeight() if WinJS application is running
     function updateTestListHeight() {
@@ -190,9 +190,9 @@ function testGroupSelected(index) {
 
     if (group.name === zumo.AllTestsGroupName || group.name === zumo.AllTestsUnattendedGroupName) {
         btnRunTestClick().then(
-            function () {
-                if (dayLight.dayLightConfig !== undefined) {
-                    dayLight.ReportResultsToDaylight(zumo.testGroups, index);
+            function () {                
+                if (storage.config !== undefined) {
+                    storage.ReportResults(zumo.testGroups, index);                    
                 }
             });
     }

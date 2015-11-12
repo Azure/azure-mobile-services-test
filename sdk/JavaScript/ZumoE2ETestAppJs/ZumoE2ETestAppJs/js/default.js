@@ -11,9 +11,8 @@
     var activation = Windows.ApplicationModel.Activation;
 
     app.onactivated = function (args) {
-
         if (args.detail.arguments != "") {
-            dayLight.setConfig(args.detail.arguments);
+            storage.setConfig(args.detail.arguments);
         }
 
         if (args.detail.kind === activation.ActivationKind.launch) {
@@ -25,7 +24,7 @@
                 // Restore application state here.
             }
 
-            if (dayLight.dayLightConfig == undefined) {
+            if (storage.config == undefined) {
                 args.setPromise(WinJS.UI.processAll().then(function () {
                     return app.local.exists('savedAppInfo.txt').then(function (exists) {
                         if (exists) {
@@ -50,9 +49,8 @@
                     });
                 }));
             } else {
-                document.getElementById('txtAppUrl').value = dayLight.dayLightConfig.AppUrl;
-                document.getElementById('txtGatewayUrl').value = dayLight.dayLightConfig.GatewayUrl;
-                document.getElementById('txtAppKey').value = dayLight.dayLightConfig.AppKey;
+                document.getElementById('txtAppUrl').value = storage.config.AppUrl;
+                document.getElementById('txtAppKey').value = storage.config.AppKey;
                 handlerForAllTestsButtons(true)(null);
             }
         }
