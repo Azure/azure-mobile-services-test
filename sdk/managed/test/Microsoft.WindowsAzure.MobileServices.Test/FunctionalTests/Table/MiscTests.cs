@@ -186,8 +186,8 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                 untypedItem = (JObject)(await untypedTable.InsertAsync(untypedItem));
                 Log("Inserted: {0}", untypedItem);
                 id = (string)untypedItem["id"];
-                createdAt = untypedItem["__createdAt"].ToObject<DateTime>();
-                updatedAt = untypedItem["__updatedAt"].ToObject<DateTime>();
+                createdAt = untypedItem["createdAt"].ToObject<DateTime>();
+                updatedAt = untypedItem["updatedAt"].ToObject<DateTime>();
             }
 
             Log("Now adding a new item");
@@ -209,18 +209,18 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                 untypedItem = (JObject)(await untypedTable.InsertAsync(untypedItem));
                 Log("Inserted: {0}", untypedItem);
                 otherId = (string)untypedItem["id"];
-                otherCreatedAt = untypedItem["__createdAt"].ToObject<DateTime>();
-                otherUpdatedAt = untypedItem["__updatedAt"].ToObject<DateTime>();
+                otherCreatedAt = untypedItem["createdAt"].ToObject<DateTime>();
+                otherUpdatedAt = untypedItem["updatedAt"].ToObject<DateTime>();
             }
 
             if (createdAt >= otherCreatedAt)
             {
-                Assert.Fail("Error, first __createdAt value is not smaller than second one");
+                Assert.Fail("Error, first createdAt value is not smaller than second one");
             }
 
             if (updatedAt >= otherUpdatedAt)
             {
-                Assert.Fail("Error, first __updatedAt value is not smaller than second one");
+                Assert.Fail("Error, first updatedAt value is not smaller than second one");
             }
 
             createdAt = otherCreatedAt;
@@ -240,18 +240,18 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                 untypedItem = new JObject(new JProperty("id", otherId), new JProperty("name", "other name"));
                 untypedItem = (JObject)(await untypedTable.UpdateAsync(untypedItem));
                 Log("Updated: {0}", untypedItem);
-                otherCreatedAt = untypedItem["__createdAt"].ToObject<DateTime>();
-                otherUpdatedAt = untypedItem["__updatedAt"].ToObject<DateTime>();
+                otherCreatedAt = untypedItem["createdAt"].ToObject<DateTime>();
+                otherUpdatedAt = untypedItem["updatedAt"].ToObject<DateTime>();
             }
 
             if (createdAt != otherCreatedAt)
             {
-                Assert.Fail("Error, update changed the value of the __createdAt property");
+                Assert.Fail("Error, update changed the value of the createdAt property");
             }
 
             if (otherUpdatedAt <= updatedAt)
             {
-                Assert.Fail("Error, update did not change the __updatedAt property to a later value");
+                Assert.Fail("Error, update did not change the updatedAt property to a later value");
             }
 
             Log("Cleanup: deleting items");
@@ -339,7 +339,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             await table.InsertAsync(item);
             Log("[client 1] Inserted item: {0}", item);
 
-            var client2 = new MobileServiceClient(client.MobileAppUri, client.ApplicationKey);
+            var client2 = new MobileServiceClient(client.MobileAppUri);
             var table2 = client.GetTable<VersionedType>();
             var item2 = await table2.LookupAsync(item.Id);
             Log("[client 2] Retrieved the item");
@@ -489,7 +489,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
 
             // Delete operation doesn't populate the object with the response, so we'll use a filter to capture that
             var handler = new HandlerToCaptureHttpTraffic();
-            var filteredClient = new MobileServiceClient(client.MobileAppUri, client.ApplicationKey, handler);
+            var filteredClient = new MobileServiceClient(client.MobileAppUri, handler);
             typed = filteredClient.GetTable<ParamsTestTableItem>();
             untyped = filteredClient.GetTable("ParamsTestTable");
 
@@ -545,7 +545,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             var handler = new HandlerToCaptureHttpTraffic();
             MobileServiceClient client = new MobileServiceClient(
                 this.GetTestSetting("MobileServiceRuntimeUrl"),
-                this.GetTestSetting("MobileServiceRuntimeKey"),
                 handler);
             var table = client.GetTable<RoundTripTableItem>();
             var item = new RoundTripTableItem { Name = "hello" };
@@ -607,7 +606,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             int numberOfRequests = new Random().Next(2, 5);
             var handler = new HandlerWithMultipleRequests(this, numberOfRequests);
             Log("Created a filter which will replay the request {0} times", numberOfRequests);
-            var filteredClient = new MobileServiceClient(client.MobileAppUri, client.ApplicationKey, handler);
+            var filteredClient = new MobileServiceClient(client.MobileAppUri, handler);
 
             var typedTable = filteredClient.GetTable<RoundTripTableItem>();
             var untypedTable = filteredClient.GetTable("RoundTripTable");

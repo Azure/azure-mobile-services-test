@@ -32,11 +32,9 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             InitializeComponent();
 
             string mobileServiceRuntimeURL = Settings.Default.MobileServiceRuntimeUrl;
-            string mobileServiceRuntimeKey = Settings.Default.MobileServiceRuntimeKey;
             string tags = Settings.Default.MobileServiceTags;
 
             txtRuntimeUri.Text = mobileServiceRuntimeURL ?? "";
-            txtRuntimeKey.Text = mobileServiceRuntimeKey ?? "";
             txtTags.Text = tags ?? "";
 
             Loaded += (s, e) => btnUnitTests.Focus();
@@ -51,11 +49,9 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         {
             // Get the test settings from the UI
             App.Harness.Settings.Custom["MobileServiceRuntimeUrl"] = txtRuntimeUri.Text;
-            App.Harness.Settings.Custom["MobileServiceRuntimeKey"] = txtRuntimeKey.Text;
             App.Harness.Settings.TagExpression = txtTags.Text;
 
             Settings.Default.MobileServiceRuntimeUrl = txtRuntimeUri.Text;
-            Settings.Default.MobileServiceRuntimeKey = txtRuntimeKey.Text;
             Settings.Default.MobileServiceTags = txtTags.Text;
 
             if (!string.IsNullOrEmpty(App.Harness.Settings.TagExpression))

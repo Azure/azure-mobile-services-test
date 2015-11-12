@@ -14,7 +14,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         [JsonProperty("id")]
         public string Id { get; set; }
 
-        [JsonProperty("__version")]
+        [JsonProperty("version")]
         public string Version { get; set; }
 
         [JsonProperty("name")]

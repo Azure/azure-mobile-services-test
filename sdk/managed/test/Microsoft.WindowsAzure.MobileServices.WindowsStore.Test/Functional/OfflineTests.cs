@@ -283,7 +283,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
 
                 if (!isUserLoggedIn)
                 {
-                    offlineReadyClient.Logout();
+                    await offlineReadyClient.LogoutAsync();
                     Log("Logged out again");
                 }
 
@@ -299,21 +299,20 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
 
                 Log("Cleaning up");
                 await localTable.PurgeAsync();
-                offlineReadyClient.Logout();
                 Log("Done");
             }
             finally
             {
                 localStore.Dispose();
                 ClearStore().Wait();
-                offlineReadyClient.Logout();
             }
+            await offlineReadyClient.LogoutAsync();
         }
 
         [AsyncTestMethod]
         private async Task NoOptimisticConcurrencyTest()
         {
-            // If a table does not have a __version column, then offline will still
+            // If a table does not have a version column, then offline will still
             // work, but there will be no conflicts
             DateTime now = DateTime.UtcNow;
             int seed = now.Year * 10000 + now.Month * 100 + now.Day;
@@ -379,10 +378,10 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             }
             finally
             {
-                offlineReadyClient.Logout();
                 localStore.Dispose();
                 ClearStore().Wait();
             }
+            await offlineReadyClient.LogoutAsync();
         }
 
         private MobileServiceClient CreateClient(params HttpMessageHandler[] handlers)
@@ -390,17 +389,12 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             var globalClient = GetClient();
             var offlineReadyClient = new MobileServiceClient(
                 globalClient.MobileAppUri,
-                globalClient.ApplicationKey,
                 handlers);
 
             if (globalClient.CurrentUser != null)
             {
                 offlineReadyClient.CurrentUser = new MobileServiceUser(globalClient.CurrentUser.UserId);
                 offlineReadyClient.CurrentUser.MobileServiceAuthenticationToken = globalClient.CurrentUser.MobileServiceAuthenticationToken;
-            }
-            else
-            {
-                offlineReadyClient.Logout();
             }
 
             return offlineReadyClient;
@@ -734,7 +728,7 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
             Log("Done");
             localStore.Dispose();
             await ClearStore();
-            if(!String.IsNullOrEmpty(errorMessage))
+            if (!String.IsNullOrEmpty(errorMessage))
             {
                 Assert.Fail(errorMessage);
             }

@@ -20,9 +20,8 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
             }
 
             harness.Settings.Custom["MobileServiceRuntimeUrl"] = config.MobileServiceRuntimeUrl;
-            harness.Settings.Custom["MobileServiceRuntimeKey"] = config.MobileServiceRuntimeKey;
-            harness.Settings.Custom["TestFrameworkStorageContainerUrl"] = config.TestFrameworkStorageContainerUrl;
             harness.Settings.Custom["TestFrameworkStorageContainerSasToken"] = config.TestFrameworkStorageContainerSasToken;
+            harness.Settings.Custom["TestFrameworkStorageContainerUrl"] = config.TestFrameworkStorageContainerUrl;
             harness.Settings.Custom["RuntimeVersion"] = config.RuntimeVersion;
             harness.Settings.TagExpression = config.TagExpression;
             harness.Settings.ManualMode = false;
@@ -55,9 +54,8 @@ namespace Microsoft.WindowsAzure.MobileServices.TestFramework
             if (args.Count > 0)
             {
                 harness.Settings.Custom["MobileServiceRuntimeUrl"] = getArgumentValue("url", args);
-                harness.Settings.Custom["MobileServiceRuntimeKey"] = getArgumentValue("key", args);
                 harness.Settings.Custom["TestFrameworkStorageContainerUrl"] = getArgumentValue("storageurl", args);
-                harness.Settings.Custom["TestFrameworkStorageContainerSasToken"] = getArgumentValue("storagesastoken", args); ;
+                harness.Settings.Custom["TestFrameworkStorageContainerSasToken"] = getArgumentValue("storagesastoken", args);
                 harness.Settings.Custom["RuntimeVersion"] = getArgumentValue("runtimeversion", args);
                 harness.Settings.TagExpression = getArgumentValue("tags", args);
                 harness.Settings.ManualMode = false;

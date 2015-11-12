@@ -38,7 +38,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
 
             var configString = ReadFile(@"TestInput\input.txt");
             txtRuntimeUri.Text = ""; // Set the default URI here
-            txtRuntimeKey.Text = ""; // Set the default Key here
             txtTags.Text = ""; // Set the default tags here
 
             if (!String.IsNullOrEmpty(configString))
@@ -46,7 +45,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
                 TestConfig config = JsonConvert.DeserializeObject<TestConfig>(configString);
                 App.Harness.SetAutoConfig(config);
                 txtRuntimeUri.Text = App.Harness.Settings.Custom["MobileServiceRuntimeUrl"];
-                txtRuntimeKey.Text = App.Harness.Settings.Custom["MobileServiceRuntimeKey"]; // Set the default Key here            
                 txtTags.Text = App.Harness.Settings.TagExpression; // Set the default tags here    
                 ExecuteUnitTests(null, null);
             }
@@ -70,7 +68,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         {
             // Get the test settings from the UI
             App.Harness.Settings.Custom["MobileServiceRuntimeUrl"] = txtRuntimeUri.Text;
-            App.Harness.Settings.Custom["MobileServiceRuntimeKey"] = txtRuntimeKey.Text;
 
             // Hide Test Settings UI
             testSettings.Visibility = Visibility.Collapsed;
@@ -124,7 +121,6 @@ namespace Microsoft.WindowsAzure.MobileServices.Test
         {
             // Get the test settings from the UI
             App.Harness.Settings.Custom["MobileServiceRuntimeUrl"] = txtRuntimeUri.Text;
-            App.Harness.Settings.Custom["MobileServiceRuntimeKey"] = txtRuntimeKey.Text;
             App.Harness.Settings.TagExpression = txtTags.Text;
 
             //ignore tests for WP75
