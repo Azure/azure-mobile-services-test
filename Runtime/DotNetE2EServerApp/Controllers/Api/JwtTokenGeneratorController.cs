@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using System.IdentityModel.Tokens;
+using System.Configuration;
 using System.Security.Claims;
 using System.Web.Http;
 using System.Web.Http.Controllers;
@@ -31,17 +31,32 @@ namespace ZumoE2EServerApp.Controllers
             {
                new Claim("sub", "Facebook:someuserid@hotmail.com")
             };
-​
-            string signingKey = this.Configuration.GetMobileAppSettingsProvider().GetMobileAppSettings().SigningKey;​
+
             string host = this.Request.RequestUri.GetLeftPart(UriPartial.Authority) + "/";
 
-            var token =  MobileAppLoginHandler.CreateToken(claims, signingKey, host, host, TimeSpan.FromDays(30));
+            var token = MobileAppLoginHandler.CreateToken(claims, GetSigningKey(), host, host, TimeSpan.FromDays(30));
 
             return new LoginUser()
             {
                 UserId = token.Subject,
                 AuthenticationToken = token.RawData
             };
+        }
+
+        private static string GetSigningKey()
+        {
+            // Check for the App Service Auth environment variable WEBSITE_AUTH_SIGNING_KEY,
+            // which holds the signing key on the server. If it's not there, check for a SIGNING_KEY
+            // app setting, which can be used for local debugging.
+
+            string key = Environment.GetEnvironmentVariable("WEBSITE_AUTH_SIGNING_KEY");
+
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                key = ConfigurationManager.AppSettings["SigningKey"];
+            }
+
+            return key;
         }
     }
 }
