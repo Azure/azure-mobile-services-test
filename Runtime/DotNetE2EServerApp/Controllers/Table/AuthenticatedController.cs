@@ -24,7 +24,6 @@ namespace ZumoE2EServerApp.Controllers
         {
             ClaimsPrincipal user = (ClaimsPrincipal)this.User;
             string userId = user.FindFirst(ClaimTypes.NameIdentifier).Value;
-            var all = (await base.GetAll()).Where(p => p.UserId == creds.UserId).ToArray();
 
             string identity = null;
             var fbcreds = await user.GetAppServiceIdentityAsync<FacebookCredentials>(this.Request);
@@ -56,7 +55,6 @@ namespace ZumoE2EServerApp.Controllers
                 identity = "{\"aad\":{\"access_token\":\"\"}}";
             }
 
-            // var creds = await user.GetIdentityAsync<FacebookCredentials>();
             var all = (await base.GetAll()).Where(p => p.UserId == userId).ToArray();
             foreach (var item in all)
             {

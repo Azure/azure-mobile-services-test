@@ -39,8 +39,8 @@ NSString *const TABLES_ROUND_TRIP_INT_ID = @"IntIdRoundTripTable";
     return self;
 }
 
--(void) initializeClientWithAppUrl:(NSString *)url andGatewayURL:(NSString *)gatewayUrl {
-    self.client = [MSClient clientWithApplicationURLString:url gatewayURLString:gatewayUrl applicationKey:nil];
+-(void) initializeClientWithAppUrl:(NSString *)url {
+    self.client = [MSClient clientWithApplicationURLString:url];
 }
 
 - (NSMutableDictionary *)globalTestParameters {
@@ -69,7 +69,7 @@ NSString *const TABLES_ROUND_TRIP_INT_ID = @"IntIdRoundTripTable";
 
 
 +(NSDate *)createDateWithYear:(NSInteger)year month:(NSInteger)month day:(NSInteger)day {
-    NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
+    NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
     NSDateComponents *components = [[NSDateComponents alloc] init];
     [components setYear:year];
     [components setMonth:month];

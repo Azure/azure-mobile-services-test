@@ -57,8 +57,6 @@ NSString * const ALL_UNATTENDED_TESTS_GROUP_NAME = @"All tests unattended";
     ZumoTestGroup *result = [[ZumoTestGroup alloc] init];
     [result setName:(unattendedOnly ? ALL_UNATTENDED_TESTS_GROUP_NAME : ALL_TESTS_GROUP_NAME)];
     for (ZumoTestGroup *group in groups) {
-        // [result addTest:[self createSeparatorTestWithName:groupHeaderName]];
-        
         for (ZumoTest *test in [group tests]) {
             if ([test canRunUnattended] || !unattendedOnly) {
                 ZumoTest *newTest = [[ZumoTest alloc] init];
@@ -71,8 +69,6 @@ NSString * const ALL_UNATTENDED_TESTS_GROUP_NAME = @"All tests unattended";
                 [result addTest:newTest];
             }
         }
-        
-        //[result addTest:[self createSeparatorTestWithName:@"------------------"]];
     }
     return result;
 }

@@ -11,26 +11,9 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-    if([application respondsToSelector:@selector(registerForRemoteNotifications)]) {
-        
-        UIUserNotificationSettings *notificationSettings = [UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound categories:nil];
-        [application registerUserNotificationSettings:notificationSettings];
-        
-        [application registerForRemoteNotifications];
-    } else {
-        // Override point for customization after application launch.
-        [[UIApplication sharedApplication] registerForRemoteNotificationTypes:(UIRemoteNotificationTypeAlert | UIRemoteNotificationTypeBadge | UIRemoteNotificationTypeSound)];
-    }
-    
-    //ZumoMainTableViewController *mainController = [[ZumoMainTableViewController alloc] init];
-    //UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:mainController];
-    //[navController setTitle:@"Azure Mobile Service E2E Tests"];
-    
-    //UINavigationController *navController = (UINavigationController *)self.window.rootViewController;
-    //ZumoMainTableViewController *mainController = [[navController viewControllers] objectAtIndex:0];
-    
-    //NSArray *allTests = [ZumoTestStore createTests];
-    //[mainController setTestGroups:allTests];
+    UIUserNotificationSettings *notificationSettings = [UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound categories:nil];
+    [application registerUserNotificationSettings:notificationSettings];
+    [application registerForRemoteNotifications];
     
     return YES;
 }

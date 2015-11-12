@@ -3,11 +3,14 @@
 // ----------------------------------------------------------------------------
 
 using System;
+using System.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 using Microsoft.Azure.Mobile.Server.Authentication;
 using Microsoft.Azure.Mobile.Server.Config;
+using Microsoft.Azure.Mobile.Server.Login;
+using ZumoE2EServerApp.DataObjects;
 
 namespace ZumoE2EServerApp.Controllers
 {
@@ -22,20 +25,23 @@ namespace ZumoE2EServerApp.Controllers
             this.handler = controllerContext.Configuration.GetMobileAppTokenHandler();
         }
 
-        public TokenInfo GetDummyUserToken()
+        public LoginUser GetDummyUserToken()
         {
-            ProviderCredentials creds = new FacebookCredentials
+            Claim[] claims = new Claim[]
             {
-                Provider = "Facebook",
-                UserId = "Facebook:someuserid@hotmail.com",
-                AccessToken = "somepassword"
+               new Claim("sub", "Facebook:someuserid@hotmail.com")
             };
-            Claim claim = new Claim(ClaimTypes.NameIdentifier, creds.UserId);
-            ClaimsIdentity claimIdentity = new ClaimsIdentity();
-            claimIdentity.AddClaim(claim);
+​
+            string signingKey = this.Configuration.GetMobileAppSettingsProvider().GetMobileAppSettings().SigningKey;​
+            string host = this.Request.RequestUri.GetLeftPart(UriPartial.Authority) + "/";
 
-            string signingKey = this.Configuration.GetMobileAppSettingsProvider().GetMobileAppSettings().SigningKey;
-            return handler.CreateTokenInfo(claimIdentity.Claims, TimeSpan.FromDays(30), signingKey);
+            var token =  MobileAppLoginHandler.CreateToken(claims, signingKey, host, host, TimeSpan.FromDays(30));
+
+            return new LoginUser()
+            {
+                UserId = token.Subject,
+                AuthenticationToken = token.RawData
+            };
         }
     }
 }

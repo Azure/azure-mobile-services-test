@@ -10,10 +10,8 @@
 @interface ZumoConfigurationViewController () <UITextFieldDelegate>
 
 @property (weak, nonatomic) IBOutlet UITextField *appUrl;
-@property (weak, nonatomic) IBOutlet UITextField *clientId;
-@property (weak, nonatomic) IBOutlet UITextField *clientSecret;
-@property (weak, nonatomic) IBOutlet UITextField *runId;
-@property (weak, nonatomic) IBOutlet UISwitch *reportOn;
+@property (weak, nonatomic) IBOutlet UITextField *storageURL;
+@property (weak, nonatomic) IBOutlet UITextField *storageToken;
 
 @property (weak, nonatomic) UITextField *activeField;
 @property (weak, nonatomic) IBOutlet UIView *validationView;
@@ -29,21 +27,53 @@
         return;
     }
     
-    // Automatically add azure-mobile.net if not specified for convenience
+    // Automatically add azurewebsites.net if not specified for convenience
     NSString *appUrl = self.appUrl.text;
     if (![appUrl hasPrefix:@"https://"] && ![appUrl hasPrefix:@"http://"]) {
-        appUrl = [NSString stringWithFormat:@"https://%@.azure-mobile.net", appUrl];
+        appUrl = [NSString stringWithFormat:@"https://%@.azurewebsites.net", appUrl];
     }
     
     // Build the client object
     ZumoTestGlobals *globals = [ZumoTestGlobals sharedInstance];
-    [globals initializeClientWithAppUrl:appUrl andGatewayURL:nil];
+    [globals initializeClientWithAppUrl:appUrl];
     [globals saveAppInfo:appUrl key:nil];
     
-    NSMutableDictionary *globalTestParams = globals.globalTestParameters;
-    globalTestParams[RUNTIME_VERSION_TAG] = @"DotNet-App";
+    // Block to begin test suite if runtime features can be loaded
+    void (^block)(BOOL) = ^(BOOL success) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (success) {
+                self.validationView.hidden = YES;
+                [self performSegueWithIdentifier:@"BeginTests" sender:self];
+            } else {
+                self.validationView.hidden = YES;
+                UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Complete" message:@"Failed to load runtime info" delegate:self cancelButtonTitle:@"OK" otherButtonTitles: nil];
+                [alert show];
+            }
+        });
+    };
 
-    [self performSegueWithIdentifier:@"BeginTests" sender:self];
+    self.validationView.hidden = NO;
+    
+    // Ask runtime what features should be tested
+    MSClient *client = [[ZumoTestGlobals sharedInstance] client];
+    [client invokeAPI:@"runtimeInfo"
+                 body:nil
+           HTTPMethod:@"GET"
+           parameters:nil
+              headers:nil
+           completion:^(NSDictionary *runtimeInfo, NSHTTPURLResponse *response, NSError *error) {
+               if (error) {
+                   block(NO);
+               } else {
+                   NSMutableDictionary *globalTestParams = ZumoTestGlobals.sharedInstance.globalTestParameters;
+                   NSDictionary *runtime = runtimeInfo[@"runtime"];
+                   
+                   globalTestParams[RUNTIME_FEATURES_KEY] = runtimeInfo[@"features"];
+                   globalTestParams[RUNTIME_VERSION_TAG] = [NSString stringWithFormat:@"%@:%@", runtime[@"type"], runtime[@"version"]];
+                   
+                   block(YES);
+               }
+    }];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -59,16 +89,13 @@
     self.navigationController.navigationBar.hidden = YES;
     
     self.appUrl.delegate = self;
-    self.clientId.delegate = self;
-    self.clientSecret.delegate = self;
-    self.runId.delegate = self;
+    self.storageURL.delegate = self;
+    self.storageToken.delegate = self;
 
     NSArray *lastUsedApp = [[ZumoTestGlobals sharedInstance] loadAppInfo];
     if (lastUsedApp) {
         self.appUrl.text = [lastUsedApp objectAtIndex:0];
     }
-
-    [self registerForKeyboardNotifications];
 }
 
 - (void)didReceiveMemoryWarning
@@ -95,14 +122,12 @@
         }
         
         ZumoTestGlobals *globals = [ZumoTestGlobals sharedInstance];
-        [globals initializeClientWithAppUrl:appUrl andGatewayURL:nil];
+        [globals initializeClientWithAppUrl:appUrl];
         [globals saveAppInfo:appUrl key:nil];
 
-        if (self.reportOn.on) {
-            globals.daylightProject = @"zumo2";
-            globals.daylightClientId = self.clientId.text;
-            globals.daylightClientSecret = self.clientSecret.text;
-            globals.daylightMasterRunId = self.runId.text;
+        if (self.storageToken.text && self.storageURL.text) {
+            globals.storageURL = self.storageURL.text;
+            globals.storageToken = self.storageToken.text;
         }
         
         self.validationView.hidden = YES;
@@ -112,7 +137,7 @@
 - (BOOL) validateAppInfo {
     
     if ([self.appUrl.text length] == 0) {
-        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error" message:@"Please set the application URL and key before proceeding" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error" message:@"Please set the application URL before proceeding" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
         [alert show];
         return NO;
     }
@@ -123,56 +148,6 @@
 
 # pragma mark UITextFieldDelegate
 
-- (void)registerForKeyboardNotifications
-{
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(keyboardWasShown:)
-                                                 name:UIKeyboardWillShowNotification object:nil];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(keyboardWillBeHidden:)
-                                                 name:UIKeyboardWillHideNotification object:nil];
-    
-}
-
-// Called when the UIKeyboardDidShowNotification is sent.
-- (void)keyboardWasShown:(NSNotification*)aNotification
-{
-    NSDictionary* info = [aNotification userInfo];
-    CGSize kbSize = [[info objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
-
-    if (self.activeField == self.appUrl) {
-        return;
-    }
-    
-    CGRect aRect = self.scrollView.frame;
-    aRect.size.height -= kbSize.height;
-    
-    CGPoint textSpot = self.runId.frame.origin;
-    textSpot.y = self.runId.frame.size.height;
-    
-    if (!CGRectContainsPoint(aRect, textSpot) ) {
-        NSTimeInterval duration = [info[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
-        [UIView animateWithDuration:duration animations:^{
-            [self.view setFrame:CGRectMake(0, -100, self.view.frame.size.width, self.view.frame.size.height)];
-        }];
-    }
-}
-
-// Called when the UIKeyboardWillHideNotification is sent
-- (void)keyboardWillBeHidden:(NSNotification*)aNotification
-{
-    if(self.view.frame.origin.y == 0) {
-        return;
-    }
-    
-    NSDictionary* info = [aNotification userInfo];
-    NSTimeInterval duration = [info[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
-
-    [UIView animateWithDuration:duration animations:^{
-        [self.view setFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height)];
-    }];
-}
 
 - (void)textFieldDidBeginEditing:(UITextField *)textField
 {
