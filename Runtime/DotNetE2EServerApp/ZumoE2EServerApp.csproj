@@ -249,10 +249,6 @@
       <SubType>Designer</SubType>
     </Content>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="Properties\PublishProfiles\e2etest-androidsdk1-app - FTP %284%29.pubxml" />
-    <None Include="Properties\PublishProfiles\e2etest-androidsdk1-app - Web Deploy %284%29.pubxml" />
-  </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
