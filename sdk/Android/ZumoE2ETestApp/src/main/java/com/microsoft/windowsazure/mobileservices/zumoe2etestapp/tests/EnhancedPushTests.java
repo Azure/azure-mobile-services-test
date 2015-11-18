@@ -201,7 +201,6 @@ public class EnhancedPushTests extends TestGroup {
 
                     register(this, MobileServicePush, registrationId);
 
-                    /*
                     JsonElement registerResult = verifyRegisterInstallationResult(client, registrationId).get();
 
                     if (!registerResult.getAsBoolean()) {
@@ -210,7 +209,7 @@ public class EnhancedPushTests extends TestGroup {
 
                         callback.onTestComplete(this, result);
                         return;
-                    }*/
+                    }
 
                     JsonObject item = new JsonObject();
                     item.addProperty("method", "send");
@@ -269,7 +268,7 @@ public class EnhancedPushTests extends TestGroup {
 
                     registerTemplate(this, MobileServicePush, registrationId, templateName, template);
 
-                    /*JsonElement registerResult = verifyRegisterInstallationResult(client, registrationId, templateName, template).get();
+                    JsonElement registerResult = verifyRegisterInstallationResult(client, registrationId, templateName, template).get();
 
                     if (!registerResult.getAsBoolean()) {
                         this.log("Register failed");
@@ -277,7 +276,7 @@ public class EnhancedPushTests extends TestGroup {
 
                         callback.onTestComplete(this, result);
                         return;
-                    }*/
+                    }
 
                     GCMMessageManager.instance.clearPushMessages();
 
@@ -399,8 +398,6 @@ public class EnhancedPushTests extends TestGroup {
                 try {
 
                     unregisterAll(test, client.getPush(), client, registrationId);
-
-                    //SystemClock.sleep(60000);
 
                     JsonElement unregisterResult = verifyUnregisterInstallationResult(client).get();
 

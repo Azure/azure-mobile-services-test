@@ -249,7 +249,7 @@ public class UpdateDeleteTests extends TestGroup {
                     JsonObject lookedUpItem = (JsonObject) table.lookUp(updatedItem.get("id").getAsInt()).get();
 
                     log("verify items are equal");
-                    if (Util.compareJson(updatedItem, lookedUpItem, true)) { // check
+                    if (Util.compareJson(updatedItem, lookedUpItem)) { // check
                         // the
                         // items
                         // are
@@ -470,6 +470,8 @@ public class UpdateDeleteTests extends TestGroup {
                 result.setTestCase(testCase);
 
                 try {
+
+                    client.getContext().deleteDatabase(STRING_ID_ROUNDTRIP_SOFT_DELETE_TABLE_NAME);
 
                     SQLiteLocalStore localStore = new SQLiteLocalStore(client.getContext(), STRING_ID_ROUNDTRIP_SOFT_DELETE_TABLE_NAME, null, 1);
 
