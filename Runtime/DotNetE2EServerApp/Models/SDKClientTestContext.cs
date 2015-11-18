@@ -27,6 +27,7 @@ namespace ZumoE2EServerApp.Models
 
         public DbSet<RoundTripTableItem> RoundTripTableItems { get; set; }
         public DbSet<IntIdRoundTripTableItem> IntIdRoundTripTableItems { get; set; }
+        public DbSet<StringIdRoundTripTableSoftDeleteItem> StringIdRoundTripTableSoftDeleteItems { get; set; }
 
         public DbSet<Dates> Dates { get; set; }
 

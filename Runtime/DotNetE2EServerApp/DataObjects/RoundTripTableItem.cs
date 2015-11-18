@@ -7,6 +7,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.Azure.Mobile.Server;
 using Microsoft.Azure.Mobile.Server.Tables;
 using ZumoE2EServerApp.Utils;
+using Newtonsoft.Json;
 
 namespace ZumoE2EServerApp.DataObjects
 {
@@ -53,15 +54,23 @@ namespace ZumoE2EServerApp.DataObjects
         public string Id { get; set; }
 
         [NotMapped]
+        [JsonIgnore]
         public bool Deleted { get; set; }
 
         [NotMapped]
+        [JsonIgnore]
         public DateTimeOffset? UpdatedAt { get; set; }
 
         [NotMapped]
+        [JsonIgnore]
         public DateTimeOffset? CreatedAt { get; set; }
 
         [NotMapped]
+        [JsonIgnore]
         public Byte[] Version { get; set; }
+    }
+
+    public class StringIdRoundTripTableSoftDeleteItem : RoundTripTableItem 
+    {
     }
 }

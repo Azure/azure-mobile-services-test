@@ -79,7 +79,7 @@ namespace ZumoE2EServerApp.Controllers
 
                         message.Add(key.Name, (string)key.Value);
                     }
-                    var result = await this.pushClient.SendAsync(message, "World");
+                    var result = await this.pushClient.SendAsync(message);
                 }
                 else if (type == "gcm")
                 {
@@ -122,6 +122,7 @@ namespace ZumoE2EServerApp.Controllers
         public async Task<bool> GetVerifyRegisterInstallationResult(string channelUri, string templates = null, string secondaryTiles = null)
         {
             var nhClient = this.GetNhClient();
+
             HttpResponseMessage msg = new HttpResponseMessage();
             msg.StatusCode = HttpStatusCode.InternalServerError;
             IEnumerable<string> installationIds;
@@ -162,11 +163,15 @@ namespace ZumoE2EServerApp.Controllers
                         msg.Content = new StringContent(string.Format("SecondaryTiles did not match. Expected {0} Found {1}", secondaryTiles, nhSecondaryTiles));
                         throw new HttpResponseException(msg);
                     }
-                    bool tagsVerified = await VerifyTags(channelUri, installationId, nhClient);
-                    if (!tagsVerified)
+
+                    if (nhInstallation.Platform != NotificationPlatform.Gcm)
                     {
-                        msg.Content = new StringContent("Did not find installationId tag");
-                        throw new HttpResponseException(msg);
+                        bool tagsVerified = await VerifyTags(channelUri, installationId, nhClient);
+                        if (!tagsVerified)
+                        {
+                            msg.Content = new StringContent("Did not find installationId tag");
+                            throw new HttpResponseException(msg);
+                        }
                     }
                     return true;
                 });
