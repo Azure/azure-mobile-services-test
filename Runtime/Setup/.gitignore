@@ -1,5 +1,0 @@
-node_modules/
-azure.err
-*.json
-!package.json
-!*_template.json
