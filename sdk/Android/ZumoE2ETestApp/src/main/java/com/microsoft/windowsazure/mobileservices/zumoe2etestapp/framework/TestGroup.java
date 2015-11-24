@@ -44,6 +44,8 @@ public abstract class TestGroup {
     ConcurrentLinkedQueue<TestCase> mTestRunQueue;
     boolean mNewTestRun;
     private int mFailedTestCount;
+    private int mPassedTestCount;
+    private int mNotRunTestCount;
     private Date mStartTime;
     private Date mEndTime;
 
@@ -135,6 +137,10 @@ public abstract class TestGroup {
 
                 if (test.getStatus() == TestStatus.Failed) {
                     mFailedTestCount++;
+                } else if (test.getStatus() == TestStatus.Passed) {
+                    mPassedTestCount++;
+                } else if (test.getStatus() == TestStatus.NotRun) {
+                    mNotRunTestCount++;
                 }
             }
 
@@ -258,6 +264,14 @@ public abstract class TestGroup {
         return mFailedTestCount;
     }
 
+    public int getPassedTestCount() {
+        return mPassedTestCount;
+    }
+
+    public int notRunTestCount() {
+        return mNotRunTestCount;
+    }
+
     public Date getStartTime() {
         return mStartTime;
     }
@@ -273,6 +287,9 @@ public abstract class TestGroup {
 
     public void onPreExecute(MobileServiceClient client) {
         mFailedTestCount = 0;
+        mPassedTestCount = 0;
+        mNotRunTestCount = 0;
+
         mStartTime = new Date();
     }
 

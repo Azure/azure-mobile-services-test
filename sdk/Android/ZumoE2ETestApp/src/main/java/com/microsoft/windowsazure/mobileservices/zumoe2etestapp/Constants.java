@@ -22,19 +22,11 @@ package com.microsoft.windowsazure.mobileservices.zumoe2etestapp;
 public class Constants {
     public static final String PREFERENCE_MOBILE_SERVICE_URL = "pref_mobile_service_url";
 
-    public static final String PREFERENCE_MOBILE_SERVICE_KEY = "pref_mobile_service_key";
+    public static final String PREFERENCE_SUNLIGHT_CONTAINER_URL = "pref_sunlight_container_url";
 
-    public static final String PREFERENCE_MASTER_RUN_ID = "pref_master_run_id";
+    public static final String PREFERENCE_SUNLIGHT_BASE64_TOKEN = "pref_sunlight_base64_token";
 
-    public static final String PREFERENCE_RUNTIME_VERSION = "pref_runtime_version";
-
-    public static final String PREFERENCE_DAYLIGHT_CLIENT_ID = "pref_daylight_client_id";
-
-    public static final String PREFERENCE_DAYLIGHT_CLIENT_SECRET = "pref_daylight_client_secret";
-
-    public static final String PREFERENCE_DAYLIGHT_URL = "pref_daylight_url";
-
-    public static final String PREFERENCE_DAYLIGHT_PROJECT = "pref_daylight_project";
+    public static final String PREFERENCE_SUNLIGHT_RUNTIME_VERSION = "pref_sunlight_runtime_version";
 
     public static final String PREFERENCE_GOOGLE_USERID = "pref_google_userid";
 
