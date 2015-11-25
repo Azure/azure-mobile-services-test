@@ -45,7 +45,6 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Spinner;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.microsoft.windowsazure.mobileservices.MobileServiceClient;
@@ -56,7 +55,7 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestGr
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestResult;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.TestStatus;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.Util;
-//import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.log.DaylightLogger;
+import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.framework.log.SunlightLogger;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.ClientSDKLoginTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.CustomApiTests;
 import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.EnhancedPushTests;
@@ -71,7 +70,6 @@ import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.UpdateDele
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
-import com.squareup.okhttp.internal.http.StatusLine;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -84,13 +82,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-//import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.EnhancedPushTests;
-//import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.LoginTests;
-//import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.MiscTests;
-//import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.PushTests;
-//import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.OfflineTests;
-//import com.microsoft.windowsazure.mobileservices.zumoe2etestapp.tests.SystemPropertiesTests;
 
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 @SuppressWarnings("deprecation")
@@ -129,15 +120,11 @@ public class MainActivity extends Activity {
             mAutomationPreferences = new HashMap<String, String>();
             mAutomationPreferences.put("pref_run_unattended", extras.getString("pref_run_unattended", ""));
             mAutomationPreferences.put("pref_mobile_service_url", extras.getString("pref_mobile_service_url", ""));
-            mAutomationPreferences.put("pref_mobile_service_key", extras.getString("pref_mobile_service_key", ""));
             mAutomationPreferences.put("pref_google_userid", extras.getString("pref_google_userid", ""));
             mAutomationPreferences.put("pref_google_webapp_clientid", extras.getString("pref_google_webapp_clientid", ""));
-            mAutomationPreferences.put("pref_master_run_id", extras.getString("pref_master_run_id", ""));
-            mAutomationPreferences.put("pref_runtime_version", extras.getString("pref_runtime_version", ""));
-            mAutomationPreferences.put("pref_daylight_client_id", extras.getString("pref_client_id", ""));
-            mAutomationPreferences.put("pref_daylight_client_secret", extras.getString("pref_client_secret", ""));
-            mAutomationPreferences.put("pref_daylight_url", extras.getString("pref_daylight_url", ""));
-            mAutomationPreferences.put("pref_daylight_project", extras.getString("pref_daylight_project", ""));
+            mAutomationPreferences.put("pref_sunlight_runtime_version", extras.getString("pref_sunlight_runtime_version", ""));
+            mAutomationPreferences.put("pref_sunlight_container_url", extras.getString("pref_sunlight_container_url", ""));
+            mAutomationPreferences.put("pref_sunlight_base64_token", extras.getString("pref_sunlight_base64_token", ""));
         }
 
         mTestCaseList = (ListView) findViewById(R.id.testCaseList);
@@ -396,14 +383,14 @@ public class MainActivity extends Activity {
                                 tests.add(result.getTestCase());
                             }
 
-                            /*DaylightLogger logger = new DaylightLogger(getDaylightURL(), getDaylightProject(), getDaylightClientId(),
-                                    getDaylightClientSecret(), getDaylightRuntime(), getDaylightRunId());
+                            SunlightLogger logger = new SunlightLogger(getSunlightURL(), getSunlightBase64Token(), getSunlightRuntime());
+
                             try {
-                                logger.reportResultsToDaylight(group.getFailedTestCount(), group.getStartTime(), group.getEndTime(), tests,
-                                        group.getSourceMap());
+                                logger.reportResults(group.getFailedTestCount(), group.getPassedTestCount(), group.notRunTestCount(),
+                                        group.getStartTime(), group.getEndTime(), tests, group.getSourceMap());
                             } catch (Throwable e) {
                                 log(e.getMessage());
-                            }*/
+                            }
                         }
 
                         if (shouldRunUnattended()) {
@@ -483,32 +470,6 @@ public class MainActivity extends Activity {
         thread.start();
     }
 
-    // private static List<Pair<String, String>> mobileServiceRuntimeFeatures;
-
-    // private void getMobileServiceRuntimeFeatures(MobileServiceClient client)
-    // {
-    // mobileServiceRuntimeFeatures = new ArrayList<Pair<String, String>>();
-    //
-    // Pair<String, String> runtimeFeature1 = new Pair<String, String>("1",
-    // "1");
-    //
-    // mobileServiceRuntimeFeatures.add(runtimeFeature1);
-    // }
-    //
-    // public boolean mobileServiceRuntimeHasFeature(String featureKey, String
-    // featureValue) {
-    //
-    // for (Pair<String, String> runtimeFeature : mobileServiceRuntimeFeatures)
-    // {
-    // if (runtimeFeature.first.equals(featureKey) &&
-    // runtimeFeature.second.equals(featureValue)) {
-    // return true;
-    // }
-    // }
-    //
-    // return false;
-    // }
-
     private void logSeparator() {
         mLog.append("\n");
         mLog.append("----\n");
@@ -536,28 +497,16 @@ public class MainActivity extends Activity {
         return this.getPreference(Constants.PREFERENCE_MOBILE_SERVICE_URL);
     }
 
-    private String getDaylightURL() {
-        return this.getPreference(Constants.PREFERENCE_DAYLIGHT_URL);
+    private String getSunlightURL() {
+        return this.getPreference(Constants.PREFERENCE_SUNLIGHT_CONTAINER_URL);
     }
 
-    private String getDaylightProject() {
-        return this.getPreference(Constants.PREFERENCE_DAYLIGHT_PROJECT);
+    private String getSunlightBase64Token() {
+        return this.getPreference(Constants.PREFERENCE_SUNLIGHT_BASE64_TOKEN);
     }
 
-    private String getDaylightClientId() {
-        return this.getPreference(Constants.PREFERENCE_DAYLIGHT_CLIENT_ID);
-    }
-
-    private String getDaylightClientSecret() {
-        return this.getPreference(Constants.PREFERENCE_DAYLIGHT_CLIENT_SECRET);
-    }
-
-    private String getDaylightRuntime() {
-        return this.getPreference(Constants.PREFERENCE_RUNTIME_VERSION);
-    }
-
-    private String getDaylightRunId() {
-        return this.getPreference(Constants.PREFERENCE_MASTER_RUN_ID);
+    private String getSunlightRuntime() {
+        return this.getPreference(Constants.PREFERENCE_SUNLIGHT_RUNTIME_VERSION);
     }
 
     public String getGoogleUserId() {
